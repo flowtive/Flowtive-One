@@ -537,6 +537,8 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .act-status-todo{background:#F3F4F6;color:#6B7280}
 .act-status-progress{background:#EFF6FF;color:#1D4ED8}
 .act-status-finished{background:#D1FAE5;color:#065F46}
+.act-email-edit{background:#EDE9FE;color:#5B21B6}
+.act-email-copy{background:#CCFBF1;color:#115E59}
 
 /* ── Weekly Chart ── */
 .weekly-chart-wrap{height:180px;position:relative}
@@ -3171,6 +3173,12 @@ function buildActivityFeed(){
     } else if(entry.type==='unclaim'){
       badgeClass='act-unclaim';
       text='<strong>'+entry.who+'</strong> released claim on '+loc+' '+indBadge;
+    } else if(entry.type==='email_edit' || entry.type==='email_copy'){
+      var emailNum = (entry.emailIdx!=null ? entry.emailIdx+1 : 1);
+      var dayStr = entry.emailDay ? ' Day '+entry.emailDay : '';
+      var isEdit = entry.type==='email_edit';
+      var actionPill = '<span class="activity-badge '+(isEdit?'act-email-edit':'act-email-copy')+'">'+(isEdit?'Edited':'Copied')+'</span>';
+      text='<strong>'+entry.who+'</strong> '+(isEdit?'edited':'copied')+' <strong>Email '+emailNum+dayStr+'</strong> '+actionPill+' '+indBadge;
     } else {
       text='<strong>'+entry.who+'</strong> updated '+loc+' '+indBadge;
     }
@@ -3988,7 +3996,8 @@ function saveEmailEdit(ind, idx){
   var def = EMAIL_TEMPLATES[ind] && EMAIL_TEMPLATES[ind].emails[idx];
   if(!def) return;
   var key = ind+'::'+idx;
-  if(newSubj === def.subject && newBody === def.body){
+  var isEdit = (newSubj !== def.subject || newBody !== def.body);
+  if(!isEdit){
     delete emailOverrides[key];
   } else {
     emailOverrides[key] = {
@@ -4001,6 +4010,9 @@ function saveEmailEdit(ind, idx){
   saveEmailOverrides();
   rerenderEmailCard(ind, idx);
   showToast('Email saved');
+  if(isEdit && currentUser){
+    logActivity(currentUser.name, 'email_edit', ind, null, null, {emailIdx: idx, emailDay: def.day});
+  }
 }
 
 function cancelEmailEdit(ind, idx){
@@ -4051,6 +4063,9 @@ function copyEmail(ind, idx, btn){
       btn.classList.remove('copied');
       if(lbl) lbl.textContent = prev || 'Copy';
     }, 1800);
+    if(currentUser){
+      logActivity(currentUser.name, 'email_copy', ind, null, null, {emailIdx: idx, emailDay: e.day});
+    }
   };
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
