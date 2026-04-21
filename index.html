@@ -655,13 +655,31 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .gr-btn:hover{background:rgba(255,255,255,0.15)}
 .gr-btn svg{width:12px;height:12px}
 
-.email-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;animation:wFadeIn 0.2s ease}
+.email-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
 .email-modal{background:#fff;border-radius:14px;width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .email-modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;flex-shrink:0}
 .email-modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
 .email-modal-sub{font-size:12px;color:var(--muted)}
 .email-modal-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:4px 8px;margin-left:auto;flex-shrink:0;border-radius:6px;font-family:inherit}
 .email-modal-close:hover{background:var(--off);color:var(--text)}
+.email-modal-back{display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;font-family:inherit;padding:5px 10px 5px 8px;border-radius:99px;flex-shrink:0;margin-right:4px;transition:all 0.12s}
+.email-modal-back:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.email-modal-back svg{flex-shrink:0}
+@media (max-width:479px){ .email-modal-back span{display:none} .email-modal-back{padding:6px 8px} }
+/* Cross-fade swap between email library and per-industry detail */
+.email-modal.xfade-out{opacity:0;transform:translateY(-8px);transition:opacity 0.22s ease, transform 0.22s ease;pointer-events:none}
+.email-modal.xfade-in{animation:xFadeIn 0.22s ease both}
+@keyframes xFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.email-backdrop.swap-bg-transparent{background:transparent}
+/* Enter / exit animations — `both` fill mode so first frame is already at `from` state (no flash) */
+.email-backdrop.em-entering{animation:emBdIn 0.2s ease both}
+.email-backdrop.em-exiting{animation:emBdOut 0.18s ease both;pointer-events:none}
+.email-backdrop.em-entering .email-modal{animation:emModalIn 0.22s ease both}
+.email-backdrop.em-exiting .email-modal{animation:emModalOut 0.18s ease both}
+@keyframes emBdIn{from{opacity:0}to{opacity:1}}
+@keyframes emBdOut{from{opacity:1}to{opacity:0}}
+@keyframes emModalIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes emModalOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-6px)}}
 .email-modal-body{overflow-y:auto;padding:18px 20px;background:#FAFBFC}
 .email-timeline{position:relative;padding-left:22px}
 .email-timeline::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--border);border-radius:2px}
@@ -832,6 +850,10 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 <div class="email-backdrop app-hidden" id="email-backdrop" onclick="closeEmailModal(event)">
   <div class="email-modal" onclick="event.stopPropagation()">
     <div class="email-modal-head">
+      <button class="email-modal-back app-hidden" id="email-modal-back" onclick="backToEmailLibrary()" type="button" aria-label="Back to all industries" title="Back to all industries">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2.5L4 7l4.5 4.5"/></svg>
+        <span>All industries</span>
+      </button>
       <div>
         <div class="email-modal-title" id="email-modal-title">Email Templates</div>
         <div class="email-modal-sub" id="email-modal-sub">3-step sequence · Day 1 · Day 5 · Day 12</div>
@@ -1708,7 +1730,7 @@ function buildMain(){
       head.innerHTML=
         '<span class="ind-name">'+ind+'</span>'+
         '<div class="ind-meta">'+
-          '<button class="email-btn" onclick="event.stopPropagation();openEmailModal(\''+ind.replace(/'/g,"\\'")+'\')" type="button" title="Email templates for '+ind+'">'+
+          '<button class="email-btn" onclick="event.stopPropagation();openEmailModal(\''+ind.replace(/'/g,"\\'")+'\', true)" type="button" title="Email templates for '+ind+'">'+
             '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg>'+
             'Emails'+
           '</button>'+
@@ -3828,12 +3850,16 @@ function renderEmailCard(ind, idx){
     '</div>';
 }
 
-function openEmailModal(ind){
+var _emailFromLibrary = false;
+function openEmailModal(ind, fromLibrary){
   var data = EMAIL_TEMPLATES[ind];
   if(!data){ showToast('No templates for '+ind); return; }
   _currentOpenInd = ind;
+  _emailFromLibrary = !!fromLibrary;
   document.getElementById('email-modal-title').textContent = ind+' — Email Templates';
   document.getElementById('email-modal-sub').textContent = data.owner+' · '+data.tone;
+  var backBtn = document.getElementById('email-modal-back');
+  if(backBtn) backBtn.classList.toggle('app-hidden', !_emailFromLibrary);
   var body = document.getElementById('email-modal-body');
   var html = '<div class="email-timeline">';
   data.emails.forEach(function(_, i){
@@ -3842,7 +3868,71 @@ function openEmailModal(ind){
   html += '</div>';
   body.innerHTML = html;
   body.scrollTop = 0;
-  document.getElementById('email-backdrop').classList.remove('app-hidden');
+  showEmailBackdrop('email-backdrop');
+}
+
+/* ── Backdrop show / hide with enter + exit animations ── */
+function showEmailBackdrop(id){
+  var bd = document.getElementById(id);
+  if(!bd) return;
+  bd.classList.remove('em-exiting');
+  bd.classList.remove('app-hidden');
+  // During a swap the swap logic owns the animation — skip the fresh-open fade.
+  if(bd.classList.contains('swap-bg-transparent')) return;
+  bd.classList.remove('em-entering');
+  void bd.offsetWidth;
+  bd.classList.add('em-entering');
+  clearTimeout(bd._emEnterT);
+  bd._emEnterT = setTimeout(function(){ bd.classList.remove('em-entering'); }, 260);
+}
+
+function hideEmailBackdrop(id){
+  var bd = document.getElementById(id);
+  if(!bd) return;
+  if(bd.classList.contains('app-hidden')) return;
+  bd.classList.remove('em-entering');
+  bd.classList.add('em-exiting');
+  clearTimeout(bd._emExitT);
+  bd._emExitT = setTimeout(function(){
+    bd.classList.add('app-hidden');
+    bd.classList.remove('em-exiting');
+  }, 200);
+}
+
+function backToEmailLibrary(){
+  _emailFromLibrary = false;
+  swapEmailBackdrops('email-backdrop', 'lib-backdrop', function(){
+    openEmailLibrary();
+  });
+}
+
+/* ── Smooth cross-fade between the two email backdrops ──
+   Keeps a single dark backdrop visible the whole time by making the
+   incoming one transparent until the outgoing backdrop is hidden. */
+function swapEmailBackdrops(fromId, toId, openFn){
+  var fromBd = document.getElementById(fromId);
+  var toBd   = document.getElementById(toId);
+  if(!fromBd || !toBd){ if(openFn) openFn(); return; }
+  var fromModal = fromBd.querySelector('.email-modal');
+
+  // Open destination with its backdrop momentarily transparent
+  toBd.classList.add('swap-bg-transparent');
+  openFn();
+  var toModal = toBd.querySelector('.email-modal');
+  if(toModal){
+    toModal.classList.add('xfade-in');
+  }
+
+  // Animate the outgoing modal out
+  if(fromModal) fromModal.classList.add('xfade-out');
+
+  setTimeout(function(){
+    fromBd.classList.add('app-hidden');
+    if(fromModal) fromModal.classList.remove('xfade-out');
+    toBd.classList.remove('swap-bg-transparent');
+    if(toModal) toModal.classList.remove('xfade-in');
+    closeGoldenRulesPop();
+  }, 220);
 }
 
 function rerenderEmailCard(ind, idx){
@@ -3942,8 +4032,9 @@ function saveEmailOverrides(){
 
 function closeEmailModal(e){
   if(e && e.target && e.target.id !== 'email-backdrop' && e.type === 'click') return;
-  document.getElementById('email-backdrop').classList.add('app-hidden');
+  hideEmailBackdrop('email-backdrop');
   _currentOpenInd = null;
+  _emailFromLibrary = false;
 }
 
 function copyEmail(ind, idx, btn){
@@ -4072,18 +4163,19 @@ function openEmailLibrary(){
   });
   body.innerHTML = html;
   body.scrollTop = 0;
-  document.getElementById('lib-backdrop').classList.remove('app-hidden');
+  showEmailBackdrop('lib-backdrop');
 }
 
 function closeEmailLibrary(e){
   if(e && e.target && e.target.id !== 'lib-backdrop' && e.type === 'click') return;
-  document.getElementById('lib-backdrop').classList.add('app-hidden');
+  hideEmailBackdrop('lib-backdrop');
   closeGoldenRulesPop();
 }
 
 function openEmailFromLibrary(ind){
-  closeEmailLibrary();
-  setTimeout(function(){ openEmailModal(ind); }, 80);
+  swapEmailBackdrops('lib-backdrop', 'email-backdrop', function(){
+    openEmailModal(ind, true);
+  });
 }
 
 function openGoldenRules(){
