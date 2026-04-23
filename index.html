@@ -698,12 +698,14 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .email-tl-dot.d1{background:#406093}
 .email-tl-dot.d2{background:#E67E22}
 .email-tl-dot.d3{background:#E74C3C}
+.email-tl-dot.d4{background:#6B7280}
 .email-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative}
 .email-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .email-pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:600;letter-spacing:0.01em}
 .email-pill.d1{background:#EEF2F7;color:#406093}
 .email-pill.d2{background:#FEF3E2;color:#B45309}
 .email-pill.d3{background:#FEE2E2;color:#B91C1C}
+.email-pill.d4{background:#F3F4F6;color:#374151}
 .email-copy{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:500;color:var(--text);cursor:pointer;transition:all 0.12s;font-family:inherit}
 .email-copy:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
 .email-copy.copied{background:#D1FAE5;border-color:#6EE7B7;color:#047857}
@@ -785,6 +787,9 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
   .email-copy{padding:5px 10px}
 }
 
+.buyer-psych{background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;margin-bottom:16px}
+.buyer-psych-label{font-size:10.5px;font-weight:700;color:#854D0E;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.buyer-psych-text{font-size:12.5px;line-height:1.55;color:#1A1A2E}
 </style>
 </head>
 <body>
@@ -866,7 +871,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
       </button>
       <div>
         <div class="email-modal-title" id="email-modal-title">Email Templates</div>
-        <div class="email-modal-sub" id="email-modal-sub">3-step sequence · Day 1 · Day 5 · Day 12</div>
+        <div class="email-modal-sub" id="email-modal-sub">4-step sequence · Day 1 · 5 · 9 · 14</div>
       </div>
       <button class="email-modal-close" onclick="closeEmailModal()" type="button" aria-label="Close">&times;</button>
     </div>
@@ -880,7 +885,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
     <div class="email-modal-head">
       <div>
         <div class="email-modal-title">Email Templates</div>
-        <div class="email-modal-sub">All 18 industries · 54 emails · Click an industry to view its 3-email sequence</div>
+        <div class="email-modal-sub">All 18 industries · 72 emails · Click an industry to view its 4-email sequence</div>
         <span class="lib-info-wrap" tabindex="0">
           <button class="lib-gr-btn" id="lib-info-btn" type="button" onclick="toggleGoldenRulesPop(event)" aria-label="Golden Rules">
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v12M3 5l4-4 4 4"/></svg>
@@ -3358,503 +3363,647 @@ window.addEventListener('resize', function(){
 var EMAIL_TEMPLATES = {
   "Agency": {
     "owner": "Emran",
-    "tone": "Peer. Wry. No flattery. Treats them as equals who already know the problem.",
+    "buyerPsychology": "Ego-driven. They know the site needs work but it never gets prioritised. Respond to peers, not vendors. The irony angle lands.",
+    "tone": "Peer-to-peer. Wry but respectful. No flattery. Treats them as equals who already know the problem.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Pattern interrupt, peer to peer",
         "subject": "quick thought on [Agency Name]",
-        "body": "Hi [First Name],\n\nLooked at your site earlier, spent a few minutes on it the way a prospective client would.\n\nThe work you're doing for clients is clearly strong. But the website isn't helping you win the rooms you should be in. The positioning is vague, the portfolio doesn't show your best projects front and centre, and there's nothing that makes a visitor feel like they found the right team.\n\nWe rebuild agency websites on Webflow, stripped back, conversion-focused, built to bring in better clients.\n\nWorth a 15 minute conversation this week?\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent a few minutes on your site this morning, the way a prospective client would.\n\nThe work is clearly strong. But the website isn't helping you win the rooms you should be in. Positioning is vague, the best projects are buried, and nothing makes a visitor feel like they found the right team.\n\nWe rebuild agency sites on Webflow, sharp, stripped back, built to bring in better clients.\n\nWorth 15 minutes this week?\n\nEmran\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The cobbler's shoes, reframe not repeat",
         "subject": "re: [Agency Name]'s site",
-        "body": "Hi [First Name],\n\nJust following up, and I'll be honest rather than send a generic nudge.\n\nEvery agency owner I've spoken to says the same thing: the website has been on the list for two years and somehow never makes it to the top. You're delivering great work for clients while your own front door looks like it was last touched in 2019.\n\nThe cost isn't obvious. It shows up as pitches you almost win, referrals that go quiet after Googling you, and rates that are harder to defend than they should be.\n\nHappy to take 15 minutes and walk through what I'd change, no deck, no pitch, just an honest look.\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up, and I'll be direct rather than send a generic nudge.\n\nEvery agency owner I've spoken to says the same thing: the website has been on the list for two years and somehow never reaches the top. You're delivering great work for clients while your own front door hasn't been touched in years.\n\nThe cost isn't obvious. It shows up in pitches you almost win, referrals that go quiet after Googling you, and rates that are harder to defend than they should be.\n\nHappy to do an honest 15 minute look, no deck, no pitch.\n\nEmran\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, something useful regardless",
+        "subject": "one thing I'd change on [Agency Name]'s homepage",
+        "body": "Hi [First Name],\n\nLast follow-up, and I want to make it worth your time.\n\nThe single biggest conversion issue on most agency homepages: the headline tries to appeal to everyone and ends up speaking to no one. A visitor in the first five seconds should immediately know what type of client you're best for.\n\nWorth testing: replace the current headline with one sentence that names your ideal client and the one thing they'll get. Most agencies who try this see a measurable jump in enquiry quality within weeks.\n\nHappy to show you what that looks like for [Agency Name] specifically, no strings.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Final close, door stays open",
         "subject": "leaving this here, [First Name]",
-        "body": "Hi [First Name],\n\nLast one from me, I know you're busy and I don't want to be that person.\n\nWhen [Agency Name]'s website makes it to the top of the list, we'd love to be involved. We work fast, we build on Webflow, and we care about the result as much as you do.\n\nEmran\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me, I know you're busy.\n\nWhen [Agency Name]'s website makes it to the top of the list, we'd love to be involved. We work fast, build on Webflow, and care about the result as much as you do.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Law Firms": {
     "owner": "Emran",
-    "tone": "Formal, measured, authoritative. Like a letter from a respected peer firm.",
+    "buyerPsychology": "Reputation-driven. Trust is everything. Respond to credibility, not cleverness. Respect their time above all else.",
+    "tone": "Formal, measured, authoritative. Like a letter from a respected peer firm. Zero fluff.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Credibility gap, observed not assumed",
         "subject": "a note on [Firm Name]'s website",
-        "body": "Hi [First Name],\n\nI took some time on [Firm Name]'s website this morning.\n\nThe practice has a strong reputation, but the website doesn't reflect that standing. The homepage doesn't lead with your strongest practice areas, there's no clear path from arrival to consultation, and the design hasn't kept pace with the calibre of work your team is doing.\n\nA prospective client forms a judgment about a firm before they make contact. Right now that judgment isn't being shaped in your favour.\n\nWe design and build Webflow websites for law firms. I'd welcome a brief conversation if this is something you've been considering.\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nTook some time on [Firm Name]'s website this morning.\n\nThe practice has a strong reputation, but the website doesn't reflect that standing. The homepage doesn't lead with your strongest practice areas, there's no clear path to a consultation, and the design hasn't kept pace with the calibre of work your team delivers.\n\nA prospective client forms a judgment about a firm before they make contact. Right now that judgment isn't being shaped in your favour.\n\nWe build Webflow websites for law firms. Would a brief conversation this week be worthwhile?\n\nEmran\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The silent cost, what happens before first contact",
         "subject": "what a prospective client decides before they call you",
-        "body": "Hi [First Name],\n\nFollowing up with something specific.\n\nIn professional services, a significant amount of the decision is made before anyone picks up the phone. The website is where that decision forms, and three things shape it immediately: whether the design communicates authority, whether the firm's specialism is clear, and whether there is an obvious and low-friction next step.\n\nWhen any of those three are weak, a qualified prospect doesn't call, they simply move to the next firm on their list. That cost never appears on a report.\n\nI'd be glad to share a brief, honest assessment of [Firm Name]'s site at no charge.\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nA brief follow-up.\n\nIn professional services, a significant portion of the decision is made before anyone picks up the phone. Three things shape it immediately on the website: whether the design communicates authority, whether the firm's specialism is immediately clear, and whether there is an obvious next step.\n\nWhen any of those three are weak, a qualified prospect doesn't call, they move to the next firm on their shortlist. That cost never appears on a report.\n\nHappy to share a free honest assessment of [Firm Name]'s site.\n\nEmran\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, something actionable",
+        "subject": "one specific thing on [Firm Name]'s site worth fixing",
+        "body": "Hi [First Name],\n\nOne more note, and I'll make it useful.\n\nThe most common missed opportunity on law firm websites: the contact page asks for name, email, and message, nothing more. Adding a brief intake question such as 'What type of legal matter are you enquiring about?' does two things: it qualifies the enquiry before it reaches your team, and it signals to a prospective client that the firm takes their matter seriously from the first moment.\n\nSmall change. Meaningful impact on the quality of inbound enquiries.\n\nHappy to show what this looks like on [Firm Name]'s site specifically.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Formal final close",
         "subject": "a final note from Flowtive",
-        "body": "Hi [First Name],\n\nI've reached out a couple of times and I won't take up any more of your time if the moment isn't right.\n\nShould improving [Firm Name]'s online presence become a priority this year, I'd welcome the conversation.\n\nEmran\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me, I won't take up any more of your time.\n\nShould improving [Firm Name]'s online presence become a priority this year, I'd welcome the conversation.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Consulting": {
     "owner": "Emran",
-    "tone": "Sharp, intellectual. Frames the website as a strategic asset, not a design project.",
+    "buyerPsychology": "Intellectual and self-aware. Responds to insight and challenges to their thinking. Dislikes being sold to. Sees themselves as the expert.",
+    "tone": "Sharp and intellectual. Frames the website as a strategic positioning asset, not a design project.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Strategic framing, website as missed asset",
         "subject": "[Firm Name]'s website is leaving positioning on the table",
-        "body": "Hi [First Name],\n\nSpent some time on [Firm Name]'s website.\n\nYou're in the business of helping clients see things differently. But the website doesn't demonstrate that. It reads like a list of services rather than a point of view, there's no distinctive thinking, no methodology that makes a prospect feel like you see their problem in a way no one else does.\n\nFor a consulting firm, the website is the first pitch. It's the thing a client reads before they agree to a meeting, before they review a proposal, before they sign anything. It should be doing more work than it is.\n\nWe build Webflow websites for consulting firms that do that work. Worth 15 minutes?\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent some time on [Firm Name]'s website.\n\nYou're in the business of helping clients see things differently. But the website reads like a services list rather than a point of view. There's no distinctive thinking, no methodology that makes a prospect feel you see their problem in a way no one else does.\n\nFor a consulting firm, the website is the first pitch. It should be doing more work than it is.\n\nWe build Webflow websites for consulting firms that do that work. Worth 15 minutes?\n\nEmran\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The pre-meeting check",
         "subject": "what happens in the 90 seconds before your prospect agrees to meet",
-        "body": "Hi [First Name],\n\nA brief follow-up.\n\nBefore almost every consulting engagement begins, a prospective client does a quick check, they visit the website, they look at LinkedIn, and they form a view. What they're assessing isn't just capabilities. It's whether the firm looks like the kind of organisation worth the fee they're about to pay.\n\nMost consulting websites fail that check at three points: the positioning is too broad to be memorable, there's no visible evidence of the firm's thinking, and nothing on the page makes the reader feel a particular urgency to reach out.\n\nWarm leads go cold at that moment. It's a quiet problem.\n\nHappy to do a free look at [Firm Name]'s site and share what I'd change.\n\nEmran\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nA brief follow-up.\n\nBefore almost every consulting engagement, a prospective client does a quick check. They visit the website, look at LinkedIn, and form a view. What they're assessing isn't just capabilities, it's whether the firm looks like the kind of organisation worth the fee.\n\nMost consulting websites fail that check at three points: positioning too broad to be memorable, no visible evidence of the firm's thinking, and nothing that makes the reader feel urgency to reach out.\n\nWarm leads go cold at that moment. It's a quiet problem.\n\nHappy to do a free look at [Firm Name]'s site.\n\nEmran\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, thought leadership gap",
+        "subject": "the positioning gap most consulting websites leave open",
+        "body": "Hi [First Name],\n\nOne more, and something worth knowing.\n\nThe consulting firms that consistently win better mandates online share one thing: their website contains a piece of original thinking, a framework, a model, a clearly articulated perspective on an industry problem. Not just service descriptions. An actual point of view.\n\nThis single addition changes how prospects experience the site. They arrive looking for a service provider and leave feeling like they've found a thought leader.\n\nHappy to think through what that looks like for [Firm Name] specifically, no commitment.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Clean intellectual close",
         "subject": "last note",
-        "body": "Hi [First Name],\n\nLast one from me, genuinely.\n\nIf repositioning [Firm Name]'s website becomes a priority this year, we'd be glad to be part of that conversation.\n\nEmran\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nIf repositioning [Firm Name]'s website becomes a priority this year, we'd be glad to be part of that conversation.\n\nEmran\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "SaaS": {
     "owner": "Milton",
-    "tone": "Founder-to-founder. Tight. Every sentence pulls weight.",
+    "buyerPsychology": "Data-aware and conversion-obsessed. Speaks in metrics. Responds to specifics not generics. Very short attention span. Respects directness.",
+    "tone": "Founder-to-founder. Tight. Every sentence pulls its weight. No corporate language.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The 5-second test, failed",
         "subject": "quick one on [Company Name]'s homepage",
-        "body": "Hi [First Name],\n\nRan your homepage through a quick test, timed how long it took me to understand what [Company Name] does, who it's for, and why I should start a trial.\n\nTook longer than 5 seconds. That's most of your top-of-funnel gone before anyone reads a word.\n\nThe value prop above the fold is too feature-led. The CTA asks for commitment before any trust has been built. And there's nothing that makes this feel urgently worth signing up for today.\n\nWe build SaaS websites on Webflow around the buyer journey, not the product roadmap. Quick call?\n\nMilton\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nRan a quick test on [Company Name]'s homepage, timed how long it took me to understand what you do, who it's for, and why I should start a trial.\n\nTook longer than 5 seconds. That's most of your top-of-funnel gone before anyone reads a word.\n\nValue prop above the fold is too feature-led. CTA asks for commitment before trust is built. Nothing creates urgency to sign up today.\n\nWe build SaaS websites on Webflow around the buyer journey. Quick call?\n\nMilton\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
-        "subject": "where [Company Name]'s site is losing people",
-        "body": "Hi [First Name],\n\nFollowing up, something specific.\n\nMost SaaS homepages lose visitors at the same three moments. The headline talks about what the product does instead of what the user gets. The proof, reviews, logos, numbers, is placed so far down the page most visitors never reach it. And the primary CTA asks for an email or a credit card before the visitor feels ready.\n\nEach one is a quiet leak. Together they compound into a conversion rate that should be higher than it is.\n\nHappy to do a free homepage audit, show you exactly where [Company Name] is bleeding visitors and what to fix first. No deck.\n\nMilton\n\nFlowtive · flowtive.co",
+        "label": "The funnel leak, where visitors are actually leaving",
+        "subject": "where [Company Name]'s homepage is losing people",
+        "body": "Hi [First Name],\n\nFollowing up, something specific.\n\nMost SaaS homepages lose visitors at three points: headline talks about features instead of outcomes, social proof is placed too far down the page where most visitors never reach it, and the primary CTA asks for too much before any trust is built.\n\nEach one is a quiet leak. Together they compound.\n\nHappy to do a free homepage audit, show you exactly where [Company Name] is bleeding visitors and what to fix first. No deck.\n\nMilton\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the one headline test",
+        "subject": "a quick homepage test worth running this week",
+        "body": "Hi [First Name],\n\nOne more, something you can test this week regardless of whether we work together.\n\nReplace your current headline with this structure: '[Outcome] for [Specific Customer] without [Main Friction]'. Then A/B test it against what you have now for two weeks.\n\nThis single change consistently moves trial conversion rates by 10 to 20% for SaaS products. The reason: it speaks to what the customer gets rather than what the product does.\n\nHappy to draft a few headline options for [Company Name], no strings.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Clean exit",
         "subject": "leaving this here",
-        "body": "Hi [First Name],\n\nLast one, I promise.\n\nWhen conversion rate improvements make it onto the roadmap, we'd love to be involved. Webflow, fast builds, built around the buyer.\n\nMilton\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen conversion rate improvements make it onto the roadmap, we'd love to be involved. Webflow, fast builds, built around the buyer.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Startup": {
     "owner": "Milton",
+    "buyerPsychology": "Ambitious and fast-moving. Slightly defensive about the placeholder site. Responds to someone who gets startup context without being patronising.",
     "tone": "Founder-to-founder. Honest. Energetic. Shows you understand the pressure they're under.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The placeholder problem",
         "subject": "honest thought on [Company Name]'s site",
-        "body": "Hi [First Name],\n\nCame across [Company Name], what you're building is genuinely interesting.\n\nBut the website still reads like a placeholder. It doesn't tell the story of what you're solving, it doesn't make a visitor feel like they found something worth paying attention to, and it doesn't make the case that this is a team that executes.\n\nAt your stage, every investor or enterprise buyer checks the website before agreeing to anything. The site is doing due diligence for them, and right now it's not helping you pass.\n\nWe build Webflow sites for growth-stage startups that fix this. Fast. Worth a call?\n\nMilton\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nCame across [Company Name], what you're building is genuinely interesting.\n\nBut the website still reads like a placeholder. It doesn't tell the story, doesn't create urgency, and doesn't make a visitor feel like they found something worth paying attention to.\n\nEvery investor or enterprise buyer checks the website before agreeing to anything. The site is doing due diligence for them, and right now it's not helping you pass.\n\nWe build Webflow sites for growth-stage startups. Worth a call?\n\nMilton\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The investor check",
         "subject": "what happens when an investor Googles [Company Name]",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nBefore most investors or enterprise buyers agree to a meeting, they spend 60 to 90 seconds on your site. They're not looking for everything, they're looking for one thing: does this team look like they know where they're going?\n\nMost early-stage startup sites don't pass that test. Not because the team isn't ready, usually the team is ahead of the product and way ahead of the website. But perception shapes pipeline.\n\nHappy to do a free look at [Company Name]'s site, honest, no pitch.\n\nMilton\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nBefore most investors or enterprise buyers agree to a meeting, they spend 60 to 90 seconds on your site. They're not looking for everything, just one thing: does this team look like they know where they're going?\n\nMost early-stage startup sites don't pass that test. Not because the team isn't ready, usually the team is way ahead of the website. But perception shapes pipeline.\n\nHappy to do a free look at [Company Name]'s site, honest, no pitch.\n\nMilton\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the narrative gap",
+        "subject": "the story [Company Name]'s website isn't telling",
+        "body": "Hi [First Name],\n\nOne more, something useful regardless.\n\nThe most common gap on startup websites: the problem being solved isn't stated clearly enough for someone who doesn't already know the space. Every homepage should answer these three things in the first scroll: what problem exists, why it matters, and why this team is the one to fix it.\n\nMost founders write for people who already get it. The best startup websites write for the person who is deciding whether to get it.\n\nHappy to take a look at how [Company Name]'s story lands on someone new to the space.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Open door close",
         "subject": "still here when the timing is right",
-        "body": "Hi [First Name],\n\nLast one from me, completely understand if now isn't the moment.\n\nWhen [Company Name] is ready to build a site that matches where you're heading, we'd love to be part of that.\n\nMilton\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one, completely understand if now isn't the moment.\n\nWhen [Company Name] is ready to build a site that matches where you're heading, we'd love to be part of that.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Restaurant & Food": {
     "owner": "Milton",
-    "tone": "Warm, direct, sensory. Makes them feel the gap between their actual experience and how it's represented online.",
+    "buyerPsychology": "Proud of the experience. Passionate about food. Time-poor. Responds to someone who clearly visited the site and noticed the gap between the real experience and how it comes across online.",
+    "tone": "Warm, sensory, direct. Makes them feel the gap between their actual experience and how the website represents it.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The appetite gap",
         "subject": "your restaurant doesn't come through on the website, [First Name]",
-        "body": "Hi [First Name],\n\nSpent some time on [Restaurant Name]'s website this morning.\n\nThe experience you offer is clearly something special, but the website doesn't make someone feel that. It loads slowly on mobile, the menu isn't presented in a way that makes the food look irresistible, and the path from landing on the page to making a reservation has too much friction.\n\nMost guests discover restaurants on their phones. If the website doesn't make them want to be there tonight, they move on.\n\nWe build Webflow restaurant websites built around one thing, getting people to the table. Quick call?\n\nMilton\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent time on [Restaurant Name]'s website this morning.\n\nThe experience you offer is clearly something special, but the website doesn't make someone feel that. It's slow on mobile, the menu isn't presented in a way that makes the food look irresistible, and getting to the reservation button has too many steps.\n\nMost guests discover restaurants on their phones. If the site doesn't make them want to be there tonight, they move on.\n\nWe build Webflow restaurant websites built around one thing, getting people to the table.\n\nQuick call?\n\nMilton\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The mobile moment",
         "subject": "where [Restaurant Name] is losing reservations",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nMost restaurant bookings start on a phone, a quick search, a tap on the first result, and a snap decision about whether this place looks worth going to.\n\nThree things decide that in seconds: how fast the site loads, how good the photography looks on a small screen, and how easy it is to reserve a table without leaving the page. When any of those three disappoint, the guest doesn't call, they just scroll to the next option.\n\nHappy to do a free look at [Restaurant Name]'s site, honest, no pitch.\n\nMilton\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nMost restaurant bookings start on a phone, a quick search, a tap on the first result, a snap decision. Three things decide that in seconds: how fast the site loads, how the photography looks on a small screen, and how easy it is to reserve without leaving the page.\n\nWhen any of those disappoint, the guest doesn't call, they scroll to the next option.\n\nHappy to do a free look at [Restaurant Name]'s site, honest, no pitch.\n\nMilton\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
-        "subject": "last one from me, wishing you a full house",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Restaurant Name] is ready for a website that does the experience proper justice, we'd love to build it.\n\nMilton\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "day": 9,
+        "label": "Value add, the menu presentation problem",
+        "subject": "one thing every great restaurant website gets right",
+        "body": "Hi [First Name],\n\nOne more, something worth knowing.\n\nThe restaurants with the highest online booking conversion share one thing: the menu on the website doesn't just list dishes, it sells them. Short descriptive lines that create appetite. Photography that makes a specific dish look unmissable. A layout that guides the eye rather than presenting a wall of text.\n\nMost restaurant websites treat the menu as information. The best ones treat it as their strongest sales page.\n\nHappy to show what that looks like for [Restaurant Name] specifically.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Warm close",
+        "subject": "last one from me",
+        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Restaurant Name] is ready for a website that does the experience proper justice, we'd love to build it.\n\nMilton\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Marketing & Advertising": {
     "owner": "Mugdho",
-    "tone": "Wry. Collegial. Lean into the irony without being smug about it.",
+    "buyerPsychology": "Self-aware and slightly embarrassed by their own site. The irony angle lands hard. Competitive and respond to the idea that their site makes them look less capable than they are.",
+    "tone": "Wry and collegial. Lean into the irony without being smug. Peer speaks to peer.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The cobbler's shoes",
         "subject": "the marketing agency with a website that doesn't market",
-        "body": "Hi [First Name],\n\nHad to say something after looking at [Agency Name]'s website.\n\nYou help clients grow through better digital experiences every day. But your own site isn't doing that for you. The positioning could belong to any agency in any city. The work is buried three clicks deep. And there's nothing that makes a visitor feel like they found the team they've been looking for.\n\nEvery prospective client Googles you before the first meeting. What they find shapes what they're willing to pay and whether they show up at all.\n\nWe rebuild marketing agency sites on Webflow that actually practice what you preach. Worth 15 minutes?\n\nMugdho\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nHad to say something after looking at [Agency Name]'s website.\n\nYou help clients grow through better digital experiences every day. But your own site isn't doing that for you. The positioning could belong to any agency in any city. The work is buried three clicks deep. And nothing makes a visitor feel like they found the team they've been looking for.\n\nEvery prospect Googles you before the first meeting. What they find shapes what they're willing to pay.\n\nWe rebuild marketing agency sites on Webflow that actually practice what you preach. Worth 15 minutes?\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The prospect's first impression",
         "subject": "what a new prospect sees before they meet you",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nThere's a simple test every agency website either passes or fails. A new prospect lands on it and asks one question: does this agency look like the kind of team I want working on my brand?\n\nMost fail because of the same three things, a homepage that doesn't differentiate the agency in any meaningful way, case studies that describe the work without making the reader feel the impact, and no clear or compelling reason to reach out today.\n\nThe irony is that fixing these things is exactly what you do for clients.\n\nHappy to take a free honest look at [Agency Name]'s site, no strings.\n\nMugdho\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nThere's a simple test every agency website either passes or fails. A new prospect lands on it and asks one question: does this agency look like the kind of team I want working on my brand?\n\nMost fail at the same three points, a homepage that doesn't differentiate in any meaningful way, case studies that describe the work without making the reader feel the impact, and no compelling reason to reach out today.\n\nThe irony is that fixing these is exactly what you do for clients.\n\nHappy to do a free honest look at [Agency Name]'s site, no strings.\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the case study problem",
+        "subject": "why your case studies aren't converting visitors into enquiries",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe most underperforming part of most agency websites: case studies written for the client who already agreed to the project rather than the prospect who is still deciding. They focus on what was done instead of what changed for the client as a result.\n\nA simple reframe, lead each case study with the before state, the obstacle, and the measurable outcome, turns a portfolio piece into a sales asset.\n\nHappy to show what that looks like for one of [Agency Name]'s existing case studies as a free example.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Clean exit",
         "subject": "last one from me",
-        "body": "Hi [First Name],\n\nLast note, I'll leave it here.\n\nWhen [Agency Name]'s website rises to the top of the list, we'd love to be the ones that build it.\n\nMugdho\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note, leaving it here.\n\nWhen [Agency Name]'s website rises to the top of the list, we'd love to be the ones to build it.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Finance & Accounting": {
     "owner": "Mugdho",
-    "tone": "Measured, formal, precise. Mirrors the way they communicate. No warmth forced. Substance over style.",
+    "buyerPsychology": "Cautious, trust-led, highly rational. Won't respond to hype. Responds to credibility, specificity, and evidence of understanding their world.",
+    "tone": "Measured, formal, precise. Mirrors the way they communicate. Substance over style.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Trust established before first contact",
         "subject": "a note on [Firm Name]'s website",
-        "body": "Hi [First Name],\n\nI reviewed [Firm Name]'s website this morning.\n\nIn financial services, a prospective client forms a view of your firm before they ever speak to anyone. The website is where that view starts, and right now it's not working as hard as it should. The design reads as dated rather than precise. The services are described as outputs rather than outcomes. And there's no clear or low-friction path for someone who's ready to engage.\n\nWe build Webflow websites for finance and accounting firms that establish authority on arrival and make it easy for the right client to take the next step.\n\nWould a brief conversation this week be worthwhile?\n\nMugdho\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nReviewed [Firm Name]'s website this morning.\n\nIn financial services, a prospective client forms a view of your firm before they ever speak to anyone. The website is where that view starts, and right now it's not working as hard as it should. The design reads as dated rather than precise. Services are described as outputs rather than outcomes. And there's no clear path for someone who's ready to engage.\n\nWe build Webflow websites for finance and accounting firms that establish authority on arrival.\n\nWould a brief conversation this week be worthwhile?\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The invisible revenue cost",
         "subject": "the business that leaves quietly through a weak website",
-        "body": "Hi [First Name],\n\nA brief follow-up.\n\nThe cost of a weak website in professional services is rarely visible in any report. It shows up as referrals that went cold after someone Googled the firm. Qualified inbound leads that chose a competitor whose site communicated more confidence. Prospects who simply never reached out.\n\nThe root cause is usually the same, a design that doesn't communicate modernity or precision, service descriptions that don't speak to outcomes, and no clear signal that this is the right firm for this type of client.\n\nI'd be glad to share a free, honest assessment of [Firm Name]'s website.\n\nMugdho\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nA brief follow-up.\n\nThe cost of a weak website in professional services never appears in a report. It shows up as referrals that went cold after someone Googled the firm. Inbound leads that chose a competitor whose site communicated more confidence. Prospects who simply never reached out.\n\nThe root cause is usually the same, a design that doesn't communicate modernity, service descriptions that don't speak to outcomes, and no clear signal that this is the right firm for this type of client.\n\nHappy to share a free honest assessment of [Firm Name]'s site.\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the outcomes language shift",
+        "subject": "one language change that improves financial services websites significantly",
+        "body": "Hi [First Name],\n\nOne more, something actionable.\n\nThe most common gap on finance and accounting firm websites: service pages describe what the firm does rather than what the client achieves. 'Tax planning and compliance' versus 'Reduce your tax liability and stay ahead of HMRC without the stress.' Same service. Completely different impact on a prospective client reading the page.\n\nThis single shift, from service language to outcome language, consistently improves enquiry rates from website visitors.\n\nHappy to apply this to one of [Firm Name]'s service pages as a free example.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Formal close",
         "subject": "a final note from Flowtive",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nShould improving [Firm Name]'s web presence become a priority this year, I'd welcome the conversation.\n\nMugdho\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me.\n\nShould improving [Firm Name]'s web presence become a priority this year, I'd welcome the conversation.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Fitness & Gym": {
     "owner": "Mugdho",
-    "tone": "Direct, energetic, mobile-first framing. Speaks to the business problem, not just the design problem.",
+    "buyerPsychology": "Passionate about their community. Competitive locally. Very mobile-aware. Responds to direct specific observations about what's actually costing them members.",
+    "tone": "Direct and energetic. Mobile-first framing. Speaks to the business problem not just the design problem.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The phone test",
         "subject": "pulled up [Gym Name] on my phone, here's what I found",
-        "body": "Hi [First Name],\n\nChecked [Gym Name]'s website on my phone this morning, the way a new member would.\n\nIt loads slowly, finding the class schedule takes too long, and the page doesn't have the energy that makes someone want to walk through the door. Most gym sign-ups happen on mobile after a quick search. If the experience disappoints in those first few seconds, that person signs up somewhere else.\n\nWe build Webflow gym and fitness websites that are fast, look the part on mobile, and are built around one goal, getting people through the door.\n\nWorth a quick call this week?\n\nMugdho\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nChecked [Gym Name]'s website on my phone this morning, the way a potential new member would.\n\nIt's slow, finding the class schedule takes too long, and the page doesn't have the energy that makes someone want to walk through the door. Most gym sign-ups happen on mobile after a quick search. If the experience disappoints in those first seconds, that person signs up somewhere else.\n\nWe build Webflow gym websites that are fast, look the part on mobile, and are built around getting people through the door.\n\nWorth a quick call?\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
-        "subject": "where [Gym Name] is losing memberships it shouldn't be",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nGym memberships are typically decided fast, someone has a moment of motivation, picks up their phone, searches, lands on your site, and either commits or doesn't. The website has about 10 seconds to capture that momentum.\n\nThree things consistently kill that moment: a site that's slow to load on mobile, pricing and class information that takes too long to find, and a page that doesn't visually communicate the energy and community of the gym itself.\n\nNone of these are big problems. But together they're costing memberships every week.\n\nFree look at [Gym Name]'s site, no pitch, just honest feedback.\n\nMugdho\n\nFlowtive · flowtive.co",
+        "label": "The membership leak",
+        "subject": "where [Gym Name] is losing members it shouldn't be",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nGym memberships are typically decided fast, someone has a moment of motivation, searches on their phone, lands on your site, and either commits or doesn't. Three things kill that moment consistently: slow load on mobile, pricing and class info buried rather than front and centre, and a page that doesn't visually communicate the energy of the gym.\n\nNone of these are big problems. Together they're costing memberships every week.\n\nFree look at [Gym Name]'s site, no pitch, just honest feedback.\n\nMugdho\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the urgency problem",
+        "subject": "the one thing missing from most gym websites",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe gyms with the best online sign-up rates share one thing their competitors don't: they make the visitor feel that joining today is better than joining next week. A limited new member offer, a class starting soon, a community that's currently active, something that creates urgency without feeling pushy.\n\nMost gym websites are static. The best ones feel alive.\n\nHappy to show what that looks like for [Gym Name], no strings.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Energetic close",
         "subject": "last one from me",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Gym Name] is ready for a website that works as hard as the people who train there, we'd love to build it.\n\nMugdho\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Gym Name] is ready for a website that works as hard as the people who train there, we'd love to build it.\n\nMugdho\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Tech & IT Services": {
     "owner": "Ashik",
-    "tone": "Direct, no-nonsense, differentiation-led. Challenges them without being rude.",
+    "buyerPsychology": "Rational, sceptical, busy. Has heard every vendor pitch. Responds to specificity and differentiation arguments. Dislikes being told what they already know.",
+    "tone": "Direct and no-nonsense. Differentiation-led. Challenges without being rude.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The sameness problem",
         "subject": "opened your site and three competitors, couldn't tell them apart",
-        "body": "Hi [First Name],\n\nI opened [Company Name]'s website alongside three of your competitors this morning.\n\nHonestly, I couldn't tell them apart. Same layout, similar service descriptions, same kind of stock imagery. A prospective client doing the same comparison has no clear reason to choose you.\n\nIn IT services the work often speaks for itself in a meeting. But the website has to get you into the room first, and right now it's not making a case for why [Company Name] specifically.\n\nWe build Webflow sites for tech and IT companies that actually communicate a point of difference.\n\n15 minutes this week?\n\nAshik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nOpened [Company Name]'s website alongside three competitors this morning.\n\nHonestly, I couldn't tell them apart. Same layout, similar service descriptions, same stock imagery. A prospective client doing the same comparison has no clear reason to choose you.\n\nIn IT services the work speaks for itself in a meeting. But the website has to get you into the room first, and right now it isn't making the case for why [Company Name] specifically.\n\nWe build Webflow sites for IT companies that communicate a real point of difference.\n\n15 minutes this week?\n\nAshik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
-        "subject": "why technically stronger IT companies lose to weaker ones",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nSomething worth sharing: technically excellent IT firms lose qualified leads to weaker competitors consistently, and it almost always comes down to how the two firms present themselves online, not the actual quality of their service.\n\nThe gap usually sits in three places: leading with technical capabilities instead of the business outcomes those capabilities produce, no differentiated story that makes the firm stick in the mind after a prospect has visited several others, and an enquiry process with too many steps.\n\nHappy to do a free look at [Company Name]'s site, honest, no strings.\n\nAshik\n\nFlowtive · flowtive.co",
+        "label": "Why stronger companies lose to weaker ones",
+        "subject": "why technically stronger IT companies lose leads to weaker ones",
+        "body": "Hi [First Name],\n\nFollowing up, something worth sharing.\n\nTechnically excellent IT firms lose qualified leads to weaker competitors consistently. It almost always comes down to how the two firms present themselves online, not the actual quality of their service.\n\nThe gap sits in three places: leading with capabilities instead of business outcomes, no differentiating story that makes the firm stick in the mind, and an enquiry process with too many steps.\n\nHappy to do a free look at [Company Name]'s site, honest, no strings.\n\nAshik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the outcomes language shift",
+        "subject": "the framing that separates IT websites that win from those that don't",
+        "body": "Hi [First Name],\n\nOne more, something you can apply right now.\n\nThe IT companies that consistently win new business online make one framing shift across their whole website: they replace capability language with outcome language. Not 'managed IT support and cybersecurity', 'Your systems stay up, your data stays safe, and your team can focus on the work that matters.'\n\nSame service. Completely different impact on a prospective client reading the page.\n\nHappy to show how this applies to [Company Name]'s homepage specifically.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Clean exit",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Company Name] is ready to stand clearly apart from everyone else in the market, we'd be glad to help make that happen.\n\nAshik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Company Name] is ready to stand clearly apart from every other IT firm in your market, we'd be glad to help.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Photography & Creative": {
     "owner": "Ashik",
+    "buyerPsychology": "Proud of their craft. Sensitive to dismissal of the work. Responds to genuine appreciation paired with honest assessment of how it's being presented.",
     "tone": "Craft-respecting. Honest about the presentation gap without dismissing the work. Visual language.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The presentation gap",
         "subject": "spent time on your portfolio, the work deserves better",
-        "body": "Hi [First Name],\n\nWent through [Studio Name]'s portfolio properly this morning.\n\nThe photography is genuinely impressive, there are shots in there that stopped me. But the website isn't presenting it the way it deserves. It loads slowly on mobile, the portfolio isn't sequenced to tell a clear story about the kind of work you do best, and there's no natural moment where admiration turns into an enquiry.\n\nStrong work presented poorly loses projects to weaker work presented well. It's one of the more frustrating things about the creative industry.\n\nWe build Webflow portfolio sites for studios like yours, fast, precise, structured to convert.\n\nQuick call this week?\n\nAshik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nWent through [Studio Name]'s portfolio properly this morning.\n\nThe photography is genuinely impressive, there are shots in there that stopped me. But the website isn't presenting it the way it deserves. It loads slowly on mobile, the portfolio isn't sequenced to tell a clear story, and there's no natural moment where admiration turns into an enquiry.\n\nStrong work presented poorly loses projects to weaker work presented well.\n\nWe build Webflow portfolio sites for creative studios, fast, precise, built to convert.\n\nQuick call?\n\nAshik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "How a client reads a portfolio",
         "subject": "what a client is actually looking for in your portfolio",
-        "body": "Hi [First Name],\n\nFollowing up, something worth knowing.\n\nWhen a new client visits a creative studio website, they're asking three things even if they can't articulate them: what does this studio specialise in and is it what I need, have they done work for clients at my level, and if I reach out do I know what happens next?\n\nMost portfolio sites leave all three of those unanswered. The work is there, but it's not being presented in a way that guides the visitor to the right conclusion.\n\nStudios with world-class work lose projects to competitors with sharper websites. It's a fixable problem.\n\nHappy to do a free look at [Studio Name]'s site, no pitch, just an honest view.\n\nAshik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up, something worth knowing.\n\nWhen a new client visits a creative studio website, they're asking three questions even if they can't articulate them: what does this studio specialise in, have they worked with clients at my level, and if I reach out do I know what happens next?\n\nMost portfolio sites leave all three unanswered. The work is there, it's just not presented in a way that guides the visitor to the right conclusion.\n\nHappy to do a free look at [Studio Name]'s site, no pitch, just honest feedback.\n\nAshik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, portfolio sequencing",
+        "subject": "the sequencing change that gets more enquiries from portfolio sites",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe most common missed opportunity on creative portfolio sites: work is shown in chronological order or by category rather than by strategic intent. The portfolio should open with the work you want to be hired to do next, not the work you did first.\n\nResequencing a portfolio around the ideal client brief rather than the project timeline consistently increases the quality of inbound enquiries.\n\nHappy to think through what that looks like for [Studio Name]'s portfolio specifically.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Creative close",
         "subject": "last one from me, [First Name]",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Studio Name] is ready for a website that gives the work the stage it deserves, we'd love to build it.\n\nAshik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me.\n\nWhen [Studio Name] is ready for a website that gives the work the stage it deserves, we'd love to build it.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Beauty & Wellness": {
     "owner": "Ashik",
-    "tone": "Premium, direct. Speaks to the brand gap and the lost bookings in a way that feels personal, not clinical.",
+    "buyerPsychology": "Experience-led and brand-conscious. Frustrated when the online presence doesn't match the in-person experience. Responds to someone who specifically noticed that gap.",
+    "tone": "Premium and direct. Speaks to the brand gap and the lost bookings in a way that feels personal not clinical.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The brand gap",
         "subject": "the website doesn't match the experience you're delivering",
-        "body": "Hi [First Name],\n\nVisited [Business Name]'s website on my phone this morning.\n\nThe experience you offer is clearly premium, but the website doesn't communicate that before someone books. It's slow, the services and pricing aren't easy to find, and the visual presentation doesn't create the feeling of stepping into somewhere special.\n\nMost bookings are decided on the phone in a 30-second window. If the website doesn't close that decision, the booking goes somewhere else.\n\nWe build Webflow beauty and wellness websites that feel as good as the experience, and convert that feeling into bookings.\n\nWorth a quick call?\n\nAshik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nVisited [Business Name]'s website on my phone this morning.\n\nThe experience you offer is clearly premium, but the website doesn't communicate that before someone books. It's slow, services and pricing aren't easy to find, and the visual presentation doesn't create the feeling of stepping into somewhere special.\n\nMost bookings are decided in a 30-second window on a phone. If the site doesn't close that decision, the booking goes somewhere else.\n\nWe build Webflow beauty and wellness websites that feel as good as the experience they represent.\n\nWorth a quick call?\n\nAshik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
-        "subject": "the 30 seconds between a visitor and a booking at [Business Name]",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nThere's a specific moment that determines whether someone books or doesn't, they've landed on your site, they're interested, and they're deciding whether to commit right now or think about it later. In almost every case, 'later' means never.\n\nThree things decide that moment: whether the site loads fast enough on mobile that they don't get impatient, whether the services and pricing are immediately visible so they don't have to hunt, and whether the visual feel creates enough desire that they don't want to leave the page.\n\nHappy to do a free look at [Business Name]'s site, honest, no strings.\n\nAshik\n\nFlowtive · flowtive.co",
+        "label": "The 30-second booking window",
+        "subject": "the 30 seconds between a visitor and a booking",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nThere's a specific moment that determines whether someone books or doesn't, they've landed on your site, they're interested, and deciding whether to commit now or think about it later. In almost every case, later means never.\n\nThree things decide that moment: whether the site loads fast enough that they don't get impatient, whether services and pricing are immediately visible, and whether the visual feel creates enough desire that they don't want to leave.\n\nHappy to do a free look at [Business Name]'s site, honest, no strings.\n\nAshik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the social proof gap",
+        "subject": "the trust element most beauty websites are missing",
+        "body": "Hi [First Name],\n\nOne more, something actionable.\n\nThe beauty and wellness businesses with the highest online booking rates share one element most competitors don't use well: real client transformation stories placed where they can be seen before the booking decision is made, not buried in a separate reviews tab.\n\nA before and after result, a short client quote, or a visible star rating near the booking button can increase conversions meaningfully. It's social proof placed at the point of decision rather than after it.\n\nHappy to think through where this fits on [Business Name]'s site, no strings.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Premium close",
         "subject": "last one from me",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Business Name] is ready for a website as polished as the experience you deliver, we'd love to build it.\n\nAshik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Business Name] is ready for a website as polished as the experience you deliver, we'd love to build it.\n\nAshik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Healthcare": {
     "owner": "Sadman",
+    "buyerPsychology": "Trust and safety are paramount. Cautious about anything that sounds like a hard sell. Responds to patient-first framing and genuine understanding of the trust dynamic in healthcare.",
     "tone": "Warm formality. Professional but not cold. Patient-centric language throughout.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Patient trust starts before first contact",
         "subject": "a note on [Practice Name]'s website",
-        "body": "Hi [First Name],\n\nI took some time on [Practice Name]'s website this morning.\n\nFor a new patient, the website is the first impression of the practice, and it shapes their decision to book before they've spoken to anyone on your team. Right now the site doesn't communicate the level of care you provide. The design feels dated, the services aren't described in a way that speaks to what a patient actually wants to know, and the path to booking an appointment isn't as clear as it should be.\n\nPatients who feel uncertain don't call, they simply choose a different practice.\n\nWe build Webflow websites for private healthcare practices that establish trust immediately and make the journey to booking frictionless.\n\nWould a brief conversation this week be worthwhile?\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nTook some time on [Practice Name]'s website this morning.\n\nFor a new patient, the website is the first impression of the practice, and it shapes their decision to book before they've spoken to anyone on your team. Right now it doesn't communicate the level of care you provide. The design feels dated, services aren't described in plain patient language, and the path to booking isn't as clear as it should be.\n\nPatients who feel uncertain don't call, they find a different practice.\n\nWe build Webflow websites for private healthcare practices that establish trust immediately.\n\nWould a brief conversation this week be worthwhile?\n\nSadman\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The 8-second trust window",
         "subject": "what a patient decides in the first moment on your site",
-        "body": "Hi [First Name],\n\nA brief follow-up.\n\nIn private healthcare, a prospective patient makes a judgment very quickly, and that judgment is almost entirely about trust. Three things determine it in the first few seconds of a website visit: whether the design feels modern and professional, whether the services are described in plain language that answers the patient's real question, and whether there's a clear and welcoming way to take the next step.\n\nMost private clinic websites fall short on at least two. The patient who feels uncertain doesn't push through, they find a practice whose website gave them more confidence.\n\nHappy to share a free honest assessment of [Practice Name]'s website.\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nA brief follow-up.\n\nIn private healthcare, a patient makes a judgment very quickly, and that judgment is almost entirely about trust. Three things determine it: whether the design feels modern and professional, whether services are described in plain language that answers the patient's real question, and whether there's a clear welcoming way to take the next step.\n\nMost private clinic websites fall short on at least two. The patient who feels uncertain simply chooses a practice whose website gave them more confidence.\n\nHappy to share a free honest assessment of [Practice Name]'s website.\n\nSadman\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the patient language shift",
+        "subject": "one language change that makes a real difference on healthcare websites",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe private practices that consistently attract new patients through their website share one characteristic: they write for the patient's fear, not the clinician's vocabulary. 'Joint pain and mobility issues' versus 'If your knees hurt when you climb stairs or sit for long periods, we can help.'\n\nSame condition. Completely different emotional impact on someone sitting at home wondering whether to make an appointment.\n\nHappy to apply this to one of [Practice Name]'s service pages as a free example.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Warm formal close",
         "subject": "a final note from Flowtive",
-        "body": "Hi [First Name],\n\nLast note from me.\n\nIf improving [Practice Name]'s website becomes a priority this year, we'd be glad to help build something that reflects the standard of care your team provides.\n\nSadman\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast note from me.\n\nIf improving [Practice Name]'s website becomes a priority this year, we'd be glad to help build something that reflects the standard of care your team provides.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Dental & Cosmetic": {
     "owner": "Sadman",
-    "tone": "Results-focused. Specific about high-value cases. Speaks to the cosmetic side of the practice, not the clinical.",
+    "buyerPsychology": "Results-oriented. Before/after results are their biggest asset. Competitive locally. High-value cosmetic cases are the goal not routine check-ups.",
+    "tone": "Results-focused. Specific about high-value cases. Speaks to the cosmetic side not the clinical side.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The high-value case gap",
         "subject": "[Practice Name] may be losing its best cases to the website",
-        "body": "Hi [First Name],\n\nVisited [Practice Name]'s website this morning.\n\nIn cosmetic dentistry, before and after results are the most powerful thing you have. A prospective patient visits the site, looks for results that match what they want to achieve, and books a consultation if they feel that confidence. Right now the website isn't giving them that moment clearly enough, the results aren't prominent, and the path from 'I want this' to 'I've booked' has too many steps.\n\nThe high-value cases, veneers, smile makeovers, implants, go to practices whose websites make patients feel certain before they even call.\n\nWe build Webflow dental websites that put results front and centre and make booking effortless. Worth a call?\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nVisited [Practice Name]'s website this morning.\n\nIn cosmetic dentistry, before and after results are the most powerful thing a practice has. A prospective patient visits the site, looks for results that match what they want to achieve, and books a consultation if they feel that confidence. Right now the website isn't giving them that moment clearly enough.\n\nThe high-value cases, veneers, smile makeovers, implants, go to practices whose websites make patients feel certain before they even call.\n\nWe build Webflow dental websites that put results front and centre. Worth a call?\n\nSadman\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "Where high-value cases actually go",
         "subject": "why high-value cosmetic cases choose one practice over another",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nHigh-value cosmetic cases don't go to the best dentist in the area. They go to the practice whose website made the patient feel most confident. Three things drive that confidence: a design that looks as premium as the treatment on offer, before and after results that are visible and emotionally compelling, and a clear easy path to booking a consultation.\n\nMost dental websites are missing at least two of these, and the patients who are most valuable make their decision online before they ever pick up the phone.\n\nHappy to do a free look at [Practice Name]'s site, honest, no strings.\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nHigh-value cosmetic cases don't go to the best dentist in the area. They go to the practice whose website made the patient feel most confident. Three things drive that confidence: a design that looks as premium as the treatment on offer, before and after results that are visible and emotionally compelling, and a clear easy path to booking a consultation.\n\nMost dental websites are missing at least two of these.\n\nHappy to do a free look at [Practice Name]'s site, honest, no strings.\n\nSadman\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the transformation story format",
+        "subject": "the before and after format that converts dental prospects",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe dental practices with the best cosmetic case conversion online don't just show before and after photos. They tell a brief transformation story: the patient's concern, why they chose the practice, what the process felt like, and how they feel about the result now.\n\nTwo to three sentences alongside the images. That's all it takes to turn a photograph into a trust-builder.\n\nHappy to show what this looks like applied to one of [Practice Name]'s existing cases.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Results-led close",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Practice Name] is ready to build a website that wins more of the high-value cases your team deserves, we'd love to make that happen.\n\nSadman\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Practice Name] is ready to build a website that wins more of the high-value cases your team deserves, we'd love to make that happen.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Hospitality & Hotels": {
     "owner": "Sadman",
-    "tone": "Revenue-led, story-aware. Speaks to commission costs as a real problem, not just a design issue.",
+    "buyerPsychology": "OTA commission is a genuine pain point. Revenue-conscious. Proud of the property. Responds to revenue language and someone who understands the direct booking challenge.",
+    "tone": "Revenue-led and story-aware. Commission costs framed as a real business problem not just a design issue.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The OTA commission problem",
         "subject": "[Hotel Name] is paying commission it shouldn't have to pay",
-        "body": "Hi [First Name],\n\nVisited [Hotel Name]'s website this morning.\n\nEvery booking that goes through Booking.com or Expedia costs between 15 and 25% in commission. That revenue stays with the hotel when a guest books directly, but only if the website is compelling enough for a guest to choose you over a platform they already trust.\n\nRight now the site isn't quite there. The property's character isn't coming through clearly enough, the imagery doesn't create the desire that makes someone book without comparing, and the direct booking experience is harder than an OTA.\n\nWe build Webflow hotel websites with one goal, driving direct bookings. Quick call?\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nVisited [Hotel Name]'s website this morning.\n\nEvery booking through Booking.com or Expedia costs between 15 and 25% in commission. That revenue stays with the hotel when a guest books directly, but only if the website is compelling enough for a guest to choose you over a platform they already trust.\n\nRight now the property's character isn't coming through clearly enough, and the direct booking experience is harder than it should be.\n\nWe build Webflow hotel websites with one goal, driving direct bookings. Quick call?\n\nSadman\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "Why guests choose the platform",
         "subject": "why guests choose Booking.com when they could book direct",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nGuests choose OTAs over direct booking for one reason, the platform feels safer and easier in the moment. To win that comparison, a hotel website needs to do three things: create enough emotional desire that a guest doesn't feel the need to compare, make direct booking as smooth or smoother than a platform, and communicate the unique character of the property clearly enough to justify choosing it specifically.\n\nShifting even a portion of OTA bookings to direct has a real and immediate effect on margin.\n\nHappy to do a free look at [Hotel Name]'s site, honest, no pitch.\n\nSadman\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nGuests choose OTAs over direct booking for one reason, the platform feels safer and easier in the moment. To win that comparison a hotel website needs to do three things: create enough emotional desire that a guest doesn't feel the need to compare, make direct booking as smooth or smoother than a platform, and communicate the unique character of the property clearly enough to justify choosing it specifically.\n\nShifting even a portion of OTA bookings to direct has a real effect on margin.\n\nHappy to do a free look at [Hotel Name]'s site, honest, no pitch.\n\nSadman\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the storytelling gap",
+        "subject": "the one thing OTAs can't give you that your website can",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe one thing an OTA listing can never give a hotel is its full story. The origin of the property, the people behind it, the specific experience that makes it unlike anything else in the area. Guests who book directly are often choosing to do so because the hotel's website made them feel a connection that a platform listing cannot.\n\nMost hotel websites underuse this. A well-told story on the About or Experience page consistently increases direct booking conversion.\n\nHappy to think through what [Hotel Name]'s story looks like online, no strings.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Revenue close",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Hotel Name] is ready to reduce commission dependency and drive more bookings directly, we'd love to build the site that makes that happen.\n\nSadman\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Hotel Name] is ready to reduce commission dependency and drive more direct bookings, we'd love to build the site that makes that happen.\n\nSadman\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Real Estate": {
     "owner": "Rafik",
-    "tone": "Premium. Mobile-first framing. Speaks to competition and the first impression problem.",
+    "buyerPsychology": "Relationship-driven but data-aware. Website is their storefront. Competitive in a crowded market. Responds to someone who understands the first showing happens online.",
+    "tone": "Premium, mobile-first framing. Speaks to competition and the first impression problem.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The digital first showing",
         "subject": "the first showing is happening online, and it's not winning",
-        "body": "Hi [First Name],\n\nSpent some time on [Agency Name]'s website this morning.\n\nIn real estate, a buyer or seller forms an opinion about your agency before they speak to anyone. The website is the first showing, and right now it's slow on mobile, the listings are harder to navigate than they should be, and there's nothing that gives a visitor a clear reason to choose [Agency Name] over the next firm they'll Google.\n\nEvery visitor who leaves without making contact is a potential transaction that went somewhere else.\n\nWe build Webflow real estate websites that look premium, present properties properly, and convert visitors into qualified leads.\n\nWorth a 15 minute call?\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent some time on [Agency Name]'s website this morning.\n\nIn real estate, a buyer or seller forms an opinion about your agency before they speak to anyone. The website is the first showing, and right now it's slow on mobile, listings are harder to navigate than they should be, and there's nothing that gives a visitor a clear reason to choose [Agency Name] over the next firm they'll Google.\n\nWe build Webflow real estate websites that look premium, present properties properly, and convert visitors into qualified leads.\n\nWorth 15 minutes?\n\nRafik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "Where transactions are being lost",
         "subject": "where [Agency Name] is losing leads before first contact",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nMost real estate leads are lost long before anyone picks up the phone, and it happens at three points online. The site isn't fast on mobile where most property searches happen. The photography and listing presentation doesn't create the emotional connection that makes someone call to view. And there's no clear, frictionless lead capture that makes it easy for a motivated buyer or seller to take action right now.\n\nEach of these is a separate leak. Together they represent transactions that are going to competitors.\n\nHappy to do a free honest look at [Agency Name]'s site, no strings.\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nMost real estate leads are lost before anyone picks up the phone, at three points online. The site isn't fast on mobile where most property searches happen. Photography isn't presented in a way that creates emotional connection. And there's no clear frictionless lead capture that makes it easy for a motivated buyer or seller to take action right now.\n\nEach of these is a separate leak. Together they represent transactions going to competitors.\n\nHappy to do a free honest look at [Agency Name]'s site, no strings.\n\nRafik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the emotional listing gap",
+        "subject": "why some property listings convert and others don't",
+        "body": "Hi [First Name],\n\nOne more, something worth applying.\n\nThe highest-converting property listings online share one thing: they sell the life, not just the home. Not '3 bedroom semi-detached with garden', 'A quiet street five minutes from the park, with enough space for the life you're building.'\n\nSame property. Completely different emotional response from a buyer scrolling through listings on their phone.\n\nHappy to show what this looks like applied to one of [Agency Name]'s current listings, no strings.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Market-led close",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Agency Name] is ready to build a website that sets you clearly apart in your market, we'd love to be the ones to build it.\n\nRafik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Agency Name] is ready to build a website that sets you clearly apart in your market, we'd love to be the ones to build it.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Travel & Tourism": {
     "owner": "Rafik",
-    "tone": "Aspirational. Trust-led. Speaks to the OTA competition in emotional not just commercial terms.",
+    "buyerPsychology": "Passionate about experiences. Frustrated competing with OTAs. Responds to someone who understands the battle is won or lost on trust and inspiration not price.",
+    "tone": "Aspirational and trust-led. Speaks to OTA competition in emotional not just commercial terms.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "The inspiration gap",
         "subject": "your website isn't making me want to travel with you, [First Name]",
-        "body": "Hi [First Name],\n\nSpent time on [Agency Name]'s website this morning.\n\nTravel is one of the most emotionally-driven purchases a person makes online. A great travel agency website needs to do two things at the same time, make the destination feel irresistible, and make the agency feel like the only sensible way to get there. Right now the site isn't quite achieving either.\n\nThe photography doesn't create enough desire, the agency's expertise isn't communicated in a way that makes self-booking feel inferior, and the enquiry process has too much friction for someone still in the dreaming stage.\n\nWe build Webflow travel agency websites that inspire and convert. Quick call?\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent time on [Agency Name]'s website this morning.\n\nTravel is one of the most emotionally-driven purchases a person makes online. A great travel agency website needs to do two things simultaneously, make the destination feel irresistible, and make the agency feel like the only sensible way to get there. Right now the site isn't quite achieving either.\n\nThe photography doesn't create enough desire, the agency's expertise isn't communicated compellingly, and the enquiry process has too much friction for someone still in the dreaming stage.\n\nWe build Webflow travel agency websites that inspire and convert. Quick call?\n\nRafik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "Why they choose the platform",
         "subject": "what makes someone choose Expedia over booking with you",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nTravellers choose platforms over agencies because of two things, trust and ease. The platform feels safer because it's familiar, and it's easier because the booking flow has been optimised by a billion-dollar UX team.\n\nTo win against that, a travel agency website has to do one thing the platform can't: communicate genuine human expertise and personalised care in a way that makes a traveller feel that self-booking is actually the riskier choice.\n\nMost agency sites don't get there, the expertise is there but the website doesn't show it compellingly.\n\nFree look at [Agency Name]'s site, honest, no pitch.\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nTravellers choose platforms over agencies for two reasons, trust and ease. The platform feels safer because it's familiar, and easier because the booking flow has been optimised by a billion-dollar UX team.\n\nTo win against that, a travel agency website has to do one thing the platform can't: communicate genuine human expertise and personalised care in a way that makes a traveller feel self-booking is actually the riskier choice.\n\nMost agency sites don't get there, the expertise is present but the website doesn't show it compellingly.\n\nFree look at [Agency Name]'s site, honest, no pitch.\n\nRafik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, the expertise signal",
+        "subject": "the one thing your website should show that Expedia never can",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe travel agencies that consistently win bookings over OTAs communicate one thing the platforms structurally cannot: the person behind the recommendation. A short genuine bio, a specific trip they know better than anyone, a destination insight that only comes from having been there, these signals build a level of trust that no algorithm can replicate.\n\nMost agency websites bury this or omit it entirely. The best ones put it front and centre.\n\nHappy to think through how [Agency Name] presents this on the site, no strings.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Aspirational close",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Agency Name] is ready for a website that makes every visitor want to book, we'd love to build it.\n\nRafik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Agency Name] is ready for a website that makes every visitor want to book, we'd love to build it.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   },
   "Architecture & Interior": {
     "owner": "Rafik",
-    "tone": "Refined. Specific about the work. Treats them as the design expert they are. No generic design language.",
+    "buyerPsychology": "Design-literate and proud. Will instantly judge quality of anyone reaching out by how they present themselves. Responds to genuine engagement with the work before writing.",
+    "tone": "Refined and specific. Treats them as the design expert they are. No generic design language.",
     "emails": [
       {
         "day": 1,
-        "label": "First Touch",
+        "label": "Genuine engagement, presentation gap",
         "subject": "looked at [Firm Name]'s portfolio properly, the work deserves more",
-        "body": "Hi [First Name],\n\nSpent real time on [Firm Name]'s portfolio this morning, not a skim.\n\nThe quality of the work is genuinely striking. But the website isn't presenting it at the level it deserves. It loads slowly, the projects aren't sequenced in a way that builds a cumulative picture of the firm's creative vision, and a prospective client arriving for the first time has no clear reason to reach out rather than continue browsing.\n\nHigh-budget clients choose design firms partly on gut, and that gut is being formed in the first 60 seconds on the website. The work is there to win the right clients. The site just needs to present it better.\n\nWe build Webflow portfolio sites for architecture and interior design firms. Worth a 15 minute conversation?\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nSpent real time on [Firm Name]'s portfolio this morning, not a skim.\n\nThe quality of the work is genuinely striking. But the website isn't presenting it at the level it deserves. It loads slowly, projects aren't sequenced in a way that builds a cumulative picture of the firm's creative vision, and a prospective client arriving for the first time has no clear reason to reach out rather than continue browsing.\n\nHigh-budget clients choose design firms on gut, and that gut is formed in the first 60 seconds on the website.\n\nWe build Webflow portfolio sites for architecture and interior design firms. Worth 15 minutes?\n\nRafik\nFlowtive · flowtive.co",
         "wait": 0
       },
       {
         "day": 5,
-        "label": "Follow Up",
+        "label": "The high-budget client's first minute",
         "subject": "what a high-budget client looks for in your portfolio",
-        "body": "Hi [First Name],\n\nFollowing up.\n\nWhen a client with a serious budget visits a design firm website, they're assessing three things in the first minute, whether the firm has a clear and distinctive creative point of view, whether there's evidence of work at the scale they're considering, and whether the website itself communicates the kind of taste they'd expect from a firm they're about to invest in.\n\nMost architecture and interior design websites fall short on at least one of these. The consequence is that projects go to firms whose websites make a stronger first impression, regardless of whose actual work is better.\n\nHappy to do a free look at [Firm Name]'s site, honest, no strings.\n\nRafik\n\nFlowtive · flowtive.co",
+        "body": "Hi [First Name],\n\nFollowing up.\n\nWhen a client with a serious budget visits a design firm website, they assess three things in the first minute: whether the firm has a clear and distinctive creative point of view, whether there's evidence of work at the scale they're considering, and whether the website itself communicates the kind of taste they'd expect from a firm they're about to invest in.\n\nMost architecture and interior design websites fall short on at least one. The consequence is projects going to firms whose websites make a stronger first impression, regardless of whose actual work is better.\n\nHappy to do a free look at [Firm Name]'s site, honest, no strings.\n\nRafik\nFlowtive · flowtive.co",
         "wait": 4
       },
       {
-        "day": 12,
-        "label": "Close",
+        "day": 9,
+        "label": "Value add, project narrative gap",
+        "subject": "what's missing from most architecture portfolio pages",
+        "body": "Hi [First Name],\n\nOne more, something specific.\n\nThe architecture and interior design firms that consistently win the right projects online share one thing: every portfolio project tells a brief story, the client's original brief, the design challenge, the decision that defined the outcome. Not just photographs and a title.\n\nA prospective client with a project in mind isn't just looking at the images. They're trying to understand how the firm thinks. That narrative is the thing that answers the question.\n\nHappy to show what this looks like applied to one of [Firm Name]'s existing projects.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 4
+      },
+      {
+        "day": 14,
+        "label": "Craft close",
         "subject": "last note from Flowtive",
-        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Firm Name] is ready for a website that attracts the calibre of projects your work deserves, we'd love to be involved.\n\nRafik\n\nFlowtive · flowtive.co",
-        "wait": 7
+        "body": "Hi [First Name],\n\nLast one from me.\n\nWhen [Firm Name] is ready for a website that attracts the calibre of projects your work deserves, we'd love to be involved.\n\nRafik\nFlowtive · flowtive.co",
+        "wait": 5
       }
     ]
   }
 };
 
 var GOLDEN_RULES = [
-  "These emails are written short on purpose. Under 120 words is the target for Email 1.",
-  "The subject line must sound like it came from a real human — not a marketing team.",
-  "Personalise the first line before every send. One specific observation about their real website doubles reply rates.",
-  "Replace every [bracket] before sending. Never send a template with a bracket still in it.",
-  "Send Tuesday to Thursday only. 6pm to 8pm Bangladesh time for USA East Coast.",
-  "Maximum 20 emails per day. Maximum 5 to 7 per hour.",
-  "Log the send date in the Email 1 column of the sheet immediately after sending.",
-  "Most replies come from Email 2 or Email 3 — never skip the follow up sequence.",
-  "One CTA only. Never two questions in the same email.",
-  "Reply within one hour of receiving any response — positive or negative."
+  "Email 1 is under 100 words. If it's longer, cut it. Every sentence that isn't earning its place is working against you.",
+  "The subject line must pass the desk test, would a real human send this subject line in a normal work email? If not, rewrite it.",
+  "Never start a cold email with I. Start with an observation, a time reference, or their name. Spam filters and humans both react better.",
+  "Add one specific observation about their actual website before sending Email 1. This single habit doubles reply rates. Not generic, something you actually noticed.",
+  "Never send with a bracket still in the email. [First Name] left in = instant delete and you look careless.",
+  "Send Tuesday to Thursday only. 6pm to 8pm Bangladesh time hits USA East Coast at 8am to 10am, their best window.",
+  "Maximum 20 emails per day from a fresh domain. Maximum 5 to 7 per hour. Never batch send.",
+  "Log the send date in the Email 1 column of the sheet immediately after sending. Not later. Now.",
+  "Email 2, 3, and 4 exist because 42% of replies do not come from Email 1. Never skip the sequence.",
+  "One CTA. One question. One ask per email. Never two."
 ];
 
 function escapeHtml(s){
@@ -3913,7 +4062,11 @@ function openEmailModal(ind, fromLibrary){
   var backBtn = document.getElementById('email-modal-back');
   if(backBtn) backBtn.classList.toggle('app-hidden', !_emailFromLibrary);
   var body = document.getElementById('email-modal-body');
-  var html = '<div class="email-timeline">';
+  var html = '';
+  if(data.buyerPsychology){
+    html += '<div class="buyer-psych"><div class="buyer-psych-label">Buyer psychology</div><div class="buyer-psych-text">'+escapeHtml(data.buyerPsychology)+'</div></div>';
+  }
+  html += '<div class="email-timeline">';
   data.emails.forEach(function(_, i){
     html += renderEmailCard(ind, i);
   });
@@ -4196,7 +4349,7 @@ function openEmailLibrary(){
           return '<div class="lib-owner-av" style="background:'+bg+'">'+inner+'</div>';
         })()+
         '<span class="lib-owner-name">'+escapeHtml(m.name)+'</span>'+
-        '<span class="lib-owner-count">'+m.inds.length+' industries · '+(m.inds.length*3)+' emails</span>'+
+        '<span class="lib-owner-count">'+m.inds.length+' industries · '+(m.inds.length*4)+' emails</span>'+
       '</div>'+
       '<div class="lib-grid">';
     m.inds.forEach(function(ind){
@@ -4214,7 +4367,7 @@ function openEmailLibrary(){
         '<div class="lib-card-tone">'+escapeHtml(data.tone)+'</div>'+
         '<div class="lib-card-meta">'+
           '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg>'+
-          '3 emails · Day 1 · 5 · 12'+
+          '4 emails · Day 1 · 5 · 9 · 14'+
         '</div>'+
       '</button>';
     });
