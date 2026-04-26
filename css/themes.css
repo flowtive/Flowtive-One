@@ -1,0 +1,112 @@
+/* ════════════════════════════════════════════════════════════════════════
+   FLOWTIVE ONE — Theme-specific selector overrides
+   (Variables live in tokens.css; this file holds the dark-mode styles
+    that target specific selectors rather than tokens.)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Status-select chevrons in dark mode — replace dark hex strokes with light grays
+   that are visible against the now-translucent dark badge backgrounds. */
+:root[data-theme="dark"] .status-select.s-todo,
+:root[data-theme="dark"] .status-select.s-progress,
+:root[data-theme="dark"] .status-select.s-finished{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' stroke='%23A1A1AA' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* "Raised glass" inner highlight on cards in dark mode — subtle 1px top edge that
+   simulates light hitting an elevated surface. macOS / Apple touch. */
+:root[data-theme="dark"] .kpi-card,
+:root[data-theme="dark"] .chart-card,
+:root[data-theme="dark"] .activity-wrap,
+:root[data-theme="dark"] .ind-block,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .otc-card,
+:root[data-theme="dark"] .lib-card,
+:root[data-theme="dark"] .login-card,
+:root[data-theme="dark"] .welcome-modal,
+:root[data-theme="dark"] .email-modal,
+:root[data-theme="dark"] .note-modal,
+:root[data-theme="dark"] .tdrawer,
+:root[data-theme="dark"] .timer-card{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
+}
+/* Modals in dark — combine raised highlight with the elevation shadow (the
+   inset must come last in CSS so it composites over the outer shadow). */
+:root[data-theme="dark"] .welcome-modal,
+:root[data-theme="dark"] .email-modal,
+:root[data-theme="dark"] .note-modal{
+  box-shadow:var(--shadow-xl), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Topbar in dark mode — floating glass: slightly lighter than the page bg */
+:root[data-theme="dark"] .topbar{
+  background:rgba(20,20,32,0.92);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+:root[data-theme="dark"] .topbar.is-scrolled{
+  background:rgba(20,20,32,0.96);
+  border-bottom-color:rgba(255,255,255,0.10);
+  box-shadow:0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 16px rgba(0,0,0,0.40);
+}
+
+/* Inputs/buttons that hardcode #fff backgrounds via legacy --white still work
+   because --white aliases to --bg-surface which is themed. */
+@media (max-width:639px){ :root{ --topbar-h:48px; } }
+@media (max-width:479px){ :root{ --topbar-h:44px; } }
+body{font-family:var(--font-sans);background:var(--bg-app);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+.app-hidden{display:none!important}
+
+/* ── Global polish: selection, focus rings, scroll behaviour, scrollbars ── */
+::selection{background:rgba(99,91,255,0.30);color:var(--text-primary)}
+:root[data-theme="dark"] ::selection{background:rgba(96,165,250,0.35);color:var(--text-primary)}
+:focus-visible{outline:none;box-shadow:var(--ring-accent);border-radius:var(--radius-sm);transition:box-shadow var(--duration-fast) var(--ease-out)}
+button:focus-visible,a:focus-visible{outline:none;box-shadow:var(--ring-accent)}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:none}
+html{scroll-behavior:smooth}
+body{accent-color:var(--accent)}
+
+/* Custom scrollbars — thin, calm, theme-aware (Firefox + WebKit) */
+*{scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:var(--radius-full);border:2px solid transparent;background-clip:padding-box;transition:background-color var(--duration-fast) var(--ease-out)}
+*::-webkit-scrollbar-thumb:hover{background:var(--text-tertiary);background-clip:padding-box;border:2px solid transparent}
+*::-webkit-scrollbar-corner{background:transparent}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ── Smooth theme switching ─────────────────────────────────────────────
+   Modern browsers use the View Transitions API (handled in JS), which gives
+   a real crossfade snapshot for free. We tune duration + easing to feel
+   deliberate (not an instant flicker) and match the rest of the design system.
+   ─────────────────────────────────────────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root){
+  animation-duration:520ms;
+  animation-timing-function:cubic-bezier(0.32, 0.72, 0.0, 1);
+  mix-blend-mode:normal;
+}
+::view-transition-old(root){animation-name:vtFadeOut}
+::view-transition-new(root){animation-name:vtFadeIn}
+@keyframes vtFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes vtFadeIn{from{opacity:0}to{opacity:1}}
+
+/* Fallback for browsers without startViewTransition: temporarily transition
+   color, background, border, shadow on every element while .theme-transitioning
+   is on <html>. The class is added by JS and removed ~520ms later, so normal
+   hover/focus interactions remain snappy. */
+:root.theme-transitioning,
+:root.theme-transitioning *,
+:root.theme-transitioning *::before,
+:root.theme-transitioning *::after{
+  transition:background-color 420ms cubic-bezier(0.32,0.72,0.0,1),
+             background        420ms cubic-bezier(0.32,0.72,0.0,1),
+             color             420ms cubic-bezier(0.32,0.72,0.0,1),
+             border-color      420ms cubic-bezier(0.32,0.72,0.0,1),
+             fill              420ms cubic-bezier(0.32,0.72,0.0,1),
+             stroke            420ms cubic-bezier(0.32,0.72,0.0,1),
+             box-shadow        420ms cubic-bezier(0.32,0.72,0.0,1),
+             opacity           420ms cubic-bezier(0.32,0.72,0.0,1)!important;
+}

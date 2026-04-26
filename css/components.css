@@ -1,0 +1,130 @@
+/* ════════════════════════════════════════════════════════════════════════
+   FLOWTIVE ONE — Generic UI components
+   Search, modals, notes UI, status/state badges, status dropdown.
+   ════════════════════════════════════════════════════════════════════════ */
+/* ── Search ── */
+.search-wrap{position:relative;flex:1;max-width:420px;margin:0 4px}
+.search-input{
+  width:100%;
+  padding:7px 56px 7px 34px;
+  border-radius:var(--radius-full);
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.06);
+  color:rgba(255,255,255,0.95);
+  font-size:12.5px;
+  font-family:inherit;
+  outline:none;
+  transition:background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  letter-spacing:0.005em;
+}
+.search-input::placeholder{color:rgba(255,255,255,0.52);font-weight:400}
+.search-input:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.12)}
+.search-input:focus{
+  background:rgba(255,255,255,0.10);
+  border-color:rgba(122,115,255,0.50);
+  box-shadow:0 0 0 3px rgba(99,91,255,0.18), 0 1px 2px rgba(0,0,0,0.20) inset;
+}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.60);pointer-events:none;transition:color var(--duration-fast) var(--ease-out)}
+.search-input:focus + .search-icon,.search-wrap:focus-within .search-icon{color:var(--accent-light)}
+.search-kbd{
+  position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  font-family:var(--font-sans);
+  font-size:10px;font-weight:600;
+  color:rgba(255,255,255,0.55);
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:5px;
+  padding:2px 6px;
+  letter-spacing:0.04em;
+  pointer-events:none;
+  transition:opacity var(--duration-fast) var(--ease-out);
+  line-height:1;
+}
+/* Hide ⌘K hint when input has focus OR when there's text (clear button is shown).
+   Uses :has() in modern browsers + a JS-driven .has-text class as fallback for
+   Safari <15.4 / older browsers that don't support :has() yet. */
+.search-wrap:focus-within .search-kbd,
+.search-wrap.has-text .search-kbd,
+.search-wrap:has(.search-clear.show) .search-kbd{opacity:0;pointer-events:none}
+.search-clear{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.10);border:none;color:rgba(255,255,255,0.75);cursor:pointer;font-size:11px;line-height:1;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;padding:0;font-family:inherit;transition:background var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out)}
+.search-clear:hover{background:rgba(255,255,255,0.18);color:#fff}
+.search-clear.show{display:flex}
+.search-results{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:500;max-height:380px;overflow-y:auto;display:none}
+.search-results.open{display:block}
+.search-results::-webkit-scrollbar{width:4px}
+.search-results::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.sr-header{padding:8px 12px;font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;background:var(--bg-elevated);border-bottom:1px solid var(--border)}
+.sr-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border-subtle);transition:background 0.1s}
+.sr-item:last-child{border-bottom:none}
+.sr-item:hover{background:var(--accent-subtle-2)}
+.sr-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--bg-surface);flex-shrink:0}
+.sr-info{flex:1;min-width:0}
+.sr-main{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-main mark{background:none;color:var(--blue);font-weight:700;padding:0}
+.sr-sub{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;flex-shrink:0}
+.sr-empty{padding:24px 12px;text-align:center;font-size:13px;color:var(--muted)}
+.user-pill-wrap{position:relative}
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-inverse-2);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-lg);min-width:160px;overflow:hidden;display:none;z-index:200}
+.user-dropdown.open{display:block}
+.user-dropdown-item{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;color:rgba(255,255,255,0.8);cursor:pointer;transition:background 0.1s;border:none;background:none;width:100%;text-align:left}
+.user-dropdown-item:hover{background:rgba(255,255,255,0.08);color:var(--bg-surface)}
+.user-dropdown-item svg{flex-shrink:0;opacity:0.7}
+.user-dropdown-divider{height:1px;background:rgba(255,255,255,0.1);margin:2px 0}
+/* topbar-sub hidden below sm — handled in responsive system above */
+
+/* ── Welcome Modal ── */
+.welcome-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;animation:wFadeIn 0.25s ease}
+@keyframes wFadeIn{from{opacity:0}to{opacity:1}}
+.welcome-modal{background:var(--bg-surface);border-radius:var(--radius-xl);padding:36px 32px 28px;width:100%;max-width:460px;box-shadow:var(--shadow-xl);animation:wSlideUp 0.3s ease}
+@keyframes wSlideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.welcome-icon{width:52px;height:52px;border-radius:14px;background:var(--blue);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.welcome-icon svg{color:var(--bg-surface)}
+.welcome-greeting{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.welcome-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.25;letter-spacing:var(--tracking-tight)}
+.welcome-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.welcome-tips{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+.welcome-tip{display:flex;align-items:flex-start;gap:12px;padding:11px 13px;background:var(--bg-card-faint);border:1px solid var(--border);border-radius:10px}
+.welcome-tip-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;margin-top:1px}
+.welcome-tip-text{flex:1}
+.welcome-tip-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.welcome-tip-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.welcome-cta{width:100%;padding:13px;border-radius:10px;background:var(--gradient-brand);color:var(--text-on-accent);font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out),filter var(--duration-fast) var(--ease-out);letter-spacing:0.01em;box-shadow:var(--shadow-glow-brand)}
+.welcome-cta:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 12px 32px rgba(99,91,255,0.32)}
+.welcome-cta:active{transform:translateY(0);filter:brightness(0.98)}
+@media(max-width:479px){
+  .welcome-modal{padding:26px 20px 22px}
+  .welcome-title{font-size:19px}
+  .welcome-tips{gap:8px}
+  .welcome-tip{padding:9px 11px;gap:10px}
+}
+
+/* ── Notes ── */
+.note-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;border:1px solid var(--border);background:var(--off);cursor:pointer;flex-shrink:0;transition:all 0.15s;padding:0;color:var(--hint);position:relative}
+.note-btn:hover{background:var(--blue-light);border-color:var(--blue);color:var(--blue)}
+.note-btn.has-note{background:var(--warning-subtle);border-color:var(--warning-yellow);color:var(--warning-deep)}
+.note-modal-backdrop{position:fixed;inset:0;background:var(--bg-overlay);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.note-modal{background:var(--bg-surface);border-radius:var(--radius-lg);padding:20px;width:100%;max-width:420px;box-shadow:var(--shadow-xl)}
+.note-modal-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.note-modal-sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+.note-textarea{width:100%;height:100px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;color:var(--text);background:var(--bg-surface);resize:vertical;outline:none;transition:border-color var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out)}
+.note-textarea:focus{border-color:var(--accent);box-shadow:var(--ring-accent)}
+.note-textarea::placeholder{color:var(--text-tertiary)}
+.note-modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.note-btn-cancel{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg-surface);font-size:13px;cursor:pointer;color:var(--muted);font-family:inherit}
+.note-btn-save{padding:7px 14px;border-radius:var(--radius);border:none;background:var(--accent);font-size:13px;cursor:pointer;color:var(--text-on-accent);font-weight:500;font-family:inherit}
+.note-btn-cancel:hover{background:var(--off);color:var(--text)}
+.note-btn-save:hover{background:var(--accent-hover)}
+
+/* ── City status dropdown ── */
+.status-select{appearance:none;-webkit-appearance:none;border:1px solid var(--border);border-radius:5px;padding:3px 22px 3px 7px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;outline:none;background-repeat:no-repeat;background-position:right 5px center;background-size:10px;transition:all 0.15s;width:100px;flex-shrink:0}
+.status-select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(64,96,147,0.1)}
+.status-select.s-todo{background-color:var(--bg-elevated);color:var(--text-secondary);border-color:var(--border-default);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' stroke='%236B7280' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}
+.status-select.s-progress{background-color:var(--info-subtle);color:var(--info-deep);border-color:var(--info-border);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' stroke='%231D4ED8' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}
+.status-select.s-finished{background-color:var(--success-subtle);color:var(--success-deep);border-color:var(--success-border);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' stroke='%2315803D' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}
+.status-select:disabled{opacity:0.5;cursor:not-allowed}
+/* ── State status badge ── */
+.state-status-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+.ssb-todo{background:var(--bg-app);color:var(--text-secondary)}
+.ssb-progress{background:var(--info-subtle);color:var(--info-deep)}
+.ssb-finished{background:var(--success-subtle);color:var(--success-deep)}
