@@ -38,7 +38,7 @@ function saveAvatar(name, dataUrl){
     };
     img.onerror = function(){ console.warn('Avatar image load failed'); };
     img.src = dataUrl;
-  }catch(e){ console.log('Avatar save failed', e); }
+  }catch(e){ console.warn('Avatar save failed', e); }
 }
 
 function triggerAvatarUpload(){
@@ -169,8 +169,9 @@ function applyAvatarsEverywhere(){
     }
   });
 
-  // Leaderboard avatars
-  if(document.getElementById('panel-dashboard').classList.contains('active')) buildDashboard();
+  // Leaderboard avatars (guard: panel may not exist if app shell hasn't built yet)
+  var dashPanel = document.getElementById('panel-dashboard');
+  if(dashPanel && dashPanel.classList.contains('active')) buildDashboard();
 
   // Done-by avatars in all state table rows
   document.querySelectorAll('[id^="by-"]').forEach(function(el){

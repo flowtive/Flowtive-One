@@ -26,6 +26,9 @@ function _logActivityLocal(entry){
 }
 
 /* ── Firebase activity: listen (real-time) ── */
+var _activityFirstLoad = true;
+var _activitySeenMaxTs = 0;
+
 function subscribeActivity(){
   if(!firebaseReady) return;
   if(_activityListener) return; // already subscribed
@@ -39,7 +42,7 @@ function subscribeActivity(){
     });
     entries.sort(function(a,b){ return b.ts - a.ts; });
     activityLog = entries;
-    _activityShowCount = 20; // Reset pagination on fresh data
+    _activityShowCount = 10;
     try{ localStorage.setItem('flowtive_activity_fallback', JSON.stringify(activityLog.slice(0,100))); }catch(e){}
     if(document.getElementById('panel-dashboard') &&
        document.getElementById('panel-dashboard').classList.contains('active')){
@@ -50,14 +53,98 @@ function subscribeActivity(){
        document.getElementById('panel-dashboard').classList.contains('active')){
       buildWeeklyChart();
     }
+    // Fire browser notifications for new activity (skip the initial load
+    // so we don't spam the user with all 100 historical entries on login).
+    var maxTs = 0;
+    entries.forEach(function(e){ if(e && e.ts > maxTs) maxTs = e.ts; });
+    if(!_activityFirstLoad){
+      entries.forEach(function(e){
+        if(e && e.ts > _activitySeenMaxTs){
+          maybeNotifyActivityEvent(e);
+        }
+      });
+    }
+    _activitySeenMaxTs = maxTs;
+    _activityFirstLoad = false;
   }, function(err){
     console.warn('Firebase read error:', err.message);
   });
 }
 
+/* ── Browser notifications ──
+   Three event types worth interrupting for: someone assigned you a task,
+   someone commented on your task, someone completed a task you assigned. */
+function maybeNotifyActivityEvent(entry){
+  if(!entry || !currentUser) return;
+  if(entry.who === currentUser.name) return;            // never notify yourself
+  if(typeof Notification === 'undefined') return;       // unsupported browser
+  if(Notification.permission !== 'granted') return;
+  if(document.hidden === false && document.hasFocus && document.hasFocus()){
+    // Tab is focused — user already sees the activity feed update; skip noise
+    // EXCEPT for direct mentions (assigned/commented) which deserve a ping
+    if(entry.type !== 'task_assign' && entry.type !== 'task_comment'){
+      // task_create + assigned-to-me also worth notifying
+      if(!(entry.type === 'task_create' && entry.assignee === currentUser.name)) return;
+    }
+  }
+
+  var title = '', body = '', taskId = entry.taskId || null;
+  var t = taskId && typeof tasksData !== 'undefined' ? tasksData[taskId] : null;
+
+  if(entry.type === 'task_assign' && entry.toAssignee === currentUser.name){
+    title = entry.who + ' assigned you a task';
+    body  = entry.title || '';
+  } else if(entry.type === 'task_create' && entry.assignee === currentUser.name){
+    title = entry.who + ' assigned you a new task';
+    body  = entry.title || '';
+  } else if(entry.type === 'task_comment' && t && t.assignee === currentUser.name){
+    title = entry.who + ' commented on your task';
+    body  = entry.title || '';
+  } else if(entry.type === 'task_status' && entry.toStatus === 'done'
+            && t && t.createdBy === currentUser.name && t.assignee !== currentUser.name){
+    title = entry.who + ' completed a task you created';
+    body  = entry.title || '';
+  } else {
+    return;
+  }
+
+  try{
+    var n = new Notification('Flowtive · '+title, {
+      body: body,
+      tag: 'flowtive-'+(taskId||entry.ts),  // collapses duplicate notifications
+      silent: false
+    });
+    n.onclick = function(){
+      window.focus();
+      if(taskId && typeof openTaskDrawer === 'function'){
+        // Switch to Tasks panel first if needed
+        if(typeof switchPanel === 'function') switchPanel('tasks');
+        openTaskDrawer(taskId);
+      }
+      n.close();
+    };
+    setTimeout(function(){ try{ n.close(); }catch(e){} }, 8000);
+  }catch(e){
+    // Some browsers (Safari) restrict Notification constructor under cross-origin
+    console.warn('Notification failed:', e.message);
+  }
+}
+
+/* Ask for notification permission once after login. We don't pester — if user
+   says "Block" or "Default", we just don't notify. */
+function requestNotificationPermission(){
+  if(typeof Notification === 'undefined') return;
+  if(Notification.permission === 'default'){
+    // Wait a beat after login so the prompt doesn't crowd the initial UI
+    setTimeout(function(){
+      try{ Notification.requestPermission(); }catch(e){}
+    }, 1500);
+  }
+}
+
 
 /* ── Activity feed renderer ── */
-var _activityShowCount = 20; // Fix 16: Track how many entries to show
+var _activityShowCount = 10; // Fixed cap: 10 most recent entries (no pagination)
 
 function buildActivityFeed(){
   var el=document.getElementById('activity-list');
@@ -133,6 +220,8 @@ function buildActivityFeed(){
       text='<strong>'+entry.who+'</strong> Assigned <strong>"'+escapeHtml(entry.title||'')+'"</strong> To '+to+' <span class="activity-badge act-task-assign">Assigned</span>';
     } else if(entry.type==='task_delete'){
       text='<strong>'+entry.who+'</strong> Deleted Task <strong>"'+escapeHtml(entry.title||'')+'"</strong> <span class="activity-badge act-task-delete">Deleted</span>';
+    } else if(entry.type==='task_comment'){
+      text='<strong>'+entry.who+'</strong> Commented on <strong>"'+escapeHtml(entry.title||'')+'"</strong> <span class="activity-badge act-task-comment">💬 Comment</span>';
     } else {
       text='<strong>'+entry.who+'</strong> updated '+loc+' '+indBadge;
     }
@@ -148,33 +237,6 @@ function buildActivityFeed(){
       '</div>';
     el.appendChild(item);
   });
-
-  // Fix 16: Show "Load more" button if there are more entries
-  if(activityLog.length > _activityShowCount){
-    var remaining = activityLog.length - _activityShowCount;
-    var moreBtn = document.createElement('button');
-    moreBtn.style.cssText='display:block;width:100%;margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);font-size:12px;color:var(--blue);font-weight:500;cursor:pointer;font-family:inherit;transition:background 0.15s';
-    moreBtn.textContent='Show '+Math.min(remaining, 20)+' more ('+remaining+' remaining)';
-    moreBtn.onmouseenter=function(){ this.style.background='var(--blue-light)'; };
-    moreBtn.onmouseleave=function(){ this.style.background='var(--bg-surface)'; };
-    moreBtn.onclick=function(){
-      _activityShowCount += 20;
-      buildActivityFeed();
-    };
-    el.appendChild(moreBtn);
-  } else if(_activityShowCount > 20){
-    // Show "Collapse" option when expanded
-    var colBtn = document.createElement('button');
-    colBtn.style.cssText='display:block;width:100%;margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-surface);font-size:12px;color:var(--muted);font-weight:500;cursor:pointer;font-family:inherit;transition:background 0.15s';
-    colBtn.textContent='Show less';
-    colBtn.onmouseenter=function(){ this.style.background='var(--off)'; };
-    colBtn.onmouseleave=function(){ this.style.background='var(--bg-surface)'; };
-    colBtn.onclick=function(){
-      _activityShowCount = 20;
-      buildActivityFeed();
-    };
-    el.appendChild(colBtn);
-  }
 }
 
 

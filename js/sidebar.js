@@ -104,6 +104,17 @@ function buildSidebar(){
     '<div class="sid-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg></div>Email Templates';
   emailItem.onclick=function(){ openEmailLibrary(); };
   sb.appendChild(emailItem);
+
+  // Sidebar footer — Start/Stop Work pill anchored at the bottom (always reachable)
+  var footer=document.createElement('div');
+  footer.className='sid-footer';
+  footer.innerHTML='<button class="clock-btn" onclick="toggleClock()" type="button" title="Track Your Work Time">'
+    +'<span class="clock-btn-icon"></span>'
+    +'<span class="clock-btn-label-text">Start Work</span>'
+    +'</button>';
+  sb.appendChild(footer);
+  // Sync button to current state
+  if(typeof renderClockButton === 'function') renderClockButton();
 }
 
 function updateSidebarCounts(){

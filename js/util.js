@@ -60,8 +60,3 @@ function formatTimeAgo(ts){
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-var emailOverrides = {}; // key: ind+'::'+idx → {subject, body, editedBy, editedAt}
-var _currentOpenInd = null;
-var _emailListener = false;
-

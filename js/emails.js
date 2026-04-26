@@ -647,10 +647,7 @@ var GOLDEN_RULES = [
   "One CTA per email. One question. One ask. Never two."
 ];
 
-function escapeHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+/* Email-specific runtime state (escapeHtml lives in util.js since it's generic) */
 var emailOverrides = {}; // key: ind+'::'+idx → {subject, body, editedBy, editedAt}
 var _currentOpenInd = null;
 var _emailListener = false;
@@ -695,7 +692,7 @@ function renderEmailCard(ind, idx){
 var _emailFromLibrary = false;
 function openEmailModal(ind, fromLibrary){
   var data = EMAIL_TEMPLATES[ind];
-  if(!data){ showToast('No templates for '+ind); return; }
+  if(!data){ emailToast('No templates for '+ind); return; }
   _currentOpenInd = ind;
   _emailFromLibrary = !!fromLibrary;
   document.getElementById('email-modal-title').textContent = ind+' — Email Templates';
@@ -830,7 +827,7 @@ function saveEmailEdit(ind, idx){
   if(!subjEl || !bodyEl) return;
   var newSubj = subjEl.value.trim();
   var newBody = bodyEl.value.trim();
-  if(!newSubj || !newBody){ showToast('Subject and body cannot be empty'); return; }
+  if(!newSubj || !newBody){ emailToast('Subject and body cannot be empty'); return; }
   var def = EMAIL_TEMPLATES[ind] && EMAIL_TEMPLATES[ind].emails[idx];
   if(!def) return;
   var key = ind+'::'+idx;
@@ -847,7 +844,7 @@ function saveEmailEdit(ind, idx){
   }
   saveEmailOverrides();
   rerenderEmailCard(ind, idx);
-  showToast('Email saved');
+  emailToast('Email saved');
   if(isEdit && currentUser){
     logActivity(currentUser.name, 'email_edit', ind, null, null, {emailIdx: idx, emailDay: def.day});
   }
@@ -862,7 +859,7 @@ function resetEmailEdit(ind, idx){
   delete emailOverrides[ind+'::'+idx];
   saveEmailOverrides();
   rerenderEmailCard(ind, idx);
-  showToast('Email reset to default');
+  emailToast('Email reset to default');
 }
 
 function saveEmailOverrides(){
@@ -896,7 +893,7 @@ function copyEmail(ind, idx, btn){
     var lbl = btn.querySelector('.email-copy-label');
     var prev = lbl ? lbl.textContent : '';
     if(lbl) lbl.textContent = 'Copied';
-    showToast('Email copied — paste into your mail client');
+    emailToast('Email copied — paste into your mail client');
     setTimeout(function(){
       btn.classList.remove('copied');
       if(lbl) lbl.textContent = prev || 'Copy';
@@ -923,8 +920,11 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
+/* Email-modal-specific toast that uses the fixed #email-toast DOM element.
+   Distinct from the generic showToast(msg, color) in util.js, which creates
+   a fresh DOM element each time and supports a colour argument. */
 var _toastTimer = null;
-function showToast(msg){
+function emailToast(msg){
   var t = document.getElementById('email-toast');
   if(!t) return;
   t.textContent = msg;

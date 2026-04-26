@@ -1,19 +1,26 @@
 /* Flowtive One — Firebase init, sync, real-time listeners, presence */
 
-/* ── Sync ── */
+/* ── Sync ──
+   The indicator is hidden by default (CSS opacity:0). It only shows when
+   sync is actively syncing or errored — once it lands back on "live" the
+   indicator fades out. Trust by default, surface only when interesting. */
 function setSyncing(s){
   var dot=document.getElementById('sync-dot');
   var label=document.getElementById('sync-label');
-  if(!dot)return;
+  var indicator=document.getElementById('sync-indicator');
+  if(!dot) return;
   if(s==='syncing'){
     dot.className='sync-dot syncing';
     if(label) label.textContent='Syncing…';
+    if(indicator) indicator.classList.add('is-active');
   } else if(s==='error'){
     dot.className='sync-dot error';
     if(label) label.textContent='Error';
+    if(indicator) indicator.classList.add('is-active');
   } else {
     dot.className='sync-dot';
     if(label) label.textContent='Live';
+    if(indicator) indicator.classList.remove('is-active');
   }
 }
 

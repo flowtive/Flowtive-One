@@ -40,6 +40,9 @@ function doLogin(){
   }
   showApp();
   if(_isFirst){ setTimeout(showWelcome, 600); }
+  // Ask for browser-notification permission so we can ping the user when a
+  // teammate assigns or comments on their task.
+  if(typeof requestNotificationPermission === 'function') requestNotificationPermission();
 }
 
 function doLogout(){
@@ -79,8 +82,7 @@ function doLogout(){
   claimsData = {};
   activityLog = [];
   emailOverrides = {};
-  // Fix 6: Reset activity feed pagination on logout
-  _activityShowCount = 20;
+  _activityShowCount = 10;
   document.getElementById('app').classList.add('app-hidden');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-email').value = '';

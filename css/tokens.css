@@ -29,22 +29,22 @@
   --border-strong:   #C1C9D2;
   --border-inverse:  rgba(255,255,255,0.12);
 
-  /* ── Accent (Stripe indigo) ── */
-  --accent:           #635BFF;
-  --accent-hover:     #7A73FF;
-  --accent-pressed:   #5046E5;
-  --accent-subtle:    #EFEEFF;
-  --accent-subtle-2:  #F4F3FF;
+  /* ── Accent — emerald (deep enough for white text on btns + readable on subtle bgs) ── */
+  --accent:           #10B981;
+  --accent-hover:     #059669;
+  --accent-pressed:   #047857;
+  --accent-subtle:    #D1FAE5;
+  --accent-subtle-2:  #ECFDF5;
   --accent-fg:        #FFFFFF;
-  --accent-light:     #A5A1FF;
-  --accent-ring:      rgba(99,91,255,0.18);
+  --accent-light:     #6BF0A9;          /* the inboxkit bright mint — used for highlights */
+  --accent-ring:      rgba(16,185,129,0.20);
 
-  /* ── Stripe brand gradient (used for hero, primary buttons, KPI strips) ── */
-  --gradient-brand:        linear-gradient(135deg, #635BFF 0%, #5046E5 100%);
-  --gradient-brand-soft:   linear-gradient(135deg, #7A73FF 0%, #635BFF 100%);
-  --gradient-marketing:    radial-gradient(ellipse 90% 60% at 25% 15%, rgba(99,91,255,0.18), transparent 60%),
-                            radial-gradient(ellipse 70% 50% at 80% 85%, rgba(223,27,65,0.10), transparent 60%),
-                            radial-gradient(ellipse 60% 50% at 60% 50%, rgba(255,170,0,0.08), transparent 60%);
+  /* ── Brand gradient — emerald family (used for hero, primary buttons, KPI strips) ── */
+  --gradient-brand:        linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --gradient-brand-soft:   linear-gradient(135deg, #34D399 0%, #10B981 100%);
+  --gradient-marketing:    radial-gradient(ellipse 90% 60% at 25% 15%, rgba(16,185,129,0.20), transparent 60%),
+                            radial-gradient(ellipse 70% 50% at 80% 85%, rgba(255,106,106,0.10), transparent 60%),
+                            radial-gradient(ellipse 60% 50% at 60% 50%, rgba(244,183,64,0.10), transparent 60%);
 
   /* ── Success — Stripe rich teal-green ── */
   --success:         #00A66E;
@@ -142,20 +142,20 @@
   --radius-xl:   16px;
   --radius-full: 9999px;
 
-  /* ── Shadows — slightly purple-tinted for Stripe warmth ── */
-  --shadow-xs:  0 1px 2px rgba(36,32,86,0.06);
-  --shadow-sm:  0 2px 6px rgba(36,32,86,0.08);
-  --shadow-md:  0 4px 12px rgba(36,32,86,0.10);
-  --shadow-lg:  0 8px 24px rgba(36,32,86,0.14);
-  --shadow-xl:  0 20px 60px rgba(36,32,86,0.20);
-  --shadow-inner: inset 0 1px 2px rgba(36,32,86,0.06);
+  /* ── Shadows — neutral slate (cool but not tinted by brand) ── */
+  --shadow-xs:  0 1px 2px rgba(15,23,42,0.06);
+  --shadow-sm:  0 2px 6px rgba(15,23,42,0.08);
+  --shadow-md:  0 4px 12px rgba(15,23,42,0.10);
+  --shadow-lg:  0 8px 24px rgba(15,23,42,0.14);
+  --shadow-xl:  0 20px 60px rgba(15,23,42,0.20);
+  --shadow-inner: inset 0 1px 2px rgba(15,23,42,0.06);
   --ring-accent:  0 0 0 3px var(--accent-ring);
-  --shadow-glow-brand: 0 8px 24px rgba(99,91,255,0.25);
+  --shadow-glow-brand: 0 8px 24px rgba(16,185,129,0.25);
 
   /* ── Theme-aware glow tints (used by pulses + logo mark) ── */
-  --glow-brand:    rgba(99,91,255,0.30);
-  --glow-brand-2:  rgba(99,91,255,0.30);
-  --glow-success:  rgba(0,166,110,0.18);
+  --glow-brand:    rgba(16,185,129,0.28);
+  --glow-brand-2:  rgba(16,185,129,0.28);
+  --glow-success:  rgba(16,185,129,0.18);
   --glow-warning:  rgba(255,170,0,0.20);
   --glow-danger:   rgba(223,27,65,0.20);
 
@@ -203,120 +203,123 @@
   --shadow-color: 15,15,26;
 }
 
+/* Responsive topbar height — defined alongside the variables they override */
+@media (max-width:639px){ :root{ --topbar-h:48px; } }
+@media (max-width:479px){ :root{ --topbar-h:44px; } }
+
 :root[data-theme="dark"]{
-  /* ── Surfaces — deep cool-black with stronger elevation steps ── */
-  --bg-app:        #08080D;            /* page bg — slightly deeper than surface for clear separation */
-  --bg-surface:    #14141E;            /* cards, modals (raised over page) */
-  --bg-elevated:   #1F1F2E;            /* hover / active surfaces (clearly raised over surface) */
-  --bg-subtle:     #181822;            /* gentle alternate (between app + surface) */
-  /* Inverse stays dark in dark mode — it's the "dark on top of dark" surface (login bg, topbar) */
-  --bg-inverse:    #06060B;
-  --bg-inverse-2:  #16162A;
-  --bg-overlay:    rgba(0,0,0,0.70);
-  --bg-overlay-soft: rgba(0,0,0,0.50);
+  /* ── Surfaces — inboxkit-style: clean near-black with calm elevation ── */
+  --bg-app:        #0A0B0E;            /* page bg */
+  --bg-surface:    #14171C;            /* cards, modals (raised over page) */
+  --bg-elevated:   #191D23;            /* hover / active surfaces */
+  --bg-subtle:     #0F1114;            /* gentle alternate between app + surface */
+  --bg-inverse:    #06080C;            /* login bg, topbar */
+  --bg-inverse-2:  #14171C;
+  --bg-overlay:    rgba(0,0,0,0.72);
+  --bg-overlay-soft: rgba(0,0,0,0.52);
 
-  /* ── Text — bumped contrast for clearer readability on dark surfaces ── */
-  --text-primary:    #F4F4F7;
-  --text-secondary:  #C7CCDB;
-  --text-tertiary:   #97A0B5;
-  --text-on-accent:  #FFFFFF;
-  --text-on-inverse: #13131C;
-  --text-disabled:   #4A4A5C;
+  /* ── Text — inboxkit ink ladder (calm, clean) ── */
+  --text-primary:    #F4F5F7;
+  --text-secondary:  #BFC5D2;          /* slightly brighter than inboxkit's #A9AFBB for our app's density */
+  --text-tertiary:   #8B92A0;
+  --text-on-accent:  #061510;          /* dark text on bright mint */
+  --text-on-inverse: #14171C;
+  --text-disabled:   #4A5060;
 
-  /* ── Borders — cool slate, no purple cast (matches blue accent) ── */
-  --border-default:  #2A3042;
-  --border-subtle:   #1E2330;
-  --border-strong:   #3D4458;
+  /* ── Borders — translucent white (inboxkit hallmark) ── */
+  --border-default:  rgba(255,255,255,0.08);
+  --border-subtle:   rgba(255,255,255,0.04);
+  --border-strong:   rgba(255,255,255,0.14);
   --border-inverse:  rgba(0,0,0,0.12);
 
-  /* ── Accent — cool blue (Linear-feeling) for dark contrast ── */
-  --accent:           #60A5FA;
-  --accent-hover:     #7BB6FB;
-  --accent-pressed:   #3B82F6;
-  --accent-subtle:    rgba(96,165,250,0.14);
-  --accent-subtle-2:  rgba(96,165,250,0.08);
-  --accent-fg:        #FFFFFF;
-  --accent-light:     #93C5FD;
-  --accent-ring:      rgba(96,165,250,0.50);
+  /* ── Accent — inboxkit mint green (the signature) ── */
+  --accent:           #6BF0A9;
+  --accent-hover:     #7EF5B5;
+  --accent-pressed:   #22C17E;
+  --accent-subtle:    rgba(107,240,169,0.12);
+  --accent-subtle-2:  rgba(107,240,169,0.06);
+  --accent-fg:        #061510;          /* deep green-black for max contrast on bright mint */
+  --accent-light:     #7EF5B5;
+  --accent-ring:      rgba(107,240,169,0.45);
 
-  /* ── Brand gradients re-tuned for dark (cool blue family) ── */
-  --gradient-brand:        linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-  --gradient-brand-soft:   linear-gradient(135deg, #7BB6FB 0%, #60A5FA 100%);
-  --gradient-marketing:    radial-gradient(ellipse 90% 60% at 25% 15%, rgba(96,165,250,0.22), transparent 60%),
-                            radial-gradient(ellipse 70% 50% at 80% 85%, rgba(223,27,65,0.14), transparent 60%),
-                            radial-gradient(ellipse 60% 50% at 60% 50%, rgba(255,170,0,0.10), transparent 60%);
+  /* ── Brand gradients re-tuned for dark (mint family) ── */
+  --gradient-brand:        linear-gradient(135deg, #6BF0A9 0%, #22C17E 100%);
+  --gradient-brand-soft:   linear-gradient(135deg, #7EF5B5 0%, #6BF0A9 100%);
+  --gradient-marketing:    radial-gradient(ellipse 90% 60% at 25% 15%, rgba(107,240,169,0.20), transparent 60%),
+                            radial-gradient(ellipse 70% 50% at 80% 85%, rgba(255,106,106,0.10), transparent 60%),
+                            radial-gradient(ellipse 60% 50% at 60% 50%, rgba(244,183,64,0.10), transparent 60%);
 
-  /* ── Success — Stripe teal-green dark ── */
-  --success:         #1FBF85;
-  --success-strong:  #00A66E;
-  --success-bg:      rgba(31,191,133,0.16);
-  --success-fg:      #6FE3B6;
-  --success-border:  rgba(31,191,133,0.32);
-  --success-subtle:  rgba(31,191,133,0.08);
-  --success-deep:    #1FBF85;
+  /* ── Success — slightly different mint to differentiate from accent ── */
+  --success:         #3AC284;
+  --success-strong:  #22C17E;
+  --success-bg:      rgba(58,194,132,0.14);
+  --success-fg:      #6BF0A9;
+  --success-border:  rgba(58,194,132,0.30);
+  --success-subtle:  rgba(58,194,132,0.07);
+  --success-deep:    #3AC284;
 
-  /* ── Warning — Stripe gold dark ── */
-  --warning:         #FFB930;
-  --warning-bg:      rgba(255,185,48,0.16);
-  --warning-fg:      #FFD476;
-  --warning-border:  rgba(255,185,48,0.32);
-  --warning-subtle:  rgba(255,185,48,0.08);
-  --warning-deep:    #FFB930;
-  --warning-amber-fg:#FFCB66;
-  --warning-amber-bg:rgba(255,185,48,0.16);
+  /* ── Warning — inboxkit gold ── */
+  --warning:         #F4B740;
+  --warning-bg:      rgba(244,183,64,0.16);
+  --warning-fg:      #F8CC6E;
+  --warning-border:  rgba(244,183,64,0.32);
+  --warning-subtle:  rgba(244,183,64,0.08);
+  --warning-deep:    #F4B740;
+  --warning-amber-fg:#F4B740;
+  --warning-amber-bg:rgba(244,183,64,0.16);
 
-  /* ── Danger — recognizable red for clearer destructive intent ── */
-  --danger:          #F87171;
-  --danger-strong:   #EF4444;
-  --danger-bg:       rgba(248,113,113,0.16);
-  --danger-fg:       #FCA5A5;
-  --danger-border:   rgba(248,113,113,0.32);
-  --danger-subtle:   rgba(248,113,113,0.08);
-  --danger-deep:     #F87171;
+  /* ── Danger — inboxkit coral ── */
+  --danger:          #FF6A6A;
+  --danger-strong:   #E04848;
+  --danger-bg:       rgba(255,106,106,0.16);
+  --danger-fg:       #FF8A8A;
+  --danger-border:   rgba(255,106,106,0.32);
+  --danger-subtle:   rgba(255,106,106,0.08);
+  --danger-deep:     #FF6A6A;
 
-  /* ── Info — cyan in dark mode (accent is now blue, so info stays distinct) ── */
-  --info:        #22D3EE;
-  --info-bg:     rgba(34,211,238,0.16);
-  --info-fg:     #67E8F9;
-  --info-subtle: rgba(34,211,238,0.08);
-  --info-deep:   #22D3EE;
-  --info-border: rgba(34,211,238,0.32);
+  /* ── Info — inboxkit secondary blue (distinct from mint accent) ── */
+  --info:        #5E8CFF;
+  --info-bg:     rgba(94,140,255,0.14);
+  --info-fg:     #8FB3FF;
+  --info-subtle: rgba(94,140,255,0.07);
+  --info-deep:   #5E8CFF;
+  --info-border: rgba(94,140,255,0.30);
 
   /* ── Purple/Teal ── */
-  --purple-bg:   rgba(139,92,246,0.14);
-  --purple-fg:   #C4B5FD;
-  --teal-bg:     rgba(20,184,166,0.14);
-  --teal-fg:     #5EEAD4;
+  --purple-bg:   rgba(200,127,255,0.14);
+  --purple-fg:   #D4A5FF;
+  --teal-bg:     rgba(107,240,169,0.10);
+  --teal-fg:     #7EF5B5;
 
   /* ── Outliers (dark-tuned) ── */
-  --bg-hover:        #25253A;
-  --bg-card-faint:   #14141E;
-  --bg-card-faint-2: #14141E;
-  --success-text-light: #6EE7B7;
-  --success-bg-2:    rgba(52,211,153,0.06);
-  --warning-amber:   #F59E0B;
-  --warning-amber-2: #FBBF24;
-  --warning-yellow:  #FBBF24;
-  --warning-yellow-border:rgba(251,191,36,0.30);
-  --neutral-bg:      #27272F;
-  --neutral-fg:      #A1A1AA;
-  --neutral-fg-strong:#D4D4D8;
-  --danger-border-strong:#F87171;
+  --bg-hover:        #1A1E25;
+  --bg-card-faint:   #14171C;
+  --bg-card-faint-2: #14171C;
+  --success-text-light: #7EF5B5;
+  --success-bg-2:    rgba(58,194,132,0.06);
+  --warning-amber:   #F4B740;
+  --warning-amber-2: #F8CC6E;
+  --warning-yellow:  #F4B740;
+  --warning-yellow-border:rgba(244,183,64,0.30);
+  --neutral-bg:      rgba(255,255,255,0.06);
+  --neutral-fg:      #BFC5D2;
+  --neutral-fg-strong:#E5E8EE;
+  --danger-border-strong:#FF6A6A;
 
-  /* ── Shadows — deep with subtle cool blue undertone (cohesive with palette) ── */
-  --shadow-color: 0,4,12;
-  --shadow-xs:  0 1px 2px rgba(0,4,12,0.40);
-  --shadow-sm:  0 2px 6px rgba(0,4,12,0.45);
-  --shadow-md:  0 4px 12px rgba(0,4,12,0.50);
-  --shadow-lg:  0 8px 24px rgba(0,4,12,0.60);
-  --shadow-xl:  0 24px 64px rgba(0,4,12,0.70);
-  --shadow-inner: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 1px 2px rgba(0,0,0,0.30);
-  --shadow-glow-brand: 0 8px 28px rgba(96,165,250,0.40);
+  /* ── Shadows — deep neutral black for cleanest sit-on-surface look ── */
+  --shadow-color: 0,0,0;
+  --shadow-xs:  0 1px 2px rgba(0,0,0,0.45);
+  --shadow-sm:  0 2px 6px rgba(0,0,0,0.50);
+  --shadow-md:  0 4px 14px rgba(0,0,0,0.55);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,0.60);
+  --shadow-xl:  0 24px 64px rgba(0,0,0,0.72);
+  --shadow-inner: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 1px 2px rgba(0,0,0,0.32);
+  --shadow-glow-brand: 0 8px 28px rgba(107,240,169,0.30);
 
-  /* Glow tints retuned for dark theme (matches brighter accents) */
-  --glow-brand:    rgba(96,165,250,0.40);
-  --glow-brand-2:  rgba(96,165,250,0.30);
-  --glow-success:  rgba(31,191,133,0.22);
-  --glow-warning:  rgba(255,185,48,0.22);
-  --glow-danger:   rgba(248,113,113,0.22);
+  /* Glow tints retuned for dark theme (mint accent) */
+  --glow-brand:    rgba(107,240,169,0.32);
+  --glow-brand-2:  rgba(107,240,169,0.20);
+  --glow-success:  rgba(58,194,132,0.22);
+  --glow-warning:  rgba(244,183,64,0.22);
+  --glow-danger:   rgba(255,106,106,0.22);
 }

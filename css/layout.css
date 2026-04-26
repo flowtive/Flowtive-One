@@ -57,22 +57,19 @@
 
 /* Right group */
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
-.topbar-clock{font-size:11px;color:var(--accent-light);display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap;padding:0 4px;letter-spacing:0.01em}
-.topbar-clock .clock-time{color:rgba(255,255,255,0.95);font-weight:500}
-.topbar-clock .clock-date{color:rgba(255,255,255,0.70);font-weight:400}
-.topbar-clock .clock-sep{color:rgba(255,255,255,0.40);margin:0 1px}
-.clock-btn-wrap{display:none;align-items:center}
-.clock-btn-wrap.show{display:flex}
-.clock-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:99px;border:1px solid rgba(72,187,120,0.45);background:rgba(39,174,96,0.18);color:var(--success-text-light);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.15s;font-variant-numeric:tabular-nums;white-space:nowrap}
-.clock-btn:hover{background:rgba(39,174,96,0.28);color:var(--bg-surface)}
+.clock-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:99px;border:1px solid var(--success-border);background:var(--success-bg);color:var(--success-fg);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;transition:background var(--duration-fast) var(--ease-out),border-color var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out);font-variant-numeric:tabular-nums;white-space:nowrap}
+.clock-btn:hover{background:var(--success-border);color:var(--success-deep);border-color:var(--success)}
 .clock-btn-icon{width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;flex-shrink:0}
-.clock-btn.running{border-color:rgba(231,76,60,0.5);background:rgba(231,76,60,0.18);color:var(--danger-border);animation:clkPulse 2s ease-in-out infinite}
-.clock-btn.running:hover{background:rgba(231,76,60,0.28);color:var(--bg-surface);animation:none}
+.clock-btn.running{border-color:var(--danger-border);background:var(--danger-bg);color:var(--danger-fg);animation:clkPulse 2s ease-in-out infinite}
+.clock-btn.running:hover{background:var(--danger-border);color:var(--danger-deep);border-color:var(--danger);animation:none}
 .clock-btn.running .clock-btn-icon{background:var(--danger);animation:clkDot 1.4s ease-in-out infinite}
-@keyframes clkPulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0)}50%{box-shadow:0 0 0 4px rgba(231,76,60,0.15)}}
+@keyframes clkPulse{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 4px var(--glow-danger)}}
 @keyframes clkDot{0%,100%{opacity:1}50%{opacity:0.45}}
 @media (max-width:639px){.clock-btn-label-text{display:none}.clock-btn{padding:5px 10px}}
-.sync-indicator{font-size:11px;color:rgba(255,255,255,0.80);display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-full);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);transition:background var(--duration-fast) var(--ease-out),color var(--duration-fast) var(--ease-out);cursor:default;letter-spacing:0.01em;font-weight:500}
+/* Hidden by default — JS adds .is-active when sync is syncing or errored,
+   and removes it when state is back to "live". Fades in/out smoothly. */
+.sync-indicator{font-size:11px;color:rgba(255,255,255,0.80);display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-full);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);cursor:default;letter-spacing:0.01em;font-weight:500;opacity:0;visibility:hidden;width:0;padding-left:0;padding-right:0;border-width:0;overflow:hidden;transition:opacity var(--duration-base) var(--ease-out),visibility var(--duration-base) var(--ease-out),width var(--duration-base) var(--ease-out),padding var(--duration-base) var(--ease-out),border-width var(--duration-base) var(--ease-out)}
+.sync-indicator.is-active{opacity:1;visibility:visible;width:auto;padding:4px 10px;border-width:1px}
 .sync-indicator:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85)}
 .sync-label{font-size:11px;line-height:1}
 .theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--radius-full);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.10);color:var(--bg-surface);cursor:pointer;transition:background var(--duration-fast) var(--ease-out),transform var(--duration-fast) var(--ease-out);font-family:inherit;padding:0;flex-shrink:0}
@@ -105,6 +102,11 @@
 /* ── Layout ── */
 .layout{display:flex;min-height:calc(100vh - var(--topbar-h))}
 .sidebar{width:260px;min-width:260px;background:var(--bg-surface);border-right:1px solid var(--border);padding:0;position:sticky;top:var(--topbar-h);height:calc(100vh - var(--topbar-h));overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+
+/* Sidebar footer — anchors work-tracker control to the bottom of the sidebar */
+.sid-footer{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border-subtle);background:var(--bg-surface);position:sticky;bottom:0}
+.sid-footer .clock-btn{width:100%;justify-content:center;padding:8px 12px}
+@media (max-width:639px){ .sid-footer{display:none} }
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .sid-section{padding:10px 16px 6px;font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border-subtle)}
@@ -152,7 +154,6 @@
   .search-input{padding-right:14px}
   .search-kbd{display:none}
   .sync-indicator{display:none}
-  .topbar-clock{display:none}
   .user-pill-name{display:none}
   .user-pill-chev{display:none}
   .user-pill{padding:3px}

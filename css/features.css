@@ -203,7 +203,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 /* ── Tasks ── */
 .tasks-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .tasks-search{flex:1;min-width:160px;max-width:280px;padding:7px 12px 7px 30px;border:1px solid var(--border);border-radius:99px;background:var(--bg-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='6' cy='6' r='4.5' stroke='%239CA3AF' stroke-width='1.4'/%3E%3Cpath d='M10 10l2.5 2.5' stroke='%239CA3AF' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 10px center;font-size:13px;font-family:inherit;color:var(--text);outline:none;transition:border-color 0.15s}
-.tasks-search:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(64,96,147,0.1)}
+.tasks-search:focus{border-color:var(--accent)}
 .view-toggle{display:inline-flex;background:var(--off);border:1px solid var(--border);border-radius:99px;padding:2px}
 .view-toggle button{border:none;background:transparent;padding:5px 12px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:99px;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all 0.12s}
 .view-toggle button.active{background:var(--bg-surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,0.06)}
@@ -213,10 +213,25 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .task-filter-chips button{border:1px solid var(--border);background:var(--bg-surface);color:var(--muted);padding:5px 12px;border-radius:99px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.12s}
 .task-filter-chips button.active{background:var(--blue);border-color:var(--blue);color:var(--bg-surface)}
 .task-filter-chips button:hover:not(.active){border-color:var(--blue);color:var(--blue)}
+/* Tiny count badge inside each filter chip — hint at scope without a click. */
+.chip-count{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:15px;padding:0 5px;margin-left:4px;border-radius:99px;background:var(--off);color:var(--muted);font-size:10px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;transition:background 0.12s,color 0.12s}
+.task-filter-chips button.active .chip-count{background:rgba(255,255,255,0.22);color:var(--bg-surface)}
+.task-filter-chips button:hover:not(.active) .chip-count{background:var(--accent-subtle);color:var(--blue)}
 .btn-new-task{display:inline-flex;align-items:center;gap:5px;background:var(--gradient-brand);color:var(--text-on-accent);border:none;padding:7px 14px;border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out),filter var(--duration-fast) var(--ease-out);margin-left:auto;box-shadow:var(--shadow-glow-brand);letter-spacing:0.01em}
-.btn-new-task:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 10px 24px rgba(99,91,255,0.32)}
+.btn-new-task:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 10px 24px rgba(16,185,129,0.32)}
 .btn-new-task:active{transform:translateY(0);filter:brightness(0.98)}
 .btn-new-task svg{width:13px;height:13px}
+
+/* Quick-add row — type + Enter creates a task. Sits between toolbar and list. */
+.task-quick-add{display:flex;align-items:center;gap:10px;padding:9px 14px;margin-bottom:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color 0.15s, box-shadow 0.15s, background 0.15s}
+.task-quick-add:focus-within{border-color:var(--accent);background:var(--bg-elevated)}
+.task-quick-add-icon{width:14px;height:14px;color:var(--hint);flex-shrink:0;transition:color 0.15s}
+.task-quick-add:focus-within .task-quick-add-icon{color:var(--accent)}
+.task-quick-add-input{flex:1;border:none;background:transparent;outline:none;font-family:inherit;font-size:13px;color:var(--text);padding:0}
+.task-quick-add-input::placeholder{color:var(--hint)}
+.task-quick-add-hint{font-family:inherit;font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:4px;padding:2px 6px;letter-spacing:0.02em;opacity:0;transition:opacity 0.15s}
+.task-quick-add:focus-within .task-quick-add-hint{opacity:1}
+@media (max-width:639px){.task-quick-add{padding:8px 10px;gap:8px}.task-quick-add-hint{display:none}}
 
 /* Task list (table) view */
 .task-list{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
@@ -232,8 +247,10 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .task-cb:hover{border-color:var(--blue)}
 .task-cb.on{background:var(--success);border-color:var(--success)}
 .task-cb.on::after{content:'';width:8px;height:5px;border-left:2px solid var(--bg-surface);border-bottom:2px solid var(--bg-surface);transform:rotate(-45deg) translate(1px,-1px);display:block}
-.task-title{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-title{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
 .task-title-sub{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Inline title editor — replaces .task-title or .kanban-card-title in place. */
+.task-title-inline-edit{font-family:inherit;font-size:13px;font-weight:500;color:var(--text);width:100%;padding:4px 8px;border:1px solid var(--accent);border-radius:5px;background:var(--bg-elevated);outline:none;box-shadow:0 0 0 2px var(--accent-subtle)}
 .task-row-actions{display:flex;align-items:center;justify-content:center;padding:0!important}
 .task-row-actions button{background:none;border:none;padding:4px;cursor:pointer;color:var(--hint);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .task-row-actions button:hover{background:var(--off);color:var(--text)}
@@ -256,7 +273,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .status-pill.s-done{background:var(--success-bg);color:var(--success-fg)}.status-pill.s-done::before{background:var(--success-strong)}
 
 /* Priority pills */
-.priority-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:0.03em}
+.priority-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:0.03em;cursor:default}
 .priority-pill.p-low{background:var(--bg-app);color:var(--text-secondary)}
 .priority-pill.p-medium{background:var(--info-bg);color:var(--info-fg)}
 .priority-pill.p-high{background:var(--warning-border);color:var(--warning-fg)}
@@ -266,6 +283,11 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .task-due{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .task-due.overdue{color:var(--danger-strong);font-weight:600}
 .task-due.today{color:var(--warning-amber-2);font-weight:600}
+/* Empty-state "Set date" placeholder — looks like a quiet, dashed pill */
+.task-due-empty{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;border:1px dashed var(--border);color:var(--hint);font-style:italic}
+.task-due-empty:hover{border-style:solid;border-color:var(--accent);color:var(--accent);font-style:normal}
+.task-due.clickable:not(.task-due-empty){padding:2px 8px;border-radius:4px;background:transparent}
+.task-due.clickable:not(.task-due-empty):hover{background:var(--bg-elevated)}
 
 /* Assignee chip */
 .task-assignee{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text)}
@@ -273,6 +295,43 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .task-assignee .av-mini img{width:100%;height:100%;object-fit:cover;display:block}
 .task-assignee.unassigned{color:var(--hint);font-style:italic}
 .task-assignee.unassigned .av-mini{background:var(--neutral-bg);color:var(--text-tertiary);font-style:normal}
+
+/* .clickable — applied to status/priority pills + assignee chips that open
+   an inline picker. Subtle hover lift cues that the chip is interactive. */
+.clickable{cursor:pointer;transition:filter 0.12s,transform 0.12s,box-shadow 0.12s,background 0.12s}
+.clickable:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 1px 4px rgba(15,15,26,0.10)}
+.clickable:active{transform:translateY(0);filter:brightness(0.98)}
+/* Empty avatar placeholder on kanban cards (when assignee is null) */
+.av-mini.av-empty{background:var(--off);color:var(--hint);border:1px dashed var(--border);font-weight:500;font-size:12px}
+.av-mini.av-empty:hover{border-style:solid;border-color:var(--accent);color:var(--accent)}
+
+/* Inline picker — shared popover used by status / priority / assignee */
+.inline-picker{position:absolute;z-index:1900;min-width:160px;max-width:280px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 12px 32px rgba(15,15,26,0.18),0 2px 6px rgba(15,15,26,0.08);padding:4px;opacity:0;transform:translateY(-4px) scale(0.98);transform-origin:top left;transition:opacity 0.12s var(--ease-out),transform 0.12s var(--ease-out)}
+.inline-picker.show{opacity:1;transform:translateY(0) scale(1)}
+.inline-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:none;background:transparent;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;transition:background 0.1s}
+.inline-picker-item:hover{background:var(--bg-elevated)}
+.inline-picker-item.active{background:var(--accent-subtle)}
+.inline-picker-item.active::after{content:'✓';margin-left:auto;color:var(--accent);font-weight:700;font-size:12px}
+/* Assignee row inside picker */
+.ip-assignee{display:inline-flex;align-items:center;gap:8px}
+.ip-assignee .av-mini{width:22px;height:22px;border-radius:50%;font-size:9px;font-weight:700;color:var(--bg-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.ip-assignee .av-mini img{width:100%;height:100%;object-fit:cover;display:block}
+.ip-av-empty{background:var(--off)!important;color:var(--hint)!important;border:1px dashed var(--border)}
+.ip-name{font-size:12.5px;color:var(--text)}
+.ip-name-muted{color:var(--muted);font-style:italic}
+
+/* Due-date picker variant — slightly wider, with preset-date subtitle + custom input + clear */
+.due-picker{min-width:200px}
+.due-preset-label{font-size:12.5px;color:var(--text);font-weight:500;flex:1}
+.due-preset-date{font-size:11px;color:var(--hint);margin-left:auto;font-variant-numeric:tabular-nums}
+.inline-picker-divider{height:1px;background:var(--border);margin:4px 6px}
+.due-picker-input-row{display:flex;align-items:center;gap:8px;padding:6px 8px}
+.due-picker-label{font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;flex-shrink:0}
+.due-picker-date{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;outline:none;color-scheme:light dark;transition:border-color 0.12s}
+.due-picker-date:focus{border-color:var(--accent)}
+.due-picker-clear{color:var(--danger-strong)!important;margin-top:2px}
+.due-picker-clear svg{width:11px;height:11px;color:var(--danger-strong)}
+.due-picker-clear:hover{background:var(--danger-bg)!important}
 
 /* Empty state */
 .task-empty{padding:48px 20px;text-align:center;color:var(--muted)}
@@ -294,34 +353,148 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .kanban-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;cursor:grab;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out),border-color var(--duration-fast) var(--ease-out),background var(--duration-fast) var(--ease-out);display:flex;flex-direction:column;gap:6px;will-change:transform}
 .kanban-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);transform:translateY(-1px);background:var(--bg-elevated)}
 .kanban-card.dragging{opacity:0.4;cursor:grabbing}
-.kanban-card-title{font-size:12.5px;font-weight:500;color:var(--text);line-height:1.4}
+.kanban-card-title{font-size:12.5px;font-weight:500;color:var(--text);line-height:1.4;cursor:text}
 .kanban-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
 .kanban-card-meta .av-mini{width:18px;height:18px;border-radius:50%;font-size:7px;font-weight:700;color:var(--bg-surface);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;margin-left:auto}
 .kanban-card-meta .av-mini img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* Task detail drawer (slide-out) */
-.tdrawer-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.4);z-index:1500;opacity:0;pointer-events:none;transition:opacity 0.2s}
+/* ── Task drawer (ClickUp-style centered modal) ──
+   Edit mode: large modal with main column + activity sidebar.
+   New-task mode: same modal shell, single column, footer with Create button. */
+.tdrawer-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);backdrop-filter:blur(2px);z-index:1500;opacity:0;pointer-events:none;transition:opacity 0.18s var(--ease-out)}
 .tdrawer-backdrop.show{opacity:1;pointer-events:auto}
-.tdrawer{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--bg-surface);border-left:1px solid var(--border);z-index:1600;transform:translateX(100%);transition:transform var(--duration-slow) var(--ease-out);display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(15,15,26,0.10)}
-.tdrawer.show{transform:translateX(0)}
-.tdrawer-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
-.tdrawer-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;padding:2px 8px;border-radius:6px;font-family:inherit;margin-left:auto}
+.tdrawer{position:fixed;top:50%;left:50%;width:min(820px,92vw);max-height:88vh;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:1600;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(15,15,26,0.32),0 4px 16px rgba(15,15,26,0.12);opacity:0;pointer-events:none;transform:translate(-50%,-48%) scale(0.97);transition:opacity 0.2s var(--ease-out),transform 0.2s var(--ease-out)}
+.tdrawer.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+
+.tdrawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-surface)}
+.tdrawer-head-left,.tdrawer-head-right{display:flex;align-items:center;gap:6px}
+.tdrawer-type-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--off);border:1px solid var(--border);border-radius:6px;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:0.01em}
+.tdrawer-type-badge svg{width:12px;height:12px;color:var(--accent)}
+.tdrawer-icon-btn{background:none;border:none;cursor:pointer;color:var(--hint);padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all 0.12s}
+.tdrawer-icon-btn:hover{background:var(--off);color:var(--danger-strong)}
+.tdrawer-icon-btn svg{width:14px;height:14px}
+.tdrawer-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;padding:2px 10px;border-radius:6px;font-family:inherit;transition:all 0.12s}
 .tdrawer-close:hover{background:var(--off);color:var(--text)}
-.tdrawer-body{padding:18px 22px;overflow-y:auto;flex:1}
-.tdrawer-foot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:var(--bg-subtle)}
-.tdrawer-foot button{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.12s}
-.tdrawer-foot button:hover{background:var(--off)}
-.tdrawer-foot .save{background:var(--blue);border-color:var(--blue);color:var(--bg-surface);margin-left:auto}
-.tdrawer-foot .save:hover{background:var(--accent-hover)}
-.tdrawer-foot .delete{color:var(--danger-strong);border-color:var(--danger-border)}
-.tdrawer-foot .delete:hover{background:var(--danger-subtle);color:var(--danger-fg);border-color:var(--danger-border-strong)}
+
+.tdrawer-body{display:flex;flex:1;overflow:hidden;min-height:0}
+.tdrawer-main{flex:1;padding:24px 32px 28px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* Title — looks like an editable heading */
+.tdrawer-title{font-size:24px;font-weight:700;color:var(--text);border:1px solid transparent;background:transparent;outline:none;font-family:inherit;padding:8px 10px;margin:-8px -10px 0;border-radius:8px;width:calc(100% + 20px);letter-spacing:-0.02em;transition:background 0.12s,border-color 0.12s}
+.tdrawer-title::placeholder{color:var(--hint);font-weight:600}
+.tdrawer-title:hover{background:var(--bg-elevated)}
+.tdrawer-title:focus{background:var(--bg-elevated);border-color:var(--accent)}
+
+/* Fact rows — Status, Assignee, Due, Priority */
+.td-facts{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.td-fact{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:14px;padding:6px 8px;border-radius:6px;transition:background 0.12s;min-height:34px}
+.td-fact:hover{background:var(--bg-elevated)}
+.td-fact-label{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--hint);font-weight:500}
+.td-fact-label svg{width:13px;height:13px;flex-shrink:0}
+.td-fact-value{display:inline-flex;align-items:center;font-size:13px;color:var(--text);min-width:0}
+
+/* Section title within main column */
+.tdrawer-section-title-h{display:block;font-size:11px;font-weight:700;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+
+/* Description textarea — bigger, more breathing room than form fields */
+.tdrawer-desc{min-height:120px;line-height:1.6;font-size:13.5px;padding:12px 14px;border-radius:8px}
+
+/* Rich-text editor (replaces plain textarea for description) */
+.td-rich-toolbar{display:flex;align-items:center;gap:2px;padding:6px;background:var(--bg-elevated);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;flex-wrap:wrap}
+.td-rich-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:transparent;border:none;border-radius:5px;cursor:pointer;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;transition:all 0.1s;padding:0}
+.td-rich-btn b,.td-rich-btn i,.td-rich-btn u{font-size:12px}
+.td-rich-btn svg{width:13px;height:13px}
+.td-rich-btn:hover{background:var(--bg-surface);color:var(--text)}
+.td-rich-btn:active{transform:scale(0.94)}
+.td-rich-sep{width:1px;height:16px;background:var(--border);margin:0 4px}
+.td-rich-editor{border-top-left-radius:0;border-top-right-radius:0;outline:none;cursor:text;overflow-y:auto;max-height:280px}
+.td-rich-editor:empty::before,.td-rich-editor.is-empty::before{content:attr(data-placeholder);color:var(--hint);pointer-events:none}
+.td-rich-editor p{margin:0 0 8px}
+.td-rich-editor ul,.td-rich-editor ol{margin:0 0 8px;padding-left:22px}
+.td-rich-editor li{margin-bottom:2px}
+.td-rich-editor a{color:var(--blue);text-decoration:underline}
+.td-rich-editor strong,.td-rich-editor b{font-weight:700}
+.td-rich-editor em,.td-rich-editor i{font-style:italic}
+
+/* ── Cmd+K palette ────────────────────────────────────────────────
+   Centered top-third popover with search + result list. */
+.pal-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);backdrop-filter:blur(2px);z-index:2400;opacity:0;pointer-events:none;transition:opacity 0.16s var(--ease-out)}
+.pal-backdrop.show{opacity:1;pointer-events:auto}
+.pal-panel{position:fixed;top:14vh;left:50%;width:min(640px,92vw);background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 30px 80px rgba(15,15,26,0.32),0 4px 16px rgba(15,15,26,0.12);z-index:2500;opacity:0;transform:translate(-50%,-8px) scale(0.97);transition:opacity 0.16s var(--ease-out),transform 0.16s var(--ease-out);pointer-events:none;display:flex;flex-direction:column;overflow:hidden;max-height:70vh}
+.pal-panel.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+.pal-input-wrap{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pal-search-ico{width:14px;height:14px;color:var(--hint);flex-shrink:0}
+.pal-input{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:15px;color:var(--text);padding:0}
+.pal-input::placeholder{color:var(--hint)}
+.pal-esc{font-family:inherit;font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:4px;padding:2px 6px;letter-spacing:0.04em}
+.pal-results{flex:1;overflow-y:auto;padding:6px;min-height:0}
+.pal-result{display:flex;align-items:center;gap:12px;width:100%;padding:8px 10px;background:transparent;border:none;border-radius:7px;cursor:pointer;font-family:inherit;text-align:left;color:var(--text);transition:background 0.08s}
+.pal-result:hover,.pal-result.selected{background:var(--bg-elevated)}
+.pal-result.selected{background:var(--accent-subtle)}
+.pal-result-ico{width:28px;height:28px;border-radius:6px;background:var(--off);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);overflow:hidden}
+.pal-result-ico svg{width:14px;height:14px}
+.pal-result-ico img{width:100%;height:100%;object-fit:cover;display:block}
+.pal-av-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--bg-surface);font-size:10px;font-weight:700}
+.pal-ico-task{color:var(--accent)}
+.pal-ico-email{color:var(--blue)}
+.pal-ico-action{color:var(--muted)}
+.pal-result-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.pal-result-label{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-result-hint{font-size:11px;color:var(--hint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pal-result-type{font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;background:var(--off);border:1px solid var(--border);border-radius:99px;padding:2px 8px;flex-shrink:0}
+.pal-result.selected .pal-result-type{background:var(--bg-surface)}
+.pal-empty{padding:32px 16px;text-align:center;color:var(--hint);font-size:12.5px;font-style:italic}
+.pal-foot{display:flex;align-items:center;gap:14px;padding:8px 14px;border-top:1px solid var(--border);background:var(--bg-app);flex-shrink:0}
+.pal-foot-hint{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--hint)}
+.pal-foot-hint kbd{font-family:inherit;font-size:9.5px;font-weight:600;color:var(--muted);background:var(--bg-surface);border:1px solid var(--border);border-radius:3px;padding:1px 5px;line-height:1}
+@media (max-width:639px){
+  .pal-panel{top:0;left:0;width:100vw;max-height:100vh;border-radius:0;border:none;transform:translateY(-8px) scale(0.98)}
+  .pal-panel.show{transform:translateY(0) scale(1)}
+  .pal-foot{display:none}
+}
+
+/* Recurrence pill (used in modal fact row) + small recurring icon in row title */
+.recurrence-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:500;background:var(--accent-subtle);color:var(--accent);border:1px solid transparent;font-family:inherit}
+.recurrence-pill svg{width:11px;height:11px}
+.recurrence-pill-empty{background:transparent;color:var(--hint);border:1px dashed var(--border);font-style:italic}
+.recurrence-pill-empty:hover{border-style:solid;border-color:var(--accent);color:var(--accent);font-style:normal}
+.task-recurring-ico{display:inline-flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;cursor:default}
+.task-recurring-ico svg{width:11px;height:11px}
+/* Recurrence picker rows */
+.ip-recur{display:inline-flex;align-items:center;gap:8px}
+.ip-recur svg{width:11px;height:11px;color:var(--muted);flex-shrink:0}
+
+
+/* Form fields used in new-task mode */
 .tdrawer-field{margin-bottom:14px}
 .tdrawer-label{display:block;font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
 .tdrawer-input,.tdrawer-textarea,.tdrawer-select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:var(--bg-surface);font-family:inherit;outline:none;transition:border-color 0.15s}
 .tdrawer-textarea{min-height:80px;resize:vertical;line-height:1.5}
-.tdrawer-input:focus,.tdrawer-textarea:focus,.tdrawer-select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(64,96,147,0.1)}
+.tdrawer-input:focus,.tdrawer-textarea:focus,.tdrawer-select:focus{border-color:var(--accent)}
 .tdrawer-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tdrawer-meta{font-size:11px;color:var(--hint);margin-top:18px;padding-top:14px;border-top:1px dashed var(--border)}
+
+/* Footer (new-task mode only) */
+.tdrawer-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:var(--bg-app);flex-shrink:0}
+.tdrawer-btn{padding:8px 18px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-size:13px;font-weight:500;color:var(--text);cursor:pointer;font-family:inherit;transition:all 0.12s}
+.tdrawer-btn:hover{background:var(--off)}
+.tdrawer-btn-cancel{color:var(--muted)}
+.tdrawer-btn-save{background:var(--blue);border-color:var(--blue);color:var(--bg-surface);font-weight:600}
+.tdrawer-btn-save:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+
+.tdrawer-meta{font-size:11px;color:var(--hint);margin-top:auto;padding-top:14px;border-top:1px dashed var(--border)}
+
+/* Responsive */
+@media (max-width:899px){
+  .tdrawer{width:96vw;max-height:92vh}
+  .tdrawer-main{padding:18px 20px 22px}
+}
+@media (max-width:639px){
+  .tdrawer{width:100vw;height:100vh;max-height:none;border-radius:0;border:none;top:0;left:0;transform:none}
+  .tdrawer.show{transform:none}
+  .tdrawer-title{font-size:20px}
+  .td-fact{grid-template-columns:110px 1fr}
+}
 
 /* Task activity badges */
 .act-task-create{background:var(--accent-subtle);color:var(--accent)}
@@ -329,10 +502,148 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .act-task-complete{background:var(--success-bg);color:var(--success-fg)}
 .act-task-assign{background:var(--warning-bg);color:var(--warning-fg)}
 .act-task-delete{background:var(--danger-bg);color:var(--danger-fg)}
+.act-task-comment{background:var(--info-bg);color:var(--info-fg)}
 
 /* Sidebar Tasks count badge */
 .sid-tasks-count{margin-left:auto;font-size:10px;font-weight:600;color:var(--bg-surface);background:var(--blue);padding:1px 7px;border-radius:99px;display:inline-block}
 .sid-tasks-count.zero{display:none}
+
+/* ── ftConfirm — branded confirmation modal (replaces native confirm dialog).
+   Used by task delete and any future destructive action. Centered, focus-trapped
+   by virtue of being the only thing the user can interact with while open. */
+.ftc-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.5);backdrop-filter:blur(2px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.18s var(--ease-out)}
+.ftc-backdrop.show{opacity:1;pointer-events:auto}
+.ftc-modal{width:min(420px,calc(100vw - 32px));background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 24px 60px rgba(15,15,26,0.28),0 2px 8px rgba(15,15,26,0.10);padding:22px 24px 18px;transform:translateY(8px) scale(0.98);transition:transform 0.18s var(--ease-out)}
+.ftc-backdrop.show .ftc-modal{transform:translateY(0) scale(1)}
+.ftc-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;letter-spacing:-0.01em}
+.ftc-message{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px}
+.ftc-actions{display:flex;justify-content:flex-end;gap:8px}
+.ftc-btn{padding:7px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-family:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;transition:all 0.12s}
+.ftc-btn:hover{background:var(--off)}
+.ftc-cancel{color:var(--muted)}
+.ftc-primary{background:var(--blue);border-color:var(--blue);color:var(--bg-surface)}
+.ftc-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.ftc-danger{background:var(--danger-strong);border-color:var(--danger-strong);color:#fff}
+.ftc-danger:hover{filter:brightness(1.08)}
+
+/* ── Phase 2 controls ─────────────────────────────────────────────── */
+
+/* Sort dropdown — sits inline in the toolbar between filter chips and view toggle */
+.task-sort{position:relative;display:inline-flex;align-items:center}
+.task-sort select{appearance:none;-webkit-appearance:none;font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);background:var(--bg-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%239CA3AF' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid var(--border);border-radius:99px;padding:6px 26px 6px 12px;cursor:pointer;outline:none;transition:all 0.12s}
+.task-sort select:hover{border-color:var(--accent);color:var(--text)}
+.task-sort select:focus{border-color:var(--accent)}
+
+/* Group toggle button (list view only) */
+.task-group-btn{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);background:var(--bg-surface);border:1px solid var(--border);border-radius:99px;padding:6px 12px;cursor:pointer;transition:all 0.12s}
+.task-group-btn svg{width:13px;height:13px}
+.task-group-btn:hover{color:var(--text);border-color:var(--accent)}
+.task-group-btn.active{background:var(--accent-subtle);color:var(--blue);border-color:var(--blue)}
+
+/* Date-grouped list — each bucket gets a label + count, then the normal list */
+.task-group{margin-bottom:18px}
+.task-group:last-child{margin-bottom:0}
+.task-group-head{display:flex;align-items:center;gap:8px;padding:6px 4px;margin-bottom:6px}
+.task-group-name{font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em}
+.task-group-count{font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px}
+.task-group.g-overdue .task-group-name{color:var(--danger-strong)}
+.task-group.g-today   .task-group-name{color:var(--warning-amber-2)}
+.task-group.g-done    .task-group-name{color:var(--hint)}
+
+/* Subtask progress badge — shown inside .task-title-row and on .kanban-card-meta */
+.task-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.task-title-row .task-title{flex:1;min-width:0}
+.subtask-progress{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--muted);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.subtask-progress svg{width:11px;height:11px;color:var(--hint)}
+.subtask-progress.complete{background:var(--success-bg);color:var(--success-fg);border-color:var(--success-bg)}
+.subtask-progress.complete svg{color:var(--success-strong)}
+.kanban-card-meta .subtask-progress{font-size:10px;padding:1px 6px}
+
+/* Per-task time pill — clickable Start/Stop button doubling as the live total.
+   Hidden entirely until the task has tracked time or is currently running. */
+.task-time-pill{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--muted);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px;flex-shrink:0;font-variant-numeric:tabular-nums;cursor:pointer;transition:all 0.12s;font-family:inherit}
+.task-time-pill svg{width:10px;height:10px;color:var(--hint);transition:color 0.12s}
+.task-time-pill:hover{color:var(--text);border-color:var(--accent)}
+.task-time-pill:hover svg{color:var(--accent)}
+.task-time-pill.running{background:var(--success-bg);color:var(--success-fg);border-color:var(--success-strong)}
+.task-time-pill.running svg{color:var(--success-strong);animation:timePillPulse 1.4s ease-in-out infinite}
+.task-time-pill.running:hover{filter:brightness(1.05)}
+/* Empty state — subtle until hovered/row-hovered, so untracked rows stay quiet. */
+.task-time-pill.empty{opacity:0.45;border-style:dashed}
+.task-row:hover .task-time-pill.empty,.kanban-card:hover .task-time-pill.empty,.task-time-pill.empty:hover{opacity:1;border-style:solid}
+@keyframes timePillPulse{0%,100%{opacity:1}50%{opacity:0.45}}
+.kanban-card-meta .task-time-pill{font-size:10px;padding:1px 6px}
+
+/* Time tracking section in modal */
+.time-total{font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.time-controls{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.time-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text);transition:all 0.12s}
+.time-btn svg{width:12px;height:12px}
+.time-btn-start{background:var(--accent);border-color:var(--accent);color:var(--text-on-accent)}
+.time-btn-start:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.25)}
+.time-btn-stop{background:var(--danger-strong);border-color:var(--danger-strong);color:#fff}
+.time-btn-stop:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 12px rgba(192,21,58,0.25)}
+.time-btn:active{transform:translateY(0)}
+
+/* "Tracking now" badge to the right of Stop button */
+.time-running-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--success-fg);background:var(--success-bg);border:1px solid var(--success-strong);border-radius:99px;padding:3px 10px}
+.time-running-dot{width:6px;height:6px;border-radius:50%;background:var(--success-strong);animation:timePillPulse 1.4s ease-in-out infinite}
+
+/* Heads-up: another teammate is tracking this task right now */
+.time-others{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:12px;background:var(--info-bg);border:1px solid var(--info-bg);border-radius:6px;font-size:11.5px;color:var(--info-fg);font-weight:500}
+.time-others svg{width:13px;height:13px;flex-shrink:0;color:var(--info)}
+
+/* Per-user time breakdown list */
+.time-user-list{display:flex;flex-direction:column;gap:4px}
+.time-user-row{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--bg-elevated);border-radius:6px;font-size:12.5px}
+.time-user-av{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--bg-surface);overflow:hidden}
+.time-user-av img{width:100%;height:100%;object-fit:cover;display:block}
+.time-user-name{color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time-user-dur{color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+/* Drawer sections (subtasks + comments) */
+.tdrawer-section{margin-top:18px;padding-top:14px;border-top:1px dashed var(--border)}
+.tdrawer-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tdrawer-section-title{font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;display:inline-flex;align-items:center;gap:8px}
+.tdrawer-section-count{font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+
+/* Subtasks list inside drawer */
+.subtask-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.subtask-item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;background:var(--bg-elevated);transition:background 0.12s}
+.subtask-item:hover{background:var(--off)}
+.subtask-text{flex:1;font-size:12.5px;color:var(--text);line-height:1.4;word-break:break-word}
+.subtask-item.done .subtask-text{text-decoration:line-through;color:var(--hint)}
+.subtask-del{background:none;border:none;cursor:pointer;color:var(--hint);padding:2px;display:flex;align-items:center;justify-content:center;border-radius:4px;opacity:0;transition:all 0.12s;font-family:inherit}
+.subtask-item:hover .subtask-del{opacity:1}
+.subtask-del:hover{background:var(--danger-bg);color:var(--danger-strong)}
+.subtask-del svg{width:11px;height:11px}
+.subtask-add{display:flex;gap:6px;align-items:center}
+.subtask-add-input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-surface);color:var(--text);font-size:12.5px;font-family:inherit;outline:none;transition:border-color 0.15s}
+.subtask-add-input:focus{border-color:var(--accent)}
+.subtask-add-input::placeholder{color:var(--hint)}
+.subtask-add-btn{padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all 0.12s}
+.subtask-add-btn:hover{background:var(--blue);border-color:var(--blue);color:var(--bg-surface)}
+
+/* Comments list inside drawer */
+/* Comments list inside drawer */
+.comment-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.comment-item{display:flex;gap:10px;align-items:flex-start}
+.comment-av{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--bg-surface);overflow:hidden;margin-top:1px}
+.comment-av img{width:100%;height:100%;object-fit:cover;display:block}
+.comment-body{flex:1;min-width:0}
+.comment-meta{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:2px}
+.comment-author{font-weight:600;color:var(--text)}
+.comment-time{color:var(--hint)}
+.comment-del{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--hint);font-size:14px;line-height:1;padding:0 4px;border-radius:4px;font-family:inherit;opacity:0;transition:all 0.12s}
+.comment-item:hover .comment-del{opacity:1}
+.comment-del:hover{background:var(--danger-bg);color:var(--danger-strong)}
+.comment-text{font-size:12.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.comment-add{display:flex;flex-direction:column;gap:6px}
+.comment-add-input{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-surface);color:var(--text);font-size:12.5px;font-family:inherit;outline:none;resize:vertical;min-height:60px;line-height:1.5;transition:border-color 0.15s}
+.comment-add-input:focus{border-color:var(--accent)}
+.comment-add-input::placeholder{color:var(--hint)}
+.comment-add-btn{align-self:flex-end;padding:6px 14px;border-radius:6px;border:1px solid var(--blue);background:var(--blue);color:var(--bg-surface);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.12s}
+.comment-add-btn:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
 
 /* Tasks panel responsive */
 @media (max-width:639px){
@@ -340,6 +651,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
   .tasks-search{max-width:none}
   .btn-new-task{margin-left:0;flex:1;justify-content:center}
   .view-toggle{order:-1;width:100%;justify-content:center}
+  .task-sort,.task-group-btn{flex:1;justify-content:center}
 }
 
 /* ── Weekly Chart ── */
@@ -459,8 +771,8 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .gr-btn:hover{background:rgba(255,255,255,0.15)}
 .gr-btn svg{width:12px;height:12px}
 
-.email-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
-.email-modal{background:var(--bg-surface);border-radius:var(--radius-lg);width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-xl)}
+.email-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);backdrop-filter:blur(2px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.email-modal{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:min(820px,92vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(15,15,26,0.32),0 4px 16px rgba(15,15,26,0.12)}
 .email-modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;flex-shrink:0}
 .email-modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
 .email-modal-sub{font-size:12px;color:var(--muted)}
@@ -470,20 +782,26 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .email-modal-back:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
 .email-modal-back svg{flex-shrink:0}
 @media (max-width:479px){ .email-modal-back span{display:none} .email-modal-back{padding:6px 8px} }
+/* Stacked head variant — back button row on top, titles row below */
+.email-modal-head-stacked{flex-direction:column;align-items:stretch;gap:10px}
+.email-modal-head-stacked .email-modal-back{margin-right:0}
+.email-modal-head-top{display:flex;align-items:center;gap:8px;min-height:24px}
+.email-modal-head-top .email-modal-close{margin-left:auto}
+.email-modal-titles{min-width:0}
 /* Cross-fade swap between email library and per-industry detail */
-.email-modal.xfade-out{opacity:0;transform:translateY(-8px);transition:opacity 0.22s ease, transform 0.22s ease;pointer-events:none}
-.email-modal.xfade-in{animation:xFadeIn 0.22s ease both}
-@keyframes xFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.email-backdrop.swap-bg-transparent{background:transparent}
-/* Enter / exit animations — `both` fill mode so first frame is already at `from` state (no flash) */
-.email-backdrop.em-entering{animation:emBdIn 0.2s ease both}
-.email-backdrop.em-exiting{animation:emBdOut 0.18s ease both;pointer-events:none}
-.email-backdrop.em-entering .email-modal{animation:emModalIn 0.22s ease both}
-.email-backdrop.em-exiting .email-modal{animation:emModalOut 0.18s ease both}
+.email-modal.xfade-out{opacity:0;transform:translateY(-6px) scale(0.97);transition:opacity 0.22s var(--ease-out),transform 0.22s var(--ease-out);pointer-events:none}
+.email-modal.xfade-in{animation:xFadeIn 0.22s var(--ease-out) both}
+@keyframes xFadeIn{from{opacity:0;transform:translateY(8px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.email-backdrop.swap-bg-transparent{background:transparent;backdrop-filter:none}
+/* Enter / exit animations — match task popup's gentle scale-in */
+.email-backdrop.em-entering{animation:emBdIn 0.18s var(--ease-out) both}
+.email-backdrop.em-exiting{animation:emBdOut 0.18s var(--ease-out) both;pointer-events:none}
+.email-backdrop.em-entering .email-modal{animation:emModalIn 0.2s var(--ease-out) both}
+.email-backdrop.em-exiting .email-modal{animation:emModalOut 0.18s var(--ease-out) both}
 @keyframes emBdIn{from{opacity:0}to{opacity:1}}
 @keyframes emBdOut{from{opacity:1}to{opacity:0}}
-@keyframes emModalIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes emModalOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-6px)}}
+@keyframes emModalIn{from{opacity:0;transform:translateY(8px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes emModalOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-6px) scale(0.97)}}
 .email-modal-body{overflow-y:auto;padding:18px 20px;background:var(--bg-card-faint-2)}
 .email-timeline{position:relative;padding-left:22px}
 .email-timeline::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--border);border-radius:2px}
@@ -519,9 +837,9 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .email-edit:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
 .email-edit svg{width:11px;height:11px}
 .email-edit-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;font-family:inherit;color:var(--text);outline:none;background:var(--bg-surface)}
-.email-edit-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(64,96,147,0.1)}
+.email-edit-input:focus{border-color:var(--accent)}
 .email-edit-textarea{width:100%;min-height:180px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.55;font-family:inherit;color:var(--text);outline:none;resize:vertical;background:var(--bg-surface)}
-.email-edit-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(64,96,147,0.1)}
+.email-edit-textarea:focus{border-color:var(--accent)}
 .email-edit-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
 .email-edit-save{padding:7px 14px;border-radius:6px;background:var(--blue);color:var(--bg-surface);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .email-edit-save:hover{background:var(--accent-hover)}
@@ -575,7 +893,8 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .gr-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 
 @media (max-width:639px){
-  .email-modal{max-width:100%;max-height:100vh;border-radius:0}
+  .email-modal{max-width:100%;max-height:100vh;border-radius:0;border:none}
+  .email-backdrop{padding:0}
   .email-modal-body{padding:14px}
   .email-card{padding:12px 14px}
   .email-copy{padding:5px 10px}

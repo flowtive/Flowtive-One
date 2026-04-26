@@ -1,14 +1,11 @@
 /* Flowtive One — Topbar live clock + work-time tracker (clock in/out) */
 
-/* ── Topbar clock ── */
+/* ── Per-second tick — drives the live elapsed time on Stop Work buttons ──
+   (Topbar live clock was removed in favour of relying on the OS clock; this
+    interval just keeps the work-timer pill label updating in real time.) */
 var _clockInterval = null;
 var _clockTimeout = null;
 function tickClock(){
-  var d = new Date();
-  var dateEl = document.getElementById('clock-date');
-  var timeEl = document.getElementById('clock-time');
-  if(dateEl) dateEl.textContent = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
-  if(timeEl) timeEl.textContent = d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit', second:'2-digit'});
   if(typeof tickClockUI === 'function') tickClockUI();
 }
 function startClock(){
@@ -127,23 +124,22 @@ function autoCloseStaleOwnSession(){
 }
 
 function renderClockButton(){
-  var wrap = document.getElementById('clock-btn-wrap');
-  var btn  = document.getElementById('clock-btn');
-  if(!wrap || !btn) return;
-  if(!currentUser){ wrap.classList.remove('show'); return; }
-  wrap.classList.add('show');
+  if(!currentUser) return;
   var active = clockActive[currentUser.name];
-  var label = btn.querySelector('.clock-btn-label-text');
-  if(active){
-    var elapsed = Date.now() - active.start;
-    btn.classList.add('running');
-    if(label) label.textContent = 'Stop Work · '+fmtElapsed(elapsed);
-    btn.title = 'Click To Stop Work';
-  } else {
-    btn.classList.remove('running');
-    if(label) label.textContent = 'Start Work';
-    btn.title = 'Click To Start Work';
-  }
+  // Update every .clock-btn on the page (sidebar footer, future locations)
+  document.querySelectorAll('.clock-btn').forEach(function(btn){
+    var label = btn.querySelector('.clock-btn-label-text');
+    if(active){
+      var elapsed = Date.now() - active.start;
+      btn.classList.add('running');
+      if(label) label.textContent = 'Stop Work · '+fmtElapsed(elapsed);
+      btn.title = 'Click To Stop Work';
+    } else {
+      btn.classList.remove('running');
+      if(label) label.textContent = 'Start Work';
+      btn.title = 'Click To Start Work';
+    }
+  });
 }
 
 function renderSidebarClockBadges(){
@@ -247,11 +243,15 @@ function renderHoursThisWeek(){
 function tickClockUI(){
   if(!currentUser) return;
   var active = clockActive[currentUser.name];
-  // Update topbar button if running
+  // Update label on every .clock-btn (topbar, tasks toolbar, etc.) when running
   if(active){
-    var label = document.querySelector('#clock-btn .clock-btn-label-text');
-    if(label) label.textContent = 'Stop Work · '+fmtElapsed(Date.now() - active.start);
+    var elapsed = Date.now() - active.start;
+    document.querySelectorAll('.clock-btn .clock-btn-label-text').forEach(function(label){
+      label.textContent = 'Stop Work · '+fmtElapsed(elapsed);
+    });
   }
+  // Update per-task timer counters (row pills + modal total) every second
+  if(typeof tickTaskTimers === 'function') tickTaskTimers();
   // Update sidebar badges + otc card every minute (less frequent than per-second to save reflows)
   var now = Date.now();
   if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 30000){

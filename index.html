@@ -91,16 +91,18 @@
 <!-- Email Templates Modal -->
 <div class="email-backdrop app-hidden" id="email-backdrop" onclick="closeEmailModal(event)">
   <div class="email-modal" onclick="event.stopPropagation()">
-    <div class="email-modal-head">
-      <button class="email-modal-back app-hidden" id="email-modal-back" onclick="backToEmailLibrary()" type="button" aria-label="Back to all industries" title="Back to all industries">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2.5L4 7l4.5 4.5"/></svg>
-        <span>All industries</span>
-      </button>
-      <div>
+    <div class="email-modal-head email-modal-head-stacked">
+      <div class="email-modal-head-top">
+        <button class="email-modal-back app-hidden" id="email-modal-back" onclick="backToEmailLibrary()" type="button" aria-label="Back to all industries" title="Back to all industries">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2.5L4 7l4.5 4.5"/></svg>
+          <span>All industries</span>
+        </button>
+        <button class="email-modal-close" onclick="closeEmailModal()" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="email-modal-titles">
         <div class="email-modal-title" id="email-modal-title">Email Templates</div>
         <div class="email-modal-sub" id="email-modal-sub">4-step sequence · Day 1 · 5 · 9 · 14</div>
       </div>
-      <button class="email-modal-close" onclick="closeEmailModal()" type="button" aria-label="Close">&times;</button>
     </div>
     <div class="email-modal-body" id="email-modal-body"></div>
   </div>
@@ -182,18 +184,6 @@
       <div class="search-results" id="search-results"></div>
     </div>
     <div class="topbar-right">
-      <div class="clock-btn-wrap" id="clock-btn-wrap">
-        <button class="clock-btn" id="clock-btn" onclick="toggleClock()" type="button" title="Track Your Work Time">
-          <span class="clock-btn-icon"></span>
-          <span class="clock-btn-label-text">Start Work</span>
-        </button>
-      </div>
-      <div class="topbar-clock" id="topbar-clock" title="Local time">
-        <span class="clock-time" id="clock-time"></span>
-        <span class="clock-sep" aria-hidden="true">·</span>
-        <span class="clock-date" id="clock-date"></span>
-      </div>
-      <span class="topbar-divider topbar-divider-thin" aria-hidden="true"></span>
       <div class="sync-indicator" id="sync-indicator" title="Live sync status">
         <span class="sync-dot" id="sync-dot"></span>
         <span class="sync-label" id="sync-label">Live</span>
@@ -259,6 +249,7 @@
 <script src="js/tasks.js"></script>
 <script src="js/emails.js"></script>
 <script src="js/topbar.js"></script>
+<script src="js/palette.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -285,6 +285,7 @@ window.addEventListener('load', function(){
       document.getElementById('user-pill-name').textContent = currentUser.name;
       startClock();
       initApp().then(function(){ applyAvatarsEverywhere(); subscribeClock(); subscribeTasks(); }); // Fix 4: apply avatars after restore
+      if(typeof requestNotificationPermission === 'function') requestNotificationPermission();
     }catch(e){ localStorage.removeItem('flowtive_user'); }
   }
 });

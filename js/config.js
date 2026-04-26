@@ -197,20 +197,5 @@ var activityLog = [];   // local cache, synced from Firebase
 var _noteContext = null;
 var _activityListener = null;
 
-function saveExtras(){
-  try{
-    localStorage.setItem('flowtive_notes_v1',  JSON.stringify(notesData));
-    localStorage.setItem('flowtive_status_v1', JSON.stringify(statusData));
-    localStorage.setItem('flowtive_activity_fallback', JSON.stringify(activityLog.slice(0,100)));
-    if(firebaseReady){
-      firebaseDb.ref('flowtive_status').set(statusData).catch(function(e){
-        console.warn('Status Firebase sync failed:', e.message);
-      });
-      // Fix 2: Sync notes to Firebase so all team members can see them
-      firebaseDb.ref('flowtive_notes').set(notesData).catch(function(e){
-        console.warn('Notes Firebase sync failed:', e.message);
-      });
-    }
-  }catch(e){}
-}
+/* saveExtras() lives in firebase.js — this used to be a duplicate copy */
 
