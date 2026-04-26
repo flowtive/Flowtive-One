@@ -105,12 +105,15 @@ function buildSidebar(){
   emailItem.onclick=function(){ openEmailLibrary(); };
   sb.appendChild(emailItem);
 
-  // Sidebar footer — Start/Stop Work pill anchored at the bottom (always reachable)
+  // Sidebar footer — Start/Stop Work pill + version pill anchored at the bottom
   var footer=document.createElement('div');
   footer.className='sid-footer';
   footer.innerHTML='<button class="clock-btn" onclick="toggleClock()" type="button" title="Track Your Work Time">'
     +'<span class="clock-btn-icon"></span>'
     +'<span class="clock-btn-label-text">Start Work</span>'
+    +'</button>'
+    +'<button class="sid-version" onclick="openWhatsNew()" type="button" title="What\'s new in Flowtive One">'
+    +'  v'+(typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?')
     +'</button>';
   sb.appendChild(footer);
   // Sync button to current state

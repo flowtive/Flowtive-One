@@ -5,6 +5,124 @@
 
 var TEAM_PASSWORD = '!FlowtiveOne2026#';
 
+/* ── Version ────────────────────────────────────────────────────────
+   Bump this on every push. Click the pill in the sidebar footer to see
+   the changelog. Conventions:
+     2.0.x — patch (bug fixes only)
+     2.x.0 — minor (new features, no breaking changes)
+     x.0.0 — major (significant redesign / breaking workflow changes)
+   The changelog below renders in the "What's New" modal — newest first. */
+var APP_VERSION = '2.0.0';
+var APP_CHANGELOG = [
+  {
+    version: '2.0.0',
+    date:    '2026-04-27',
+    title:   'Modern Flowtive One — Major Tasks Upgrade',
+    notes:   'A categorical leap from v1.x. Tasks become a real workspace with rich editing, inline pickers, time tracking, recurring repeats, comments, subtasks, and a centered ClickUp-style modal. Plus Cmd+K palette and browser notifications across the app.',
+    changes: [
+      {type:'new', text:'Tasks panel rebuilt — list + kanban board, drag-drop between statuses'},
+      {type:'new', text:'ClickUp-style centered task popup with blurred backdrop'},
+      {type:'new', text:'Inline pickers on every row — click any chip (status / priority / assignee / due / repeat) to edit without opening the modal'},
+      {type:'new', text:'Quick-add input — type title → Enter → task created'},
+      {type:'new', text:'Filter chips with live counts (All / My Tasks / Open / Overdue / Done)'},
+      {type:'new', text:'Smart sort dropdown — Smart, Newest, Oldest, Due Date, Priority, A→Z'},
+      {type:'new', text:'Date grouping in list view — Overdue / Today / Tomorrow / This Week / Later / No Due / Done'},
+      {type:'new', text:'Subtasks with progress badge (3/5 indicator on row + kanban card)'},
+      {type:'new', text:'Comments on tasks with owner-only delete + Cmd/Ctrl+Enter to send'},
+      {type:'new', text:'Rich-text descriptions — Bold, Italic, Underline, lists, links'},
+      {type:'new', text:'Recurring tasks — Daily / Weekdays / Weekly / Monthly, auto-spawns next instance on completion'},
+      {type:'new', text:'Per-task time tracking — Start/Stop pill on every row, modal section with per-user breakdown, 16h auto-close'},
+      {type:'new', text:'Inline title edit — double-click any task title in list or kanban to rename in place'},
+      {type:'new', text:'Custom delete confirmation modal (replaces native browser dialog)'},
+      {type:'new', text:'Per-filter empty states with contextual messaging'},
+      {type:'new', text:'Cmd+K (Ctrl+K) command palette — searches tasks, members, email industries, plus quick actions'},
+      {type:'new', text:'Browser notifications — pings when assigned a task, commented on, or task you assigned was completed'},
+      {type:'new', text:'Email Templates modal redesigned to match the task popup (centered, blurred, scale-in)'},
+      {type:'new', text:'Email Templates per-industry header is now vertical (back button on top, title below)'},
+      {type:'improvement', text:'Mint green design system inspired by Inboxkit (light + dark mode)'},
+      {type:'improvement', text:'Dark mode polish — sharper contrast, cleaner translucent borders'},
+      {type:'improvement', text:'Modular file structure — index.html shrunk from 6,146 lines to 264, split into 6 CSS + 18 JS files'},
+      {type:'improvement', text:'Sync indicator is hidden by default — only shows during sync or errors'},
+      {type:'improvement', text:'Activity feed limited to 10 most recent (no pagination clutter)'},
+      {type:'improvement', text:'Start Work button moved to sidebar footer (always reachable)'},
+      {type:'improvement', text:'Live OS-style date+time in topbar with seconds'},
+      {type:'fix', text:'Modal close no longer blocks subsequent clicks on the page'},
+      {type:'fix', text:'Esc on the modal saves in-progress title/description before closing'},
+      {type:'fix', text:'Drawer auto-closes if a teammate deletes the task being viewed'},
+      {type:'fix', text:'Inline picker dismisses cleanly when modal closes'},
+      {type:'fix', text:'Rich-text placeholder reappears after type-then-delete'},
+      {type:'fix', text:'Per-task timers auto-close after 16h (matches global Start Work safety net)'}
+    ]
+  },
+  {
+    version: '1.4.0',
+    date:    '2026-04-25',
+    title:   'Inboxkit Theme + Modular Split',
+    notes:   'Replaced the Stripe-purple palette with Inboxkit-inspired mint green. Split the single-file app into a modular CSS + JS structure for maintainability.',
+    changes: [
+      {type:'new', text:'Mint green color theme (light + dark mode)'},
+      {type:'improvement', text:'Code split into 6 CSS files (tokens, themes, base, layout, components, features) and 17 JS files'},
+      {type:'fix', text:'Login page "Flowtive" logo visibility on dark mode'},
+      {type:'fix', text:'Input focus halos removed (kept :focus-visible for keyboard accessibility)'},
+      {type:'fix', text:'Topbar live clock removed (OS clock is enough)'}
+    ]
+  },
+  {
+    version: '1.3.0',
+    date:    '2026-04-22',
+    title:   'Design System + Dark Mode',
+    notes:   'World-class app design with full dark/light mode support, smooth theme switching via the View Transitions API.',
+    changes: [
+      {type:'new', text:'Design tokens — light + dark theme variables'},
+      {type:'new', text:'Dark / light mode toggle with smooth crossfade'},
+      {type:'new', text:'Stripe-inspired gradient palette (later changed to mint)'},
+      {type:'improvement', text:'Topbar redesigned with better contrast'},
+      {type:'improvement', text:'Recent Activity feed bug fixes (status labels)'}
+    ]
+  },
+  {
+    version: '1.2.0',
+    date:    '2026-04-18',
+    title:   'Time Tracker',
+    notes:   'Team time tracker so members can clock in / out and see hours logged this week.',
+    changes: [
+      {type:'new', text:'Start Work / Stop Work tracker per member'},
+      {type:'new', text:'Hours-this-week chart on the Dashboard'},
+      {type:'new', text:'On-the-Clock card showing live elapsed sessions'},
+      {type:'new', text:'Sidebar live elapsed pills next to each member'}
+    ]
+  },
+  {
+    version: '1.1.0',
+    date:    '2026-04-10',
+    title:   'Email Templates',
+    notes:   'Full email templates library — 18 industries × 4-email sequences, with copy/edit and activity logging.',
+    changes: [
+      {type:'new', text:'Email Templates modal with per-industry sequences'},
+      {type:'new', text:'Library view with all 18 industries grouped by owner'},
+      {type:'new', text:'Copy button per email (one-click to clipboard)'},
+      {type:'new', text:'Edit emails inline (saved to Firebase, synced across team)'},
+      {type:'new', text:'Golden Rules popup'},
+      {type:'new', text:'Activity logs for email copy + edit events'}
+    ]
+  },
+  {
+    version: '1.0.0',
+    date:    '2026-04-01',
+    title:   'Flowtive One — Initial Release',
+    notes:   'The original State Lead Tracker, renamed and rebuilt as Flowtive One. State-by-state lead progress, member assignments, notes, and a presence-aware sidebar.',
+    changes: [
+      {type:'new', text:'USA state lead tracker with progress per member'},
+      {type:'new', text:'Status pills (To Do / In Progress / Done / Won / Closed)'},
+      {type:'new', text:'Notes per state'},
+      {type:'new', text:'Member sidebar with online indicator'},
+      {type:'new', text:'Login screen + session persistence'},
+      {type:'new', text:'Real-time Firebase sync across the team'},
+      {type:'new', text:'Recent Activity feed on the Dashboard'}
+    ]
+  }
+];
+
 var TEAM_ACCOUNTS = [
   {email:'theemon.me@gmail.com',    name:'Emran'},
   {email:'miltonsarkar333111@gmail.com',   name:'Milton'},

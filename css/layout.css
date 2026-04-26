@@ -104,8 +104,10 @@
 .sidebar{width:260px;min-width:260px;background:var(--bg-surface);border-right:1px solid var(--border);padding:0;position:sticky;top:var(--topbar-h);height:calc(100vh - var(--topbar-h));overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
 
 /* Sidebar footer — anchors work-tracker control to the bottom of the sidebar */
-.sid-footer{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border-subtle);background:var(--bg-surface);position:sticky;bottom:0}
+.sid-footer{margin-top:auto;padding:12px 14px 8px;border-top:1px solid var(--border-subtle);background:var(--bg-surface);position:sticky;bottom:0;display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .sid-footer .clock-btn{width:100%;justify-content:center;padding:8px 12px}
+.sid-version{align-self:center;background:transparent;border:none;font-family:inherit;font-size:10.5px;font-weight:500;color:var(--hint);cursor:pointer;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;font-variant-numeric:tabular-nums;transition:all 0.12s}
+.sid-version:hover{color:var(--accent);background:var(--accent-subtle)}
 @media (max-width:639px){ .sid-footer{display:none} }
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
