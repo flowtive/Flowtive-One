@@ -42,6 +42,13 @@ function buildMain(){
   tasksPanel.innerHTML='<div class="dash-title">Tasks</div><div class="dash-sub">Team-wide task board · drag cards on the board to change status.</div><div id="tasks-panel-body"></div>';
   main.appendChild(tasksPanel);
 
+  // Time Tracker panel container (rendered on demand by renderTimeTrackerPanel)
+  var timePanel=document.createElement('div');
+  timePanel.className='panel';
+  timePanel.id='panel-time';
+  timePanel.innerHTML='<div class="dash-title">Time Tracker</div><div class="dash-sub">Log your work, edit past entries, and review where your time went.</div><div id="time-panel-body"></div>';
+  main.appendChild(timePanel);
+
   // Member panels — open logged-in user's panel by default
   var defaultMi = currentUser ? MEMBERS.findIndex(function(m){return m.name===currentUser.name;}) : -1;
 

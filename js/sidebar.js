@@ -41,6 +41,22 @@ function buildSidebar(){
   };
   sb.appendChild(tasksItem);
 
+  // Time Tracker sidebar entry
+  var timeItem=document.createElement('div');
+  timeItem.className='sid-dashboard';
+  timeItem.id='sid-time';
+  timeItem.innerHTML=
+    '<div class="sid-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 2"/></svg></div>'+
+    'Time Tracker';
+  timeItem.onclick=function(){
+    document.querySelectorAll('.sid-item,.sid-dashboard').forEach(function(s){s.classList.remove('active');});
+    document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+    timeItem.classList.add('active');
+    document.getElementById('panel-time').classList.add('active');
+    if(typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
+  };
+  sb.appendChild(timeItem);
+
   var collapsed = localStorage.getItem('flowtive_sidebar_members_collapsed') === '1';
   var sec2=document.createElement('div');
   sec2.className='sid-section-toggle'+(collapsed?'':' open');

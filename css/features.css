@@ -571,6 +571,105 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .ftc-danger{background:var(--danger-strong);border-color:var(--danger-strong);color:#fff}
 .ftc-danger:hover{filter:brightness(1.08)}
 
+/* ── Time Tracker panel (Clockify-style) ────────────────────────── */
+#panel-time .dash-title{margin-bottom:4px}
+#panel-time .dash-sub{margin-bottom:18px}
+
+/* Top tracker bar — description input + live counter + start/stop + manual */
+.tt-tracker-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;transition:border-color 0.15s, box-shadow 0.15s}
+.tt-tracker-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-subtle)}
+.tt-tracker-bar.tt-running{border-color:var(--success-strong);box-shadow:0 0 0 3px var(--success-bg)}
+.tt-desc{flex:1;border:none;background:transparent;outline:none;font-family:inherit;font-size:14px;color:var(--text);padding:6px 4px;min-width:0}
+.tt-desc::placeholder{color:var(--hint)}
+.tt-live-time{font-family:inherit;font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;padding:0 8px;flex-shrink:0}
+.tt-live-idle{color:var(--hint)}
+.tt-start-btn,.tt-stop-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:filter 0.12s, transform 0.12s, box-shadow 0.12s}
+.tt-start-btn{background:var(--accent);color:var(--text-on-accent)}
+.tt-start-btn:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.25)}
+.tt-stop-btn{background:var(--danger-strong);color:#fff}
+.tt-stop-btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 12px rgba(192,21,58,0.25)}
+.tt-start-btn:active,.tt-stop-btn:active{transform:translateY(0)}
+.tt-start-btn svg,.tt-stop-btn svg{width:11px;height:11px}
+.tt-manual-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg-surface);color:var(--muted);cursor:pointer;font-family:inherit;transition:all 0.12s;flex-shrink:0}
+.tt-manual-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-subtle)}
+.tt-manual-btn svg{width:13px;height:13px}
+
+/* Totals strip — Today + This week */
+.tt-totals{display:flex;gap:12px;margin-bottom:18px}
+.tt-total-card{flex:1;padding:14px 18px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md)}
+.tt-total-label{font-size:10.5px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.tt-total-value{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+
+/* Filter chip row */
+.tt-filters{display:inline-flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tt-filter{font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);background:var(--bg-surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px;cursor:pointer;transition:all 0.12s}
+.tt-filter:hover{color:var(--text);border-color:var(--accent)}
+.tt-filter.active{background:var(--blue);border-color:var(--blue);color:var(--bg-surface)}
+
+/* Entry log — grouped by day */
+.tt-log{display:flex;flex-direction:column;gap:18px}
+.tt-day{}
+.tt-day-head{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:6px}
+.tt-day-label{font-size:12px;font-weight:600;color:var(--text)}
+.tt-day-total{font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.tt-day-rows{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+
+/* Single entry row */
+.tt-row{display:grid;grid-template-columns:1fr 200px 80px 90px;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border-subtle);transition:background 0.1s}
+.tt-row:last-child{border-bottom:none}
+.tt-row:hover{background:var(--bg-elevated)}
+.tt-row-running{background:var(--success-bg)!important}
+.tt-row-desc{display:flex;align-items:center;gap:10px;min-width:0}
+.tt-row-text{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.tt-row-badges{display:inline-flex;gap:4px;flex-shrink:0}
+.tt-badge{display:inline-flex;align-items:center;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2px 7px;border-radius:99px}
+.tt-badge-task{background:var(--accent-subtle);color:var(--accent)}
+.tt-badge-manual{background:var(--info-bg);color:var(--info-fg)}
+.tt-badge-auto{background:var(--warning-bg);color:var(--warning-fg)}
+.tt-row-times{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tt-arrow{color:var(--hint);margin:0 2px}
+.tt-row-dur{font-size:13px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+.tt-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:4px}
+.tt-row-action,.tt-row-link{background:none;border:none;cursor:pointer;color:var(--hint);padding:6px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all 0.12s;opacity:1}
+@media (hover: hover){.tt-row-action,.tt-row-link{opacity:0}.tt-row:hover .tt-row-action,.tt-row:hover .tt-row-link{opacity:1}}
+.tt-row-action:hover,.tt-row-link:hover{background:var(--off);color:var(--text)}
+.tt-row-action-danger:hover{background:var(--danger-bg);color:var(--danger-strong)}
+.tt-row-action svg,.tt-row-link svg{width:13px;height:13px}
+.tt-running-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--success-fg);background:var(--success-bg);border:1px solid var(--success-strong);border-radius:99px;padding:1px 8px}
+.tt-running-dot{width:5px;height:5px;border-radius:50%;background:var(--success-strong);animation:timePillPulse 1.4s ease-in-out infinite}
+
+.tt-empty{padding:48px 20px;text-align:center;color:var(--muted);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg)}
+.tt-empty-icon{font-size:32px;margin-bottom:8px;opacity:0.5}
+.tt-empty-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.tt-empty-sub{font-size:12px;color:var(--muted)}
+
+/* Manual / edit entry dialog form */
+.te-form{margin-bottom:18px}
+.te-label{display:block;font-size:10.5px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;margin-top:10px}
+.te-label:first-child{margin-top:0}
+.te-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:var(--bg-surface);font-family:inherit;outline:none;transition:border-color 0.12s}
+.te-input:focus{border-color:var(--accent)}
+.te-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+.te-duration{font-size:12px;color:var(--muted);font-weight:500;margin-top:10px;font-variant-numeric:tabular-nums}
+.te-duration-error{color:var(--danger-strong)}
+
+/* Mobile responsive */
+@media (max-width:899px){
+  .tt-tracker-bar{flex-wrap:wrap}
+  .tt-desc{order:1;width:100%;flex:1 1 100%}
+  .tt-live-time{order:2}
+  .tt-start-btn,.tt-stop-btn{order:3;flex:1}
+  .tt-manual-btn{order:4}
+  .tt-row{grid-template-columns:1fr;gap:6px;padding:12px 14px}
+  .tt-row-times{font-size:11.5px}
+  .tt-row-dur{text-align:left;font-size:14px}
+  .tt-row-actions{justify-content:flex-start}
+  .te-grid{grid-template-columns:1fr 1fr 1fr}
+}
+@media (max-width:479px){
+  .tt-totals{flex-direction:column;gap:8px}
+}
+
 /* ── Phase 2 controls ─────────────────────────────────────────────── */
 
 /* Sort dropdown — sits inline in the toolbar between filter chips and view toggle */

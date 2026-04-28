@@ -57,11 +57,20 @@ function subscribeClock(){
     renderClockButton();
     renderOnTheClockCard();
     renderSidebarClockBadges();
+    // Refresh Time Tracker panel if active (running state may have changed)
+    var tt = document.getElementById('panel-time');
+    if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function'){
+      renderTimeTrackerPanel();
+    }
   });
   firebaseDb.ref('flowtive_time_sessions').orderByChild('start').limitToLast(500).on('value', function(snap){
     clockSessions = snap.val() || {};
     if(document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')){
       renderHoursThisWeek();
+    }
+    var tt = document.getElementById('panel-time');
+    if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function'){
+      renderTimeTrackerPanel();
     }
   });
 }
@@ -75,7 +84,7 @@ function unsubscribeClock(){
   clockActive = {};
 }
 
-function clockIn(){
+function clockIn(description){
   if(!currentUser) return;
   if(!firebaseReady){ showToast('Cannot Start Work — Offline'); return; }
   var name = currentUser.name;
@@ -84,10 +93,75 @@ function clockIn(){
   var id = ref.key;
   var now = Date.now();
   var rec = {user:name, start:now, end:null, durationMs:null};
+  if(description && typeof description === 'string' && description.trim()){
+    rec.description = description.trim();
+  }
   ref.set(rec).catch(function(){ showToast('Start Work Failed'); });
   firebaseDb.ref('flowtive_time_active/'+name).set({sessionId:id, start:now, user:name}).catch(function(){});
   logActivity(name, 'clock_in', null, null, null, {sessionId:id});
   showToast('Started Work', '#065F46');
+}
+
+/* Edit a past session — used by the Time Tracker panel's edit dialog. Pass any
+   subset of {description, start, end}; durationMs is recomputed if start or
+   end change. */
+function updateSession(sessionId, patch){
+  if(!firebaseReady) return;
+  var existing = clockSessions[sessionId];
+  if(!existing) return;
+  var update = {};
+  if('description' in patch){
+    var d = (patch.description||'').trim();
+    update.description = d || null;
+  }
+  if('start' in patch && typeof patch.start === 'number') update.start = patch.start;
+  if('end'   in patch && typeof patch.end   === 'number') update.end   = patch.end;
+  // Recompute duration if either bound changed
+  if('start' in update || 'end' in update){
+    var newStart = 'start' in update ? update.start : existing.start;
+    var newEnd   = 'end'   in update ? update.end   : existing.end;
+    if(newStart && newEnd) update.durationMs = Math.max(0, newEnd - newStart);
+  }
+  update.editedAt = Date.now();
+  firebaseDb.ref('flowtive_time_sessions/'+sessionId).update(update).catch(function(){ showToast('Save Failed'); });
+}
+
+function deleteSession(sessionId){
+  if(!firebaseReady) return;
+  firebaseDb.ref('flowtive_time_sessions/'+sessionId).remove().catch(function(){ showToast('Delete Failed'); });
+}
+
+/* Add a retroactive session — for "I forgot to start the timer" cases.
+   Validates start < end and returns the new id (or null on failure). */
+function addManualSession(start, end, description){
+  if(!firebaseReady){ showToast('Cannot Add — Offline'); return null; }
+  if(!currentUser) return null;
+  if(typeof start !== 'number' || typeof end !== 'number' || end <= start){
+    showToast('End must be after start');
+    return null;
+  }
+  var ref = firebaseDb.ref('flowtive_time_sessions').push();
+  var id = ref.key;
+  var rec = {
+    user: currentUser.name,
+    start: start,
+    end: end,
+    durationMs: end - start,
+    manuallyAdded: true
+  };
+  if(description && description.trim()) rec.description = description.trim();
+  ref.set(rec).catch(function(){ showToast('Save Failed'); });
+  return id;
+}
+
+/* Update only the description of the currently-running session — called
+   live as the user types in the Time Tracker panel's description field. */
+function updateActiveSessionDescription(description){
+  if(!currentUser || !firebaseReady) return;
+  var active = clockActive[currentUser.name];
+  if(!active) return;
+  var d = (description||'').trim();
+  firebaseDb.ref('flowtive_time_sessions/'+active.sessionId+'/description').set(d || null).catch(function(){});
 }
 
 function clockOut(opts){
@@ -252,6 +326,8 @@ function tickClockUI(){
   }
   // Update per-task timer counters (row pills + modal total) every second
   if(typeof tickTaskTimers === 'function') tickTaskTimers();
+  // Update the Time Tracker panel live counter when it's the active panel
+  if(typeof tickTimeTrackerPanel === 'function') tickTimeTrackerPanel();
   // Update sidebar badges + otc card every minute (less frequent than per-second to save reflows)
   var now = Date.now();
   if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 30000){

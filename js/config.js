@@ -12,8 +12,27 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.1.2';
+var APP_VERSION = '2.2.0';
 var APP_CHANGELOG = [
+  {
+    version: '2.2.0',
+    date:    '2026-04-28',
+    title:   'Time Tracker panel — Clockify-style',
+    notes:   'A dedicated Time Tracker page with a Start/Stop bar, daily and weekly totals, full session log grouped by day, plus manual entries you can edit and delete. Per-task time also shows up here so everything you tracked is in one view.',
+    changes: [
+      {type:'new', text:'Dedicated Time Tracker panel (sidebar → "Time Tracker")'},
+      {type:'new', text:'Top tracker bar with description input + live counter + Start/Stop button'},
+      {type:'new', text:'Today + This Week totals at the top of the page'},
+      {type:'new', text:'Session log grouped by day with daily totals — combines global sessions and per-task time'},
+      {type:'new', text:'Manual entry — add a session retroactively when you forgot to start the timer (date + start + end + description)'},
+      {type:'new', text:'Edit any past session (description, start time, end time) — duration recalculates automatically'},
+      {type:'new', text:'Delete past sessions with confirmation'},
+      {type:'new', text:'Filter by Today / Yesterday / This Week / Last Week / All Time'},
+      {type:'new', text:'Description on global Start Work sessions — type "what are you working on?" before clicking Start, or edit it while running'},
+      {type:'new', text:'Badges on entries: Task (linked to a task), Manual (added retroactively), Auto (auto-closed after 16h)'},
+      {type:'improvement', text:'Per-task time entries link directly to the task — click the link icon to open the task'}
+    ]
+  },
   {
     version: '2.1.2',
     date:    '2026-04-28',
