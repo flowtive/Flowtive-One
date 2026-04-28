@@ -12,8 +12,128 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.4.0';
+var APP_VERSION = '2.10.0';
 var APP_CHANGELOG = [
+  {
+    version: '2.10.0',
+    date:    '2026-04-26',
+    title:   'Polish & accessibility sweep',
+    notes:   'Big QA round: undo for destructive deletes, mobile sidebar drawer, keyboard shortcut overlay, accessibility upgrades, login branding moment, and dozens of smaller polish fixes.',
+    changes: [
+      {type:'new',         text:'Undo toast — deleting tasks, projects, tags, or time entries now shows a 5-second Undo. Hit Undo to restore.'},
+      {type:'new',         text:'Mobile sidebar drawer — phones get a proper slide-out menu with backdrop instead of the cramped bottom-nav strip. Topbar gets a hamburger + dedicated search button.'},
+      {type:'new',         text:'Keyboard shortcut overlay — press ? from anywhere to see all shortcuts (⌘K, Esc, N, navigation keys, etc.)'},
+      {type:'new',         text:'"What\'s New" red dot — sidebar version pill pulses with an unread indicator until you open the changelog for the current version.'},
+      {type:'new',         text:'Login screen branding moment — the four products are introduced in a side panel with colored dots, taglines, and version stamp.'},
+      {type:'new',         text:'Onboarding overhaul — the welcome modal now introduces all four products (Workflow / Logbook / Cold Pitch / Territory) plus a ⌘K tip.'},
+      {type:'new',         text:'Recurring task spawn banner — when a recurring task spawns its next instance, an in-modal banner with "Open" links to the new task.'},
+      {type:'new',         text:'Skip-to-main-content link for keyboard users; activity feed exposes aria-live so screen readers announce new updates.'},
+      {type:'improvement', text:'Inline pickers (status / priority / assignee / due / repeat) now trap keyboard focus — Tab/Arrow stays inside, Esc closes.'},
+      {type:'improvement', text:'Activity feed timestamps gained absolute-time tooltips on hover — relative time at a glance, exact time on demand.'},
+      {type:'improvement', text:'Workspace Dashboard "Top Overdue" rows now show priority pill + due date, not just the title.'},
+      {type:'improvement', text:'Reports chart auto-buckets large date ranges (per-day → per-week → per-month) so 90+ day ranges stay readable.'},
+      {type:'improvement', text:'Calendar tooltips on multi-day entries now show both the displayed slice and the full original time range.'},
+      {type:'improvement', text:'Timesheet click pre-fills the first free 1-hour slot for the day instead of always 9 AM (avoids clobbering existing entries).'},
+      {type:'improvement', text:'Cold Pitch palette hint specifies sequence length + owner so each industry feels distinct.'},
+      {type:'improvement', text:'Toast colors standardized to a small palette (success / danger / warning / neutral / info) — no more seven shades of green.'},
+      {type:'improvement', text:'Detailed Reports table converts to a card stack on phones — no more horizontal scroll on small screens.'},
+      {type:'improvement', text:'Tasks modal rich-text toolbar scrolls horizontally on narrow screens instead of overflowing.'},
+      {type:'improvement', text:'Empty states across the app got more specific call-to-action copy.'},
+      {type:'improvement', text:'Priority pills gained a non-color glyph prefix so they\'re distinguishable in grayscale or for color-vision differences.'},
+      {type:'improvement', text:'KPI numbers now wrap gracefully on narrow screens / large fonts (no more overflow).'},
+      {type:'improvement', text:'Email modal cross-fade smoothed in dark mode (backdrop transitions instead of popping).'},
+      {type:'improvement', text:'Inline picker placeholder reads "+ Add due date" instead of a terse "Set date".'},
+      {type:'improvement', text:'Rapid Firebase updates now coalesce per-panel via rAF — multiple updates in the same frame share a single render.'},
+      {type:'improvement', text:'Per-task timer ticks bail early when nothing is running (faster on busy boards).'},
+      {type:'improvement', text:'Internal: js/dashboards.js renamed to js/sub-dashboards.js — no longer collides with js/dashboard.js.'},
+      {type:'improvement', text:'Internal: manual-entry pre-fill API decoupled from the calendar (timesheet no longer pokes _calPendingManualEntry).'},
+      {type:'improvement', text:'Icon buttons across the app gained aria-label parity with their title attribute (auto-applied via MutationObserver).'},
+      {type:'improvement', text:'Modal × close buttons wrap the symbol in aria-hidden so screen readers say "Close" not "multiplication sign".'},
+      {type:'fix',         text:'Removed a stray production console.log in firebase.js.'}
+    ]
+  },
+  {
+    version: '2.9.0',
+    date:    '2026-04-28',
+    title:   'Workspace Dashboard split out from Territory',
+    notes:   'The main Dashboard is now a workspace overview pulling from all four apps. The state-tracker analytics that used to live there moved into Flowtive Territory · Dashboard — one click away in the sidebar.',
+    changes: [
+      {type:'new', text:'Workspace Dashboard — opens to a friendly "Welcome back, [name]" + four cross-product KPIs: Open Tasks (Workflow) · Hours This Week (Logbook) · Active Right Now · Territory Coverage %'},
+      {type:'new', text:'Hours This Week chart, Weekly Activity chart (across all apps), and the Recent Activity feed live on the Workspace Dashboard'},
+      {type:'new', text:'Working Now card stays on the Workspace Dashboard for quick visibility of who\'s tracking time'},
+      {type:'new', text:'Flowtive Territory · Dashboard — dedicated sub-page for state-coverage analytics: leaderboard, donut, bar chart, industry progress grid, and the four state KPIs (Total Cities, States Covered, Hot Cities Done, Overall Completion)'},
+      {type:'improvement', text:'Cmd+K palette adds "Flowtive Territory · Dashboard" so you can jump straight from anywhere'},
+      {type:'improvement', text:'Sidebar layout reads cleaner — apps on top (Workflow, Logbook), reference tools under Resources (Cold Pitch, Territory)'}
+    ]
+  },
+  {
+    version: '2.8.0',
+    date:    '2026-04-28',
+    title:   'Product rebrand — Workflow · Logbook · Cold Pitch · Territory',
+    notes:   'Flowtive One is the workspace; the apps inside it now have their own names. Tasks becomes Flowtive Workflow. Time Tracker becomes Flowtive Logbook. Email Templates becomes Flowtive Cold Pitch. The state-by-state lead pipeline becomes Flowtive Territory. No data changed — only labels.',
+    changes: [
+      {type:'new', text:'Flowtive Workflow — the team\'s task system (was Tasks)'},
+      {type:'new', text:'Flowtive Logbook — record of work hours and project time (was Time Tracker)'},
+      {type:'new', text:'Flowtive Cold Pitch — outreach email templates by industry (was Email Templates)'},
+      {type:'new', text:'Flowtive Territory — state-by-state lead pipeline (was Team Members section)'},
+      {type:'improvement', text:'Sub-items cleaned up — "Tasks Dashboard" → "Dashboard", "Tasks" → "Board" (inside Flowtive Workflow); "Time Tracker" → "Tracker" (inside Flowtive Logbook)'},
+      {type:'improvement', text:'Panel titles follow the pattern Product · Sub-page (e.g. "Flowtive Logbook · Calendar")'},
+      {type:'improvement', text:'Cmd+K actions are prefixed with the product name so it\'s clear which app you\'re jumping into'},
+      {type:'improvement', text:'Workspace name stays Flowtive One — that\'s where you log in. The four products live inside it.'}
+    ]
+  },
+  {
+    version: '2.7.0',
+    date:    '2026-04-28',
+    title:   'Time Tracker · Timesheet',
+    notes:   'A project × day grid for the week. Click any cell to log time on that project on that day — fastest way to fill out the week if you tracked some sessions live and need to log the rest after the fact.',
+    changes: [
+      {type:'new', text:'Timesheet sub-page in the Time Tracker sidebar group'},
+      {type:'new', text:'Week grid — one row per project (with a "No project" row when applicable), 7 day columns + Total column'},
+      {type:'new', text:'Click any cell to open the manual entry dialog pre-filled with that project + that date (default 9 AM, 1-hour block — adjust before saving)'},
+      {type:'new', text:'"Add Project Row" button — pick a project to log time against without first having an entry that week'},
+      {type:'new', text:'Today\'s column highlighted in mint green for quick orientation'},
+      {type:'new', text:'Daily totals row + grand total cell update live as you add entries'},
+      {type:'new', text:'Prev / Next / This Week navigation — flip through past weeks at a glance'},
+      {type:'improvement', text:'First column is sticky on horizontal scroll so the project label stays visible on phones'}
+    ]
+  },
+  {
+    version: '2.6.0',
+    date:    '2026-04-28',
+    title:   'Time Tracker · Reports + CSV export',
+    notes:   'Slice your tracked time across date ranges, members, projects, and tags. Three views (Summary / Detailed / Weekly), filters, a stacked bar chart, sortable tables, and one-click CSV export — ready for monthly reviews and share-outs.',
+    changes: [
+      {type:'new', text:'Reports page in the Time Tracker sidebar group (replaces the Coming Soon stub)'},
+      {type:'new', text:'Summary view — Total / Avg per Day / Top Member / Top Project KPIs, stacked bar chart by day, grouped table with proportional bars'},
+      {type:'new', text:'Detailed view — flat sortable table of every entry (description / member / project / tags / start / end / duration), sort by clicking any column header'},
+      {type:'new', text:'Weekly view — group × day grid with row + column totals and prev / next / today week navigation'},
+      {type:'new', text:'Filters: Member, Project, Tag, Description text search'},
+      {type:'new', text:'Date range presets: Today / Yesterday / This Week / Last Week / This Month / Last Month / This Year / All Time / Custom'},
+      {type:'new', text:'Group by: Project / Member / Tag / Day (Summary view)'},
+      {type:'new', text:'CSV export — one click downloads the current view as a UTF-8 CSV with proper RFC 4180 escaping. Filename auto-named: flowtive-time-{view}-{from}-{to}.csv'},
+      {type:'new', text:'Per-task time entries surface in Detailed view with a clickable "Task" badge that opens the parent task'},
+      {type:'improvement', text:'Real-time refresh — Reports panel updates instantly when teammates log new time, edit entries, or change project / tag definitions'}
+    ]
+  },
+  {
+    version: '2.5.0',
+    date:    '2026-04-28',
+    title:   'Time Tracker · Projects + Tags',
+    notes:   'Group time under named projects with custom colors, and tag entries with cross-project labels. Both panels are now real (Projects + Tags in the Time Tracker sidebar group). Calendar blocks borrow project colors. Tracker bar gets Project + Tags chips for quick assignment.',
+    changes: [
+      {type:'new', text:'Projects management page — add / rename / delete / pick color from a 12-color palette'},
+      {type:'new', text:'Tags management page — add / rename / delete cross-project labels'},
+      {type:'new', text:'Project chip on the Time Tracker bar — click to pick a project for the running session, or stage one for next start'},
+      {type:'new', text:'Tags chip on the Time Tracker bar — multi-select picker with type-to-filter and Enter-to-create'},
+      {type:'new', text:'Project + Tags fields in the manual / edit entry dialog'},
+      {type:'new', text:'Project chip + tag pills appear on every entry row in the time log'},
+      {type:'new', text:'Calendar blocks use the project color when one is set (member color stays as fallback)'},
+      {type:'new', text:'Per-project total tracked time shown next to each project on the Projects page'},
+      {type:'new', text:'Per-tag entry count shown next to each tag on the Tags page'},
+      {type:'improvement', text:'Deleting a project or tag removes the reference from all sessions automatically — no orphan IDs left behind'}
+    ]
+  },
   {
     version: '2.4.0',
     date:    '2026-04-28',
@@ -333,12 +453,12 @@ var WHY={
 };
 
 var MEMBERS=[
-  {name:"Emran",  color:"#406093",inds:["Agency","Law Firms","Consulting"]},
+  {name:"Emran",  color:"#10B981",inds:["Agency","Law Firms","Consulting"]},
   {name:"Milton", color:"#2980B9",inds:["SaaS","Startup","Restaurant & Food"]},
   {name:"Mugdho", color:"#8E44AD",inds:["Marketing & Advertising","Finance & Accounting","Fitness & Gym"]},
   {name:"Ashik",  color:"#E67E22",inds:["Tech & IT Services","Photography & Creative","Beauty & Wellness"]},
   {name:"Sadman", color:"#E74C3C",inds:["Healthcare","Dental & Cosmetic","Hospitality & Hotels"]},
-  {name:"Rafik",  color:"#1ABC9C",inds:["Real Estate","Travel & Tourism","Architecture & Interior"]},
+  {name:"Rafik",  color:"#03A9F4",inds:["Real Estate","Travel & Tourism","Architecture & Interior"]},
 ];
 
 var ALL_INDUSTRIES = MEMBERS.reduce(function(a,m){return a.concat(m.inds);},[]);

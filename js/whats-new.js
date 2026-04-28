@@ -22,6 +22,14 @@ function openWhatsNew(){
   bd.classList.add('show');
   requestAnimationFrame(function(){ pn.classList.add('show'); });
   document.addEventListener('keydown', _wnEscHandler);
+  // Clear the unread red dot on the sidebar version pill
+  if(typeof _markWhatsNewSeen === 'function') _markWhatsNewSeen();
+  var pill = document.querySelector('.sid-version.has-update');
+  if(pill){
+    pill.classList.remove('has-update');
+    var dot = pill.querySelector('.sid-version-dot');
+    if(dot) dot.remove();
+  }
 }
 
 function closeWhatsNew(){
@@ -42,7 +50,7 @@ function renderWhatsNewHtml(){
     +     '<div class="wn-title">What\'s New</div>'
     +     '<div class="wn-sub">Flowtive One <span class="wn-curver">v'+escapeHtml(current)+'</span></div>'
     +   '</div>'
-    +   '<button class="wn-close" onclick="closeWhatsNew()" type="button" aria-label="Close">×</button>'
+    +   '<button class="wn-close" onclick="closeWhatsNew()" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>'
     + '</div>'
     + '<div class="wn-body">';
   if(!log.length){

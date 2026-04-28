@@ -9,18 +9,11 @@ var _calFilter = 'me';              // 'me' | 'all'
 var CAL_HOUR_HEIGHT = 48;           // px per hour
 var CAL_DAY_HEIGHT  = 24 * CAL_HOUR_HEIGHT;
 
-function _calStartOfDay(d){ var x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); }
-function _calStartOfWeek(d){
-  var x = new Date(d); x.setHours(0,0,0,0);
-  var day = x.getDay();
-  var diff = (day === 0 ? -6 : 1 - day);     // Mon as week start
-  x.setDate(x.getDate() + diff);
-  return x.getTime();
-}
+// Date helpers — startOfDay / startOfWeek live in util.js (centralized)
 
 function _calEnsureAnchor(){
   if(_calAnchor !== null) return;
-  _calAnchor = _calView === 'week' ? _calStartOfWeek(Date.now()) : _calStartOfDay(Date.now());
+  _calAnchor = _calView === 'week' ? startOfWeek(Date.now()) : startOfDay(Date.now());
 }
 
 function renderTimeCalendarPanel(){
@@ -108,7 +101,7 @@ function _calRenderGrid(){
     var dayEntries = entries.filter(function(e){ return e._dayIdx === idx; });
     var blocksHtml = dayEntries.map(_calRenderBlock).join('');
     var nowLine = _calRenderNowLine(ds);
-    var isToday = ds === _calStartOfDay(Date.now());
+    var isToday = ds === startOfDay(Date.now());
     return '<div class="cal-day-col'+(isToday?' cal-today':'')+'" '
       + 'data-day-start="'+ds+'" '
       + 'onclick="_calOnEmptyClick(event, '+ds+')">'
@@ -129,7 +122,7 @@ function _calRenderGrid(){
 
 function _calRenderDayHeader(dayStart){
   var d = new Date(dayStart);
-  var isToday = dayStart === _calStartOfDay(Date.now());
+  var isToday = dayStart === startOfDay(Date.now());
   // Day total (all sessions overlapping this day, filtered)
   var name = currentUser ? currentUser.name : null;
   var total = 0;
@@ -187,12 +180,14 @@ function _calCollectEntries(dayStarts){
   function pushSplit(base){
     var s = base.start, e = base.end || Date.now();
     if(e <= rangeStart || s >= rangeEnd) return;
+    var fullStart = base.start;
+    var fullEnd = base.end;
     s = Math.max(s, rangeStart);
     e = Math.min(e, rangeEnd);
     // Walk day-by-day so entries spanning midnight render in each day column
     var cursor = s;
     while(cursor < e){
-      var dayStart = _calStartOfDay(cursor);
+      var dayStart = startOfDay(cursor);
       var dayIdx = -1;
       for(var i=0;i<dayStarts.length;i++){ if(dayStarts[i] === dayStart){ dayIdx = i; break; } }
       if(dayIdx < 0) break;
@@ -204,6 +199,10 @@ function _calCollectEntries(dayStarts){
       copy.end = blockEnd;
       copy._dayIdx = dayIdx;
       copy._dayStart = dayStart;
+      copy._origStart = fullStart;
+      copy._origEnd = fullEnd;
+      copy._continuesBefore = cursor > fullStart;
+      copy._continuesAfter = blockEnd < (fullEnd || Date.now());
       rows.push(copy);
       cursor = blockEnd;
     }
@@ -214,10 +213,18 @@ function _calCollectEntries(dayStarts){
     if(!s || !s.start || !s.user) return;
     if(_calFilter === 'me' && s.user !== name) return;
     var member = MEMBERS.find(function(m){ return m.name === s.user; }) || {color:'#6B7280'};
+    // Project color overrides member color when set — keeps the user's
+    // project palette consistent across the week.
+    var color = member.color;
+    if(s.projectId && typeof projectsData !== 'undefined' && projectsData[s.projectId]){
+      color = projectsData[s.projectId].color;
+    }
     pushSplit({
-      kind:'global', id:id, user:s.user, color:member.color,
+      kind:'global', id:id, user:s.user, color:color,
       start:s.start, end:s.end || null,
       description: s.description || '',
+      projectId: s.projectId || null,
+      tags: Array.isArray(s.tags) ? s.tags : [],
       running: !s.end,
       autoClosed: !!s.autoClosed,
       manuallyAdded: !!s.manuallyAdded
@@ -262,16 +269,26 @@ function _calRenderBlock(b){
   var endStr   = b.end ? new Date(b.end).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}) : 'now';
   var desc = b.description || '(no description)';
   var compact = height < 40;
-  var meta = compact ? '' : '<div class="cal-block-meta">'+startStr+' – '+endStr+'</div>';
+  // For multi-day entries: show only this slice's clamped times in the meta;
+  // tooltip carries the full original span for context.
+  var spans = b._continuesBefore || b._continuesAfter;
+  var fullStartStr = b._origStart ? new Date(b._origStart).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : startStr;
+  var fullEndStr = b._origEnd ? new Date(b._origEnd).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : 'now';
+  var sliceLabel = startStr + ' – ' + endStr + (b._continuesBefore ? ' ←' : '') + (b._continuesAfter ? ' →' : '');
+  var titleStr = spans
+    ? desc + ' · this slice: ' + sliceLabel + ' · full entry: ' + fullStartStr + ' → ' + fullEndStr
+    : desc + ' · ' + startStr + ' – ' + endStr;
+  var meta = compact ? '' : '<div class="cal-block-meta">'+escapeHtml(sliceLabel)+'</div>';
   return '<div class="cal-block'
     + (b.kind==='task'?' cal-block-task':'')
     + (b.running?' cal-block-running':'')
     + (compact?' cal-block-compact':'')
+    + (spans?' cal-block-spans':'')
     + '" '
     + 'data-start="'+b.start+'" '
     + 'style="top:'+top+'px;height:'+height+'px;background:'+_calLighten(bg)+';border-left-color:'+bg+'" '
     + 'onclick="event.stopPropagation();'+clickHandler+'" '
-    + 'title="'+escapeHtml(desc)+' · '+startStr+' – '+endStr+'">'
+    + 'title="'+escapeHtml(titleStr)+'">'
     + '<div class="cal-block-title">'+escapeHtml(desc)+'</div>'
     + meta
     + (b.running ? '<span class="cal-block-running-dot"></span>' : '')
@@ -317,13 +334,13 @@ function _calOnEmptyClick(evt, dayStart){
   var startTs = dayStart + minutes*60000;
   var endTs = startTs + 60*60*1000;     // default 1-hour block
   if(typeof openManualEntryDialog === 'function'){
-    // Pre-fill via a small global override
-    _calPendingManualEntry = { start: startTs, end: endTs };
+    // Pre-fill via the neutral staging API (decoupled from internals)
+    if(typeof stageManualEntry === 'function'){
+      stageManualEntry({ start: startTs, end: endTs });
+    }
     openManualEntryDialog();
-    _calPendingManualEntry = null;
   }
 }
-var _calPendingManualEntry = null;
 
 /* ── Toolbar handlers ── */
 function setCalView(v){
@@ -331,9 +348,9 @@ function setCalView(v){
   _calView = v;
   // When switching to day, anchor on today (or current day if anchor was a week)
   if(v === 'day' && _calView !== 'day'){
-    _calAnchor = _calStartOfDay(_calAnchor || Date.now());
+    _calAnchor = startOfDay(_calAnchor || Date.now());
   } else if(v === 'week'){
-    _calAnchor = _calStartOfWeek(_calAnchor || Date.now());
+    _calAnchor = startOfWeek(_calAnchor || Date.now());
   }
   renderTimeCalendarPanel();
 }
@@ -345,7 +362,7 @@ function calNav(dir){
   var step = (_calView === 'week' ? 7 : 1) * 86400000;
   if(dir === 'prev')  _calAnchor -= step;
   if(dir === 'next')  _calAnchor += step;
-  if(dir === 'today') _calAnchor = _calView === 'week' ? _calStartOfWeek(Date.now()) : _calStartOfDay(Date.now());
+  if(dir === 'today') _calAnchor = _calView === 'week' ? startOfWeek(Date.now()) : startOfDay(Date.now());
   renderTimeCalendarPanel();
 }
 
@@ -370,7 +387,7 @@ function tickCalendarPanel(){
     if(!startStr) return;
     var start = parseInt(startStr, 10);
     if(!start) return;
-    var dayStart = _calStartOfDay(start);
+    var dayStart = startOfDay(start);
     var endMin = (Date.now() - dayStart) / 60000;
     var startMin = (start - dayStart) / 60000;
     el.style.height = Math.max(14, ((endMin - startMin)/60) * CAL_HOUR_HEIGHT) + 'px';

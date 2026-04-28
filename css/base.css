@@ -63,12 +63,27 @@ body{accent-color:var(--accent)}
              opacity           420ms cubic-bezier(0.32,0.72,0.0,1)!important;
 }
 
+/* Skip link — visually hidden until focused via Tab */
+.skip-link{position:fixed;top:8px;left:8px;z-index:10000;padding:10px 16px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;border-radius:8px;text-decoration:none;transform:translateY(-200%);transition:transform 0.18s var(--ease-out)}
+.skip-link:focus{transform:translateY(0);outline:2px solid var(--accent);outline-offset:2px}
+
 /* ── Login ── */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-inverse);padding:20px;position:relative;overflow:hidden}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-inverse);padding:20px;position:relative;overflow:hidden;gap:48px}
 .login-wrap::before{content:'';position:absolute;inset:0;background:var(--gradient-marketing);pointer-events:none;z-index:0}
 .login-card{position:relative;z-index:1;background:var(--bg-surface);border-radius:16px;padding:40px 36px;width:100%;max-width:380px;box-shadow:var(--shadow-xl)}
 .login-logo{font-size:15px;font-weight:700;color:var(--text-primary);letter-spacing:-0.4px;margin-bottom:6px}
 .login-logo span{color:var(--accent)}
+/* Branding aside on the left of the login card (hidden on narrow screens) */
+.login-brand-aside{position:relative;z-index:1;color:#fff;max-width:340px;display:flex;flex-direction:column;gap:18px}
+.login-brand-mark{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(8px);box-shadow:0 6px 24px rgba(0,0,0,0.18)}
+.login-brand-tagline{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-0.3px}
+.login-brand-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.login-brand-item{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.92)}
+.login-brand-item b{font-weight:600;display:block}
+.login-brand-item small{display:block;font-size:11px;color:rgba(255,255,255,0.7);margin-top:1px}
+.login-brand-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,0.08)}
+.login-brand-foot{font-size:11px;color:rgba(255,255,255,0.55);margin-top:6px;letter-spacing:0.2px}
+@media (max-width:899px){.login-brand-aside{display:none}}
 .login-title{font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:6px;letter-spacing:var(--tracking-tight)}
 .login-sub{font-size:13px;color:var(--text-secondary);margin-bottom:28px;line-height:1.5}
 .form-group{margin-bottom:16px}

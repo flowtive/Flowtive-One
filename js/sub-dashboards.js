@@ -10,7 +10,7 @@ function renderTasksDashboardPanel(){
   if(!body) return;
   var all = (typeof tasksData === 'object' && tasksData) ? Object.values(tasksData).filter(Boolean) : [];
   var now = Date.now();
-  var weekStart = _ttdStartOfWeek(now);
+  var weekStart = startOfWeek(now);
 
   // Top KPI cards
   var openCount    = all.filter(function(t){ return t.status !== 'done'; }).length;
@@ -65,13 +65,7 @@ function renderTasksDashboardPanel(){
     + '</div>';
 }
 
-function _ttdStartOfWeek(d){
-  var x = new Date(d); x.setHours(0,0,0,0);
-  var day = x.getDay();
-  var diff = (day === 0 ? -6 : 1 - day);
-  x.setDate(x.getDate() + diff);
-  return x.getTime();
-}
+// Date helper — startOfWeek lives in util.js (centralized)
 
 function renderKPIRow(items){
   var html = '<div class="td-kpi-row">';
@@ -112,10 +106,20 @@ function renderTopOverdueList(rows, now){
   }
   return '<div class="td-overdue-list">' + rows.map(function(t){
     var daysLate = Math.floor((now - t.dueDate) / 86400000);
+    var prio = t.priority || 'medium';
+    var prioLabel = (typeof taskPriorityLabel === 'function') ? taskPriorityLabel(prio) : prio;
+    var dueStr = '';
+    try{
+      dueStr = new Date(t.dueDate).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+    }catch(e){}
     return '<div class="td-overdue-row" onclick="(typeof openTaskDrawer===\'function\') && openTaskDrawer(\''+t.id+'\')">'
-      +    '<div class="td-overdue-title">'+escapeHtml(t.title||'(Untitled)')+'</div>'
+      +    '<div class="td-overdue-title-row">'
+      +      '<span class="priority-pill p-'+escapeHtml(prio)+'" style="pointer-events:none">'+escapeHtml(prioLabel)+'</span>'
+      +      '<div class="td-overdue-title">'+escapeHtml(t.title||'(Untitled)')+'</div>'
+      +    '</div>'
       +    '<div class="td-overdue-meta">'
       +      (t.assignee ? '<span>'+escapeHtml(t.assignee)+'</span> · ' : '')
+      +      (dueStr ? '<span>Due '+escapeHtml(dueStr)+'</span> · ' : '')
       +      '<span class="td-overdue-late">'+(daysLate <= 0 ? 'Today' : daysLate+' day'+(daysLate>1?'s':'')+' late')+'</span>'
       +    '</div>'
       +  '</div>';
@@ -124,7 +128,7 @@ function renderTopOverdueList(rows, now){
 
 function renderMemberBreakdown(rows){
   if(!rows.length){
-    return '<div class="td-empty-mini">No tasks assigned yet</div>';
+    return '<div class="td-empty-mini">No tasks assigned yet — create one above or press N.</div>';
   }
   var maxOpen = rows.reduce(function(m,r){ return Math.max(m, r.open); }, 1);
   var html = '<div class="td-member-table">';
@@ -157,7 +161,7 @@ function renderMemberBreakdown(rows){
 function renderTimeDashboardPanel(){
   var body = document.getElementById('time-dashboard-body');
   if(!body) return;
-  var weekStart = _ttdStartOfWeek(Date.now());
+  var weekStart = startOfWeek(Date.now());
 
   // Collect this week's tracked time across the team
   // (a) global sessions
@@ -241,7 +245,7 @@ function _renderTimeWeekChart(){
   if(charts.timeWeek){ charts.timeWeek.destroy(); }
   var labels = [];
   var dayStarts = [];
-  var weekStart = _ttdStartOfWeek(Date.now());
+  var weekStart = startOfWeek(Date.now());
   for(var i=0;i<7;i++){
     var d = new Date(weekStart + i*86400000);
     labels.push(d.toLocaleDateString(undefined,{weekday:'short',day:'numeric'}));
@@ -285,7 +289,7 @@ function _renderTimeWeekChart(){
 
 function renderTopTasksList(rows){
   if(!rows.length){
-    return '<div class="td-empty-mini">No task time tracked this week</div>';
+    return '<div class="td-empty-mini">No task time tracked this week — open a task and click ▶ to log time against it.</div>';
   }
   var maxMs = rows[0].ms || 1;
   return '<div class="td-tasks-list">' + rows.map(function(r){
@@ -302,7 +306,7 @@ function renderTimeMemberBreakdown(perMember){
   var entries = Object.keys(perMember).map(function(n){ return {name:n, ms:perMember[n]}; })
                 .sort(function(a,b){ return b.ms - a.ms; });
   if(!entries.length){
-    return '<div class="td-empty-mini">No time tracked this week</div>';
+    return '<div class="td-empty-mini">No time tracked this week — hit Start Work in the sidebar to begin.</div>';
   }
   var maxMs = entries[0].ms || 1;
   return '<div class="td-tasks-list">' + entries.map(function(r){
@@ -327,46 +331,3 @@ function _fmtHM(ms){
   return h + ':' + (m<10?'0'+m:m);
 }
 
-/* ── Stub pages ───────────────────────────────────────────────────
-   "Coming soon" placeholders for Phase 2+ features. */
-function _renderStub(bodyId, title, description, eta){
-  var body = document.getElementById(bodyId);
-  if(!body) return;
-  body.innerHTML = ''
-    + '<div class="stub-page">'
-    +   '<div class="stub-icon">'
-    +     '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">'
-    +       '<rect x="4" y="4" width="24" height="24" rx="3"/>'
-    +       '<path d="M11 16h10M11 12h10M11 20h6"/>'
-    +     '</svg>'
-    +   '</div>'
-    +   '<div class="stub-title">'+escapeHtml(title)+'</div>'
-    +   '<div class="stub-desc">'+escapeHtml(description)+'</div>'
-    +   (eta ? '<div class="stub-eta">'+escapeHtml(eta)+'</div>' : '')
-    + '</div>';
-}
-
-function renderTimeReportsStub(){
-  _renderStub('time-reports-body',
-    'Reports — Coming Soon',
-    'Summary, Detailed, and Weekly reports with team / project / tag filters and CSV export.',
-    'Phase 4');
-}
-function renderTimeProjectsStub(){
-  _renderStub('time-projects-body',
-    'Projects — Coming Soon',
-    'Group time entries under named projects with colors. Required for Reports group-by-project.',
-    'Phase 3');
-}
-function renderTimeTagsStub(){
-  _renderStub('time-tags-body',
-    'Tags — Coming Soon',
-    'Cross-project labels for time entries. Tag your work with categories like "Outreach", "Meetings", "Admin".',
-    'Phase 3');
-}
-function renderTimeTeamStub(){
-  _renderStub('time-team-body',
-    'Team — Coming Soon',
-    'Per-member time totals, trends, and team activity. (Billable rates intentionally skipped — internal team.)',
-    'Phase later');
-}

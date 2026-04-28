@@ -154,7 +154,7 @@ async function toggleCity(mi,ind,state,city,indIdx){
   if(doneData[key]===m.name){ delete doneData[key]; }
   else if(doneData[key]){
     // Fix 4: Inform user why the tick is blocked
-    showToast('⚠️ This city was marked done by '+doneData[key], '#E67E22');
+    showToast('⚠️ This city was marked done by '+doneData[key], 'warning');
     return;
   }
   else{ doneData[key]=m.name; }
@@ -208,6 +208,8 @@ async function toggleCity(mi,ind,state,city,indIdx){
   updateStats(mi);
   updateSidebarCounts();
   if(document.getElementById('panel-dashboard').classList.contains('active')) buildDashboard();
+  var tDash = document.getElementById('panel-territory-dashboard');
+  if(tDash && tDash.classList.contains('active') && typeof buildTerritoryDashboard === 'function') buildTerritoryDashboard();
   await saveData();
   saveExtras();
 }
@@ -354,6 +356,8 @@ async function setCityStatus(ind, state, city, mi, indIdx, selectEl){
   updateStats(mi);
   updateSidebarCounts();
   if(document.getElementById('panel-dashboard').classList.contains('active')) buildDashboard();
+  var tDash2 = document.getElementById('panel-territory-dashboard');
+  if(tDash2 && tDash2.classList.contains('active') && typeof buildTerritoryDashboard === 'function') buildTerritoryDashboard();
   saveExtras();
 }
 

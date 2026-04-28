@@ -35,7 +35,7 @@ document.addEventListener('click', function(e){
   window.addEventListener('scroll', updateTopbarScrollState, {passive:true});
   // Also listen on .main scroll (the inner scrolling region)
   document.addEventListener('DOMContentLoaded', function(){
-    var main = document.getElementById('main');
+    var main = document.getElementById('main-content');
     if(main){ main.addEventListener('scroll', function(){
       var bar = document.getElementById('topbar'); if(!bar) return;
       bar.classList.toggle('is-scrolled', main.scrollTop > 4);

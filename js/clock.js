@@ -54,28 +54,47 @@ function subscribeClock(){
   firebaseDb.ref('flowtive_time_active').on('value', function(snap){
     clockActive = snap.val() || {};
     autoCloseStaleOwnSession();
+    // These three are cheap and safe to run synchronously
     renderClockButton();
     renderOnTheClockCard();
     renderSidebarClockBadges();
-    // Refresh Time Tracker panel if active (running state may have changed)
-    var tt = document.getElementById('panel-time');
-    if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function'){
-      renderTimeTrackerPanel();
-    }
+    // Heavier panel rebuilds — coalesce per key so back-to-back FB updates
+    // don't stack into multiple full renders in the same frame.
+    scheduleRender('panel-time', function(){
+      var tt = document.getElementById('panel-time');
+      if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
+    });
+    scheduleRender('panel-dashboard', function(){
+      var wd = document.getElementById('panel-dashboard');
+      if(wd && wd.classList.contains('active') && typeof buildDashboard === 'function') buildDashboard();
+    });
   });
   firebaseDb.ref('flowtive_time_sessions').orderByChild('start').limitToLast(500).on('value', function(snap){
     clockSessions = snap.val() || {};
-    if(document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')){
-      renderHoursThisWeek();
-    }
-    var tt = document.getElementById('panel-time');
-    if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function'){
-      renderTimeTrackerPanel();
-    }
-    var cal = document.getElementById('panel-time-calendar');
-    if(cal && cal.classList.contains('active') && typeof renderTimeCalendarPanel === 'function'){
-      renderTimeCalendarPanel();
-    }
+    // Coalesce panel rebuilds via scheduleRender (rAF-batched, per key)
+    scheduleRender('panel-dashboard', function(){
+      var wd = document.getElementById('panel-dashboard');
+      if(wd && wd.classList.contains('active')){
+        if(typeof buildDashboard === 'function') buildDashboard();
+        else renderHoursThisWeek();
+      }
+    });
+    scheduleRender('panel-time', function(){
+      var tt = document.getElementById('panel-time');
+      if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
+    });
+    scheduleRender('panel-time-calendar', function(){
+      var cal = document.getElementById('panel-time-calendar');
+      if(cal && cal.classList.contains('active') && typeof renderTimeCalendarPanel === 'function') renderTimeCalendarPanel();
+    });
+    scheduleRender('panel-time-reports', function(){
+      var rep = document.getElementById('panel-time-reports');
+      if(rep && rep.classList.contains('active') && typeof renderTimeReportsPanel === 'function') renderTimeReportsPanel();
+    });
+    scheduleRender('panel-time-timesheet', function(){
+      var ts = document.getElementById('panel-time-timesheet');
+      if(ts && ts.classList.contains('active') && typeof renderTimeTimesheetPanel === 'function') renderTimeTimesheetPanel();
+    });
   });
 }
 function unsubscribeClock(){
@@ -88,11 +107,12 @@ function unsubscribeClock(){
   clockActive = {};
 }
 
-function clockIn(description){
+function clockIn(description, opts){
   if(!currentUser) return;
   if(!firebaseReady){ showToast('Cannot Start Work — Offline'); return; }
   var name = currentUser.name;
   if(clockActive[name]) return; // already started
+  opts = opts || {};
   var ref = firebaseDb.ref('flowtive_time_sessions').push();
   var id = ref.key;
   var now = Date.now();
@@ -100,10 +120,12 @@ function clockIn(description){
   if(description && typeof description === 'string' && description.trim()){
     rec.description = description.trim();
   }
+  if(opts.projectId) rec.projectId = opts.projectId;
+  if(Array.isArray(opts.tags) && opts.tags.length) rec.tags = opts.tags;
   ref.set(rec).catch(function(){ showToast('Start Work Failed'); });
   firebaseDb.ref('flowtive_time_active/'+name).set({sessionId:id, start:now, user:name}).catch(function(){});
   logActivity(name, 'clock_in', null, null, null, {sessionId:id});
-  showToast('Started Work', '#065F46');
+  showToast('Started Work', 'success');
 }
 
 /* Edit a past session — used by the Time Tracker panel's edit dialog. Pass any
@@ -120,6 +142,10 @@ function updateSession(sessionId, patch){
   }
   if('start' in patch && typeof patch.start === 'number') update.start = patch.start;
   if('end'   in patch && typeof patch.end   === 'number') update.end   = patch.end;
+  if('projectId' in patch) update.projectId = patch.projectId || null;
+  if('tags' in patch){
+    update.tags = (Array.isArray(patch.tags) && patch.tags.length) ? patch.tags : null;
+  }
   // Recompute duration if either bound changed
   if('start' in update || 'end' in update){
     var newStart = 'start' in update ? update.start : existing.start;
@@ -132,18 +158,34 @@ function updateSession(sessionId, patch){
 
 function deleteSession(sessionId){
   if(!firebaseReady) return;
+  var existing = clockSessions && clockSessions[sessionId];
+  var snapshot = null;
+  if(existing){
+    snapshot = {};
+    Object.keys(existing).forEach(function(k){ snapshot[k] = existing[k]; });
+  }
   firebaseDb.ref('flowtive_time_sessions/'+sessionId).remove().catch(function(){ showToast('Delete Failed'); });
+  if(snapshot && typeof showUndoToast === 'function'){
+    showUndoToast(
+      'Entry deleted',
+      function(){
+        firebaseDb.ref('flowtive_time_sessions/'+sessionId).set(snapshot).catch(function(){ showToast('Restore failed'); });
+      },
+      null
+    );
+  }
 }
 
 /* Add a retroactive session — for "I forgot to start the timer" cases.
    Validates start < end and returns the new id (or null on failure). */
-function addManualSession(start, end, description){
+function addManualSession(start, end, description, opts){
   if(!firebaseReady){ showToast('Cannot Add — Offline'); return null; }
   if(!currentUser) return null;
   if(typeof start !== 'number' || typeof end !== 'number' || end <= start){
     showToast('End must be after start');
     return null;
   }
+  opts = opts || {};
   var ref = firebaseDb.ref('flowtive_time_sessions').push();
   var id = ref.key;
   var rec = {
@@ -154,6 +196,8 @@ function addManualSession(start, end, description){
     manuallyAdded: true
   };
   if(description && description.trim()) rec.description = description.trim();
+  if(opts.projectId) rec.projectId = opts.projectId;
+  if(Array.isArray(opts.tags) && opts.tags.length) rec.tags = opts.tags;
   ref.set(rec).catch(function(){ showToast('Save Failed'); });
   return id;
 }
@@ -183,7 +227,7 @@ function clockOut(opts){
   firebaseDb.ref('flowtive_time_sessions/'+active.sessionId).update(update).catch(function(){});
   firebaseDb.ref('flowtive_time_active/'+name).remove().catch(function(){});
   logActivity(name, opts.autoClosed?'clock_auto':'clock_out', null, null, null, {sessionId:active.sessionId, durationMs:dur});
-  if(!opts.silent) showToast('Stopped Work · '+fmtElapsed(dur), '#991B1B');
+  if(!opts.silent) showToast('Stopped Work · '+fmtElapsed(dur), 'danger');
 }
 
 function toggleClock(){
@@ -334,6 +378,8 @@ function tickClockUI(){
   if(typeof tickTimeTrackerPanel === 'function') tickTimeTrackerPanel();
   // Update the calendar's now-line + running blocks every second
   if(typeof tickCalendarPanel === 'function') tickCalendarPanel();
+  // Refresh timesheet totals when a session crosses a minute boundary
+  if(typeof tickTimesheetPanel === 'function') tickTimesheetPanel();
   // Update sidebar badges + otc card every minute (less frequent than per-second to save reflows)
   var now = Date.now();
   if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 30000){

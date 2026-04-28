@@ -25,7 +25,7 @@ function saveAvatar(name, dataUrl){
         localStorage.setItem(getAvatarKey(name), compressed);
       } catch(storageErr){
         // Fix 12: Inform user instead of silently failing
-        showToast('⚠️ Storage full — avatar could not be saved. Clear browser data to free space.', '#E67E22');
+        showToast('⚠️ Storage full — avatar could not be saved. Clear browser data to free space.', 'warning');
         console.warn('Avatar localStorage save failed:', storageErr);
         return;
       }
@@ -72,7 +72,7 @@ function handleMemberAvatarUpload(input, memberName){
 
 function refreshMemberPanel(){
   // Fix 5: Preserve scroll position before rebuilding
-  var mainEl = document.getElementById('main');
+  var mainEl = document.getElementById('main-content');
   var savedScroll = mainEl ? mainEl.scrollTop : 0;
 
   var activePanelId = null;
@@ -169,9 +169,12 @@ function applyAvatarsEverywhere(){
     }
   });
 
-  // Leaderboard avatars (guard: panel may not exist if app shell hasn't built yet)
+  // Re-render whichever dashboard is currently active so the new avatar
+  // shows up everywhere (workspace OTC card, territory leaderboard, etc.)
   var dashPanel = document.getElementById('panel-dashboard');
   if(dashPanel && dashPanel.classList.contains('active')) buildDashboard();
+  var tDashPanel = document.getElementById('panel-territory-dashboard');
+  if(tDashPanel && tDashPanel.classList.contains('active') && typeof buildTerritoryDashboard === 'function') buildTerritoryDashboard();
 
   // Done-by avatars in all state table rows
   document.querySelectorAll('[id^="by-"]').forEach(function(el){
@@ -190,7 +193,7 @@ function applyAvatarsEverywhere(){
 function removeAvatar(){
   if(!currentUser) return;
   var name = currentUser.name;
-  if(!loadAvatar(name)){ showToast('No profile photo to remove.', '#6B7280'); return; }
+  if(!loadAvatar(name)){ showToast('No profile photo to remove.', 'neutral'); return; }
   // Remove from localStorage
   try{ localStorage.removeItem(getAvatarKey(name)); }catch(e){}
   // Remove from Firebase
@@ -210,6 +213,6 @@ function removeAvatar(){
   // Refresh everywhere
   refreshMemberPanel();
   applyAvatarsEverywhere();
-  showToast('Profile photo removed.', '#6B7280');
+  showToast('Profile photo removed.', 'neutral');
 }
 

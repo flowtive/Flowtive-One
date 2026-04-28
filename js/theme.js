@@ -23,10 +23,15 @@ function applyTheme(theme, persist){
       Chart.defaults.color = s.getPropertyValue('--text-secondary').trim() || '#6B7280';
       Chart.defaults.borderColor = s.getPropertyValue('--border-default').trim() || '#E4E8EE';
     }
-    // Rebuild dashboard charts INSIDE the swap so they're captured by the transition snapshot
+    // Rebuild whichever dashboard is currently active so its charts re-paint
+    // with the new theme colors during the transition snapshot
     var dash = document.getElementById('panel-dashboard');
     if(dash && dash.classList.contains('active') && typeof buildDashboard === 'function'){
       try{ buildDashboard(); }catch(e){}
+    }
+    var tDash = document.getElementById('panel-territory-dashboard');
+    if(tDash && tDash.classList.contains('active') && typeof buildTerritoryDashboard === 'function'){
+      try{ buildTerritoryDashboard(); }catch(e){}
     }
   };
 
@@ -60,6 +65,10 @@ function applyTheme(theme, persist){
     var dash = document.getElementById('panel-dashboard');
     if(dash && dash.classList.contains('active') && typeof buildDashboard === 'function'){
       try{ buildDashboard(); }catch(e){}
+    }
+    var tDash = document.getElementById('panel-territory-dashboard');
+    if(tDash && tDash.classList.contains('active') && typeof buildTerritoryDashboard === 'function'){
+      try{ buildTerritoryDashboard(); }catch(e){}
     }
   }, 420);
   setTimeout(function(){ root.classList.remove('theme-transitioning'); }, 540);

@@ -104,37 +104,59 @@
 .sidebar{width:260px;min-width:260px;background:var(--bg-surface);border-right:1px solid var(--border);padding:0;position:sticky;top:var(--topbar-h);height:calc(100vh - var(--topbar-h));overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
 
 /* Sidebar footer — anchors work-tracker control to the bottom of the sidebar */
-/* ── Collapsible sidebar groups (Tasks, Time Tracker) ───────────── */
-.sid-group-head{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--text);user-select:none;border-radius:6px;margin:0 6px;transition:background 0.12s}
-.sid-group-head:hover{background:var(--bg-elevated)}
-.sid-group-chev{width:10px;height:10px;color:var(--hint);transition:transform 0.15s var(--ease-out);flex-shrink:0}
-.sid-group-head.open .sid-group-chev{transform:rotate(90deg)}
+/* ── Collapsible sidebar groups (Tasks, Time Tracker) ─────────────
+   Group heads match .sid-dashboard styling so Dashboard / Tasks /
+   Time Tracker read as visually consistent main items. The chevron
+   sits on the right and points DOWN when collapsed, UP when open. */
+.sid-group-head{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--muted);user-select:none;border-left:3px solid transparent;transition:all 0.1s}
+.sid-group-head:hover{background:var(--bg-elevated);color:var(--text)}
+.sid-group-head:hover .sid-icon{background:var(--accent-subtle);border-color:var(--accent-subtle)}
 .sid-group-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sid-group-head .sid-icon{flex-shrink:0}
-.sid-group-body{display:flex;flex-direction:column;gap:1px;overflow:hidden;padding:2px 0 4px;transition:max-height 0.18s var(--ease-out), padding 0.18s var(--ease-out)}
+.sid-group-chev{width:10px;height:10px;color:var(--hint);transition:transform 0.18s var(--ease-out);flex-shrink:0;margin-left:auto}
+.sid-group-head:hover .sid-group-chev{color:var(--text)}
+.sid-group-head.open .sid-group-chev{transform:rotate(180deg);color:var(--accent)}
+/* Body uses an explicit max-height so the open/close animation can interpolate
+   (transitioning to/from "auto" doesn't work — must be a length). 500px is
+   enough for the largest group (Time Tracker has 7 sub-items). */
+.sid-group-body{display:flex;flex-direction:column;gap:1px;overflow:hidden;max-height:500px;padding:2px 0 4px;transition:max-height 0.2s var(--ease-out), padding 0.2s var(--ease-out)}
 .sid-group-body.collapsed{max-height:0;padding:0}
-.sid-subitem{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 36px;margin:0 6px;border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:background 0.1s, color 0.1s}
+.sid-subitem{display:flex;align-items:center;gap:9px;padding:6px 12px 6px 32px;margin:0 6px;border-radius:6px;font-size:12px;color:var(--muted);cursor:pointer;transition:background 0.1s, color 0.1s}
 .sid-subitem:hover{background:var(--bg-elevated);color:var(--text)}
 .sid-subitem.active{background:var(--accent-subtle);color:var(--accent);font-weight:600}
-.sid-subitem-dot{width:4px;height:4px;border-radius:50%;background:var(--hint);flex-shrink:0;transition:background 0.1s}
-.sid-subitem.active .sid-subitem-dot{background:var(--accent)}
+.sid-subitem-icon{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;flex-shrink:0;color:var(--hint);transition:color 0.12s}
+.sid-subitem-icon svg{width:13px;height:13px;display:block}
+.sid-subitem:hover .sid-subitem-icon{color:var(--text)}
+.sid-subitem.active .sid-subitem-icon{color:var(--accent)}
 .sid-subitem-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .sid-footer{margin-top:auto;padding:12px 14px 8px;border-top:1px solid var(--border-subtle);background:var(--bg-surface);position:sticky;bottom:0;display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .sid-footer .clock-btn{width:100%;justify-content:center;padding:8px 12px}
-.sid-version{align-self:center;background:transparent;border:none;font-family:inherit;font-size:10.5px;font-weight:500;color:var(--hint);cursor:pointer;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;font-variant-numeric:tabular-nums;transition:all 0.12s}
+/* Footer row holding the bell + version pill side-by-side, centered */
+.sid-footer-row{display:flex;align-items:center;justify-content:center;gap:8px}
+.sid-version{position:relative;align-self:center;background:transparent;border:none;font-family:inherit;font-size:10.5px;font-weight:500;color:var(--hint);cursor:pointer;padding:2px 8px;border-radius:99px;letter-spacing:0.04em;font-variant-numeric:tabular-nums;transition:all 0.12s;display:inline-flex;align-items:center;gap:6px}
 .sid-version:hover{color:var(--accent);background:var(--accent-subtle)}
+.sid-version.has-update{color:var(--accent);font-weight:600}
+.sid-version-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#EF4444;box-shadow:0 0 0 2px var(--bg-surface);animation:wnDotPulse 2s ease-in-out infinite}
+@keyframes wnDotPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.85}}
+/* Notification bell button — bright (active) by default, muted dims it
+   AND draws a diagonal slash via a ::before pseudo-element. */
+.sid-icon-btn{position:relative;width:24px;height:24px;border:none;background:transparent;color:var(--accent);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:all 0.12s;padding:0;flex-shrink:0}
+.sid-icon-btn:hover{background:var(--accent-subtle)}
+.sid-icon-btn svg{width:13px;height:13px}
+.sid-icon-btn.muted{color:var(--hint)}
+.sid-icon-btn.muted:hover{background:var(--off);color:var(--text)}
+.sid-icon-btn.muted::before{content:'';position:absolute;top:50%;left:50%;width:18px;height:1.5px;background:var(--hint);transform:translate(-50%,-50%) rotate(-45deg);border-radius:1px;pointer-events:none}
+.sid-icon-btn.muted:hover::before{background:var(--text)}
 @media (max-width:639px){ .sid-footer{display:none} }
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 .sid-section{padding:10px 16px 6px;font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border-subtle)}
-.sid-section-toggle{display:flex;align-items:center;gap:6px;padding:10px 16px 6px;font-size:10px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border-subtle);cursor:pointer;user-select:none;transition:color 0.1s}
-.sid-section-toggle:hover{color:var(--blue)}
-.sid-section-toggle .sid-sec-chev{width:10px;height:10px;transition:transform 0.18s ease;color:var(--hint)}
-.sid-section-toggle:hover .sid-sec-chev{color:var(--blue)}
-.sid-section-toggle.open .sid-sec-chev{transform:rotate(90deg)}
-.sid-members-group{overflow:hidden;transition:max-height 0.2s ease}
-.sid-members-group.collapsed{max-height:0!important}
+/* Static count badge in group heads (e.g. Team Members shows "6"). The
+   dynamic Tasks-open count uses .sid-tasks-count which has its own styling. */
+.sid-group-count{font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px;font-variant-numeric:tabular-nums;flex-shrink:0}
+.sid-group-head:hover .sid-group-count{color:var(--text)}
+.sid-group-head.open .sid-group-count{background:var(--accent-subtle);color:var(--accent);border-color:var(--accent-subtle)}
 .sid-item{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--muted);transition:all 0.1s;position:relative;border-left:3px solid transparent}
 .sid-item:hover{background:var(--bg-elevated);color:var(--text)}
 .sid-item.active{background:var(--accent-subtle-2);color:var(--blue);font-weight:500;border-left-color:var(--blue)}
@@ -192,42 +214,42 @@
   .sidebar{width:220px;min-width:220px}
 }
 
-/* sm: even narrower sidebar, icon-only feel */
-@media (max-width:639px){
-  .sidebar{width:64px;min-width:64px}
-  .sid-item span:not(.sid-done-count),.sid-dashboard span:not(.sid-icon){display:none}
-  .sid-done-count{display:none}
-  .sid-section{display:none}
-  .sid-item,.sid-dashboard{padding:10px;justify-content:center;border-left-width:2px}
-  .sid-av,.sid-icon{margin:0 auto}
-  .presence-dot{display:none}
-}
+/* Topbar mobile menu button — only shown when sidebar collapses to drawer */
+.topbar-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text);padding:6px;border-radius:6px;align-items:center;justify-content:center;font-family:inherit}
+.topbar-menu-btn:hover{background:var(--off)}
+.topbar-search-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text);padding:6px;border-radius:6px;align-items:center;justify-content:center;margin-left:auto;font-family:inherit}
+.topbar-search-btn:hover{background:var(--off)}
 
-/* xs: bottom nav bar  */
-@media (max-width:479px){
-  .layout{flex-direction:column-reverse;min-height:unset}
+/* sm + xs: full slide-out drawer (replaces icon-only and bottom-nav patterns).
+   The sidebar stays in the DOM; we hide it off-screen and slide it in over
+   a backdrop when the user taps the topbar hamburger. */
+@media (max-width:899px){
+  .topbar-menu-btn{display:inline-flex}
   .sidebar{
-    width:100%;min-width:unset;height:56px;
-    position:fixed;bottom:0;left:0;right:0;top:unset;
-    flex-direction:row;overflow-x:auto;overflow-y:hidden;
-    border-right:none;border-top:1px solid var(--border);
-    padding:0;z-index:90;background:var(--bg-surface);
-    box-shadow:0 -4px 16px rgba(0,0,0,0.08);
-    scrollbar-width:none;
+    position:fixed;top:var(--topbar-h);left:0;bottom:0;height:calc(100vh - var(--topbar-h));
+    width:280px;min-width:280px;max-width:85vw;
+    transform:translateX(-100%);
+    transition:transform 0.22s var(--ease-out);
+    z-index:95;box-shadow:6px 0 24px rgba(0,0,0,0.18);
+    border-right:1px solid var(--border);
   }
-  .sidebar::-webkit-scrollbar{display:none}
-  .sid-item,.sid-dashboard{
-    flex-direction:column;gap:3px;padding:6px 10px;min-width:64px;
-    font-size:9px;white-space:nowrap;border-left:none;border-top:3px solid transparent;
-    align-items:center;justify-content:center;flex-shrink:0;height:56px;
+  .sidebar.is-open{transform:translateX(0)}
+  .sidebar-backdrop{
+    position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.4);z-index:94;
+    opacity:0;pointer-events:none;transition:opacity 0.22s var(--ease-out);
   }
-  .sid-item.active,.sid-dashboard.active{border-top-color:var(--blue);border-left:none;background:var(--accent-subtle-2)}
-  .sid-item span:not(.sid-done-count),.sid-dashboard span:not(.sid-icon){display:block;font-size:9px;color:inherit}
-  .sid-done-count{display:none}
-  .sid-section{display:none}
-  .sid-av,.sid-icon{margin:0;width:22px;height:22px;font-size:8px}
-  .presence-dot{display:none}
-  .main{padding-bottom:72px} /* room for bottom nav */
+  .sidebar-backdrop.is-open{opacity:1;pointer-events:auto}
+  .layout{display:block}
+  .main{width:100%;min-width:0}
+  /* Hide the topbar ⌘K hint on phones — use the dedicated search button */
+  .search-wrap{display:none}
+  .topbar-search-btn{display:inline-flex}
+  /* Lock body scroll while drawer is open */
+  body.sidebar-open{overflow:hidden}
+}
+@media (max-width:479px){
+  .panel.active{padding-bottom:24px} /* no longer reserves space for bottom nav */
 }
 
 /* ── Panel / page padding ── */
@@ -246,10 +268,13 @@
 /* ── Dashboard chart cards ── */
 @media (max-width:479px){
   .chart-card{padding:12px 14px;border-radius:var(--radius)}
-  .kpi-card{padding:12px 14px;border-radius:var(--radius)}
-  .kpi-num{font-size:24px}
+  .kpi-card{padding:12px 14px;border-radius:var(--radius);min-width:0}
+  .kpi-num{font-size:22px}
   .dash-title{font-size:15px}
   .dash-sub{font-size:11px;margin-bottom:14px}
+  /* Workspace dashboard sub-KPIs — same overflow guards */
+  .td-kpi-value{font-size:18px}
+  .rep-kpi-value{font-size:17px}
 }
 
 /* ── Industry progress grid ── */

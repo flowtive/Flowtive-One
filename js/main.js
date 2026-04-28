@@ -2,17 +2,49 @@
 
 /* ── Main panels ── */
 function buildMain(){
-  var main=document.getElementById('main');
+  var main=document.getElementById('main-content');
   main.innerHTML='';
 
-  // Dashboard
+  // ── Workspace Dashboard (top-level) ──
+  // Cross-product overview: KPIs from Workflow + Logbook + Territory, the
+  // Working Now card, weekly activity chart, hours-per-member chart, and
+  // the team activity feed. State-tracker-specific widgets (leaderboard,
+  // donut, bar, industry progress) live on the Territory dashboard now.
   var dash=document.createElement('div');
+  // Dashboard is the universal landing — always active by default. Members
+  // can navigate to their own state-tracker panel via the Flowtive Territory
+  // group when they want it.
   var defaultMiCheck = currentUser ? MEMBERS.findIndex(function(m){return m.name===currentUser.name;}) : -1;
-  dash.className='panel'+(defaultMiCheck>=0?'':' active');dash.id='panel-dashboard';
+  dash.className='panel active';dash.id='panel-dashboard';
   dash.innerHTML=
-    '<div class="dash-title">Team Progress Dashboard</div>'+
-    '<div class="dash-sub">Live Overview Of USA State Coverage — Welcome Back, '+( currentUser?currentUser.name:'')+'</div>'+
+    '<div class="dash-title">Welcome back, '+(currentUser?escapeHtml(currentUser.name):'')+'</div>'+
+    '<div class="dash-sub">Your workspace home — quick view across all four apps.</div>'+
     '<div class="otc-card" id="otc-card"><div class="otc-head"><div class="otc-pulse"></div><div class="otc-title">Working Now</div></div><div class="otc-list" id="otc-list"></div></div>'+
+    '<div class="kpi-grid">'+
+      // Each workspace KPI is a clickable shortcut into the relevant product.
+      // role+tabindex for keyboard/screen-reader users; onkeydown lets Enter/Space activate.
+      '<div class="kpi-card kpi-card-clickable kpi-strip-brand" role="button" tabindex="0" title="Open Flowtive Workflow · Board" onclick="(document.getElementById(\'sid-tasks\')||{click:function(){}}).click()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();(document.getElementById(\'sid-tasks\')||{click:function(){}}).click();}"><div class="kpi-label">Open Tasks</div><div class="kpi-num" id="ws-kpi-tasks">—</div><div class="kpi-sub">Flowtive Workflow</div></div>'+
+      '<div class="kpi-card kpi-card-clickable kpi-strip-success" role="button" tabindex="0" title="Open Flowtive Logbook · Tracker" onclick="(document.getElementById(\'sid-time\')||{click:function(){}}).click()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();(document.getElementById(\'sid-time\')||{click:function(){}}).click();}"><div class="kpi-label">Hours This Week</div><div class="kpi-num" style="color:var(--success)" id="ws-kpi-hours">—</div><div class="kpi-sub">Flowtive Logbook</div></div>'+
+      '<div class="kpi-card kpi-card-clickable kpi-strip-warning" role="button" tabindex="0" title="Open Flowtive Logbook · Dashboard" onclick="(document.getElementById(\'sid-time-dashboard\')||{click:function(){}}).click()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();(document.getElementById(\'sid-time-dashboard\')||{click:function(){}}).click();}"><div class="kpi-label">Active Right Now</div><div class="kpi-num" style="color:var(--warning)" id="ws-kpi-active">—</div><div class="kpi-sub">Tracking time</div></div>'+
+      '<div class="kpi-card kpi-card-clickable kpi-strip-info" role="button" tabindex="0" title="Open Flowtive Territory · Dashboard" onclick="(document.getElementById(\'sid-territory-dashboard\')||{click:function(){}}).click()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();(document.getElementById(\'sid-territory-dashboard\')||{click:function(){}}).click();}"><div class="kpi-label">Territory Coverage</div><div class="kpi-num" style="color:var(--info)" id="ws-kpi-territory">—</div><div class="kpi-sub">Flowtive Territory</div></div>'+
+    '</div>'+
+    '<div class="charts-grid">'+
+      '<div class="chart-card chart-full" id="card-hours-week"><div class="chart-title">Hours This Week <span class="chart-title-sub">(Last 7 Days, Per Member)</span></div><div class="hours-week-chart-wrap"><canvas id="hours-week-chart-canvas"></canvas></div></div>'+
+      '<div class="chart-card chart-full" id="card-weekly"><div class="chart-title">Weekly Activity <span class="chart-title-sub">(All Apps · Last 7 Days)</span></div><div class="weekly-chart-wrap"><canvas id="weekly-chart-canvas"></canvas></div></div>'+
+      '<div class="chart-card chart-full" id="card-activity" style="overflow:hidden"><div class="chart-title">Recent Activity</div><div class="activity-list" id="activity-list" role="log" aria-live="polite" aria-relevant="additions" aria-label="Team activity feed" style="max-height:340px;overflow-y:auto"></div></div>'+
+    '</div>';
+  main.appendChild(dash);
+
+  // ── Flowtive Territory · Dashboard ──
+  // The state-tracker dashboard that used to be the main one. KPIs,
+  // bar + donut, leaderboard, weekly progress (state activity), and the
+  // industry progress grid all moved here.
+  var territoryDash=document.createElement('div');
+  territoryDash.className='panel';
+  territoryDash.id='panel-territory-dashboard';
+  territoryDash.innerHTML=
+    '<div class="dash-title">Flowtive Territory · Dashboard</div>'+
+    '<div class="dash-sub">USA state coverage — leaderboard, charts, and industry progress.</div>'+
     '<div class="kpi-grid">'+
       '<div class="kpi-card kpi-strip-brand"><div class="kpi-label">Total Cities</div><div class="kpi-num" id="kpi-total">—</div><div class="kpi-sub">All Members &amp; Industries</div></div>'+
       '<div class="kpi-card kpi-strip-success"><div class="kpi-label">States Covered</div><div class="kpi-num" style="color:var(--success)" id="kpi-done">0</div><div class="kpi-sub">All Cities Ticked</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-done-bar" style="background:var(--success);width:0%"></div></div></div>'+
@@ -20,83 +52,76 @@ function buildMain(){
       '<div class="kpi-card kpi-strip-info"><div class="kpi-label">Overall Completion</div><div class="kpi-num" style="color:var(--info)" id="kpi-pct">0%</div><div class="kpi-sub">Of Total USA Coverage</div></div>'+
     '</div>'+
     '<div class="charts-grid">'+
-      /* Row 1: bar + donut side by side on desktop, stacked on mobile */
       '<div class="chart-card" id="card-bar"><div class="chart-title">States Covered Per Person</div><div class="bar-chart-wrap"><canvas id="bar-chart-canvas"></canvas></div></div>'+
       '<div class="chart-card" id="card-donut"><div class="chart-title">Coverage Distribution</div><div class="donut-wrap"><div class="donut-canvas-wrap"><canvas id="donut-chart"></canvas></div><div class="donut-legend" id="donut-legend"></div></div></div>'+
-      /* Row 2: weekly progress — full width */
-      '<div class="chart-card chart-full" id="card-weekly"><div class="chart-title">Weekly Progress <span class="chart-title-sub">(Last 7 Days)</span></div><div class="weekly-chart-wrap"><canvas id="weekly-chart-canvas"></canvas></div></div>'+
-      /* Row 2.5: hours this week — full width */
-      '<div class="chart-card chart-full" id="card-hours-week"><div class="chart-title">Hours This Week <span class="chart-title-sub">(Last 7 Days, Per Member)</span></div><div class="hours-week-chart-wrap"><canvas id="hours-week-chart-canvas"></canvas></div></div>'+
-      /* Row 3: leaderboard + activity side by side on desktop, stacked on mobile */
-      '<div class="chart-card" id="card-leaderboard" style="overflow:hidden"><div class="chart-title">Team Leaderboard</div><div class="leaderboard" id="leaderboard"></div></div>'+
-      '<div class="chart-card" id="card-activity" style="overflow:hidden"><div class="chart-title">Recent Activity</div><div class="activity-list" id="activity-list" style="max-height:340px;overflow-y:auto"></div></div>'+
-      /* Row 4: industry progress — full width */
+      '<div class="chart-card chart-full" id="card-leaderboard" style="overflow:hidden"><div class="chart-title">Team Leaderboard</div><div class="leaderboard" id="leaderboard"></div></div>'+
       '<div class="chart-card chart-full" id="card-industry"><div class="chart-title">Industry Coverage Progress</div><div class="ind-prog-grid" id="ind-progress-grid"></div></div>'+
     '</div>';
-  main.appendChild(dash);
+  main.appendChild(territoryDash);
 
   // Tasks Dashboard panel
   var tasksDashPanel=document.createElement('div');
   tasksDashPanel.className='panel';
   tasksDashPanel.id='panel-tasks-dashboard';
-  tasksDashPanel.innerHTML='<div class="dash-title">Tasks Dashboard</div><div class="dash-sub">Team-wide task overview — status breakdown, overdue, and who\'s busy.</div><div id="tasks-dashboard-body"></div>';
+  tasksDashPanel.innerHTML='<div class="dash-title">Flowtive Workflow · Dashboard</div><div class="dash-sub">Team-wide task overview — status breakdown, overdue, and who\'s busy.</div><div id="tasks-dashboard-body"></div>';
   main.appendChild(tasksDashPanel);
 
   // Tasks panel container (rendered on demand by renderTasksPanel)
   var tasksPanel=document.createElement('div');
   tasksPanel.className='panel';
   tasksPanel.id='panel-tasks';
-  tasksPanel.innerHTML='<div class="dash-title">Tasks</div><div class="dash-sub">Team-wide task board · drag cards on the board to change status.</div><div id="tasks-panel-body"></div>';
+  tasksPanel.innerHTML='<div class="dash-title">Flowtive Workflow · Board</div><div class="dash-sub">Team-wide task board · drag cards on the board to change status.</div><div id="tasks-panel-body"></div>';
   main.appendChild(tasksPanel);
 
   // Time Tracker panel container (rendered on demand by renderTimeTrackerPanel)
   var timePanel=document.createElement('div');
   timePanel.className='panel';
   timePanel.id='panel-time';
-  timePanel.innerHTML='<div class="dash-title">Time Tracker</div><div class="dash-sub">Log your work, edit past entries, and review where your time went.</div><div id="time-panel-body"></div>';
+  timePanel.innerHTML='<div class="dash-title">Flowtive Logbook · Tracker</div><div class="dash-sub">Log your work, edit past entries, and review where your time went.</div><div id="time-panel-body"></div>';
   main.appendChild(timePanel);
 
   // Time Tracker · Calendar (stub for now — Phase 2)
   var timeCalPanel=document.createElement('div');
   timeCalPanel.className='panel';
   timeCalPanel.id='panel-time-calendar';
-  timeCalPanel.innerHTML='<div class="dash-title">Calendar</div><div class="dash-sub">Visual week / day view of your tracked time.</div><div id="time-calendar-body"></div>';
+  timeCalPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Calendar</div><div class="dash-sub">Visual week / day view of your tracked time.</div><div id="time-calendar-body"></div>';
   main.appendChild(timeCalPanel);
+
+  // Time Tracker · Timesheet (Phase 5)
+  var timeSheetPanel=document.createElement('div');
+  timeSheetPanel.className='panel';
+  timeSheetPanel.id='panel-time-timesheet';
+  timeSheetPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Timesheet</div><div class="dash-sub">Project × day grid for the week. Click any cell to log time on that project, on that day.</div><div id="time-timesheet-body"></div>';
+  main.appendChild(timeSheetPanel);
 
   // Time Tracker · Dashboard (analytics — built in Phase 1)
   var timeDashPanel=document.createElement('div');
   timeDashPanel.className='panel';
   timeDashPanel.id='panel-time-dashboard';
-  timeDashPanel.innerHTML='<div class="dash-title">Time Tracker · Dashboard</div><div class="dash-sub">Hours tracked, top contributor, and weekly trend across the team.</div><div id="time-dashboard-body"></div>';
+  timeDashPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Dashboard</div><div class="dash-sub">Hours tracked, top contributor, and weekly trend across the team.</div><div id="time-dashboard-body"></div>';
   main.appendChild(timeDashPanel);
 
   // Time Tracker · Reports (stub for now — Phase 4)
   var timeRepPanel=document.createElement('div');
   timeRepPanel.className='panel';
   timeRepPanel.id='panel-time-reports';
-  timeRepPanel.innerHTML='<div class="dash-title">Reports</div><div class="dash-sub">Filter, group, and export tracked time for any range.</div><div id="time-reports-body"></div>';
+  timeRepPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Reports</div><div class="dash-sub">Filter, group, and export tracked time for any range.</div><div id="time-reports-body"></div>';
   main.appendChild(timeRepPanel);
 
   // Time Tracker · Projects (stub for now — Phase 3)
   var timeProjPanel=document.createElement('div');
   timeProjPanel.className='panel';
   timeProjPanel.id='panel-time-projects';
-  timeProjPanel.innerHTML='<div class="dash-title">Projects</div><div class="dash-sub">Group time entries under projects and track per-project totals.</div><div id="time-projects-body"></div>';
+  timeProjPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Projects</div><div class="dash-sub">Group time entries under projects and track per-project totals.</div><div id="time-projects-body"></div>';
   main.appendChild(timeProjPanel);
 
   // Time Tracker · Tags (stub for now — Phase 3)
   var timeTagsPanel=document.createElement('div');
   timeTagsPanel.className='panel';
   timeTagsPanel.id='panel-time-tags';
-  timeTagsPanel.innerHTML='<div class="dash-title">Tags</div><div class="dash-sub">Categorize time entries with cross-project labels.</div><div id="time-tags-body"></div>';
+  timeTagsPanel.innerHTML='<div class="dash-title">Flowtive Logbook · Tags</div><div class="dash-sub">Categorize time entries with cross-project labels.</div><div id="time-tags-body"></div>';
   main.appendChild(timeTagsPanel);
 
-  // Time Tracker · Team (stub for now — Phase later)
-  var timeTeamPanel=document.createElement('div');
-  timeTeamPanel.className='panel';
-  timeTeamPanel.id='panel-time-team';
-  timeTeamPanel.innerHTML='<div class="dash-title">Team</div><div class="dash-sub">Per-member time tracked and team activity.</div><div id="time-team-body"></div>';
-  main.appendChild(timeTeamPanel);
 
   // Member panels — open logged-in user's panel by default
   var defaultMi = currentUser ? MEMBERS.findIndex(function(m){return m.name===currentUser.name;}) : -1;
@@ -104,7 +129,7 @@ function buildMain(){
   MEMBERS.forEach(function(m,mi){
     var isMe=currentUser&&m.name===currentUser.name;
     var panel=document.createElement('div');
-    panel.className='panel'+(isMe&&defaultMi>=0?' active':'');
+    panel.className='panel';
     panel.id='panel-'+mi;
     panel.innerHTML=
       '<div class="page-header">'+
@@ -139,7 +164,7 @@ function buildMain(){
       head.innerHTML=
         '<span class="ind-name">'+ind+'</span>'+
         '<div class="ind-meta">'+
-          '<button class="email-btn" onclick="event.stopPropagation();openEmailModal(\''+ind.replace(/'/g,"\\'")+'\', true)" type="button" title="Email templates for '+ind+'">'+
+          '<button class="email-btn" onclick="event.stopPropagation();openEmailModal(\''+ind.replace(/'/g,"\\'")+'\', true)" type="button" title="Flowtive Cold Pitch · '+ind+'">'+
             '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg>'+
             'Emails'+
           '</button>'+
@@ -279,15 +304,10 @@ function buildMain(){
     main.appendChild(panel);updateStats(mi);
   });
 
-  // Fix dashboard to be active if no user match
+  // Dashboard is the universal landing — guarantee it's active even if some
+  // earlier code path tried to override.
   var pdash = document.getElementById('panel-dashboard');
-  var sdash = document.getElementById('sid-dashboard');
-  if(defaultMi<0){
-    if(pdash) pdash.classList.add('active');
-  } else {
-    if(pdash) pdash.classList.remove('active');
-    if(sdash) sdash.classList.remove('active');
-  }
+  if(pdash) pdash.classList.add('active');
 }
 
 
@@ -326,6 +346,11 @@ async function initApp(){
 
 
 window.addEventListener('load', function(){
+  // Show app version on the login branding aside
+  try{
+    var lv = document.getElementById('login-brand-version');
+    if(lv && typeof APP_VERSION !== 'undefined') lv.textContent = APP_VERSION;
+  }catch(e){}
   var stored = localStorage.getItem('flowtive_user');
   if(stored){
     try{
@@ -340,7 +365,7 @@ window.addEventListener('load', function(){
       else { _pillEl2.style.background=color; _pillEl2.textContent=currentUser.name.substring(0,2).toUpperCase(); }
       document.getElementById('user-pill-name').textContent = currentUser.name;
       startClock();
-      initApp().then(function(){ applyAvatarsEverywhere(); subscribeClock(); subscribeTasks(); }); // Fix 4: apply avatars after restore
+      initApp().then(function(){ applyAvatarsEverywhere(); subscribeClock(); subscribeTasks(); if(typeof subscribeProjects==='function') subscribeProjects(); if(typeof subscribeTags==='function') subscribeTags(); }); // Fix 4: apply avatars after restore
       if(typeof requestNotificationPermission === 'function') requestNotificationPermission();
     }catch(e){ localStorage.removeItem('flowtive_user'); }
   }

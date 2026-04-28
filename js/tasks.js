@@ -29,19 +29,35 @@ function subscribeTasks(){
     tasksData = snap.val() || {};
     autoCloseStaleTaskTimer();
     updateSidebarTasksCount();
-    var panel = document.getElementById('panel-tasks');
-    if(panel && panel.classList.contains('active')){
-      // If the panel hasn't been built yet (no toolbar exists), build it.
-      // Otherwise refresh only the task area so search input keeps focus.
-      if(!document.getElementById('tasks-area')) renderTasksPanel();
-      else renderTasksArea();
-    }
-    // If the drawer is open, refresh the live sections (subtasks/comments)
-    // without rebuilding inputs that the user may be typing in.
-    // If the open task was deleted by a teammate, close the drawer.
+    // Drawer refresh is cheap + needs to run immediately so users don't
+    // see stale data while typing.
     if(_drawerTaskId){
       if(tasksData[_drawerTaskId]) refreshDrawerLiveSections(tasksData[_drawerTaskId]);
       else { showToast('Task was deleted'); closeTaskDrawer(); }
+    }
+    // Heavy renders: coalesce per key via rAF so multiple rapid updates
+    // share a single rebuild instead of stacking.
+    if(typeof scheduleRender === 'function'){
+      scheduleRender('panel-tasks', function(){
+        var panel = document.getElementById('panel-tasks');
+        if(panel && panel.classList.contains('active')){
+          if(!document.getElementById('tasks-area')) renderTasksPanel();
+          else renderTasksArea();
+        }
+      });
+      scheduleRender('panel-dashboard', function(){
+        var wd = document.getElementById('panel-dashboard');
+        if(wd && wd.classList.contains('active') && typeof buildDashboard === 'function') buildDashboard();
+      });
+    } else {
+      // Fallback if util.js hasn't loaded scheduleRender yet
+      var panel = document.getElementById('panel-tasks');
+      if(panel && panel.classList.contains('active')){
+        if(!document.getElementById('tasks-area')) renderTasksPanel();
+        else renderTasksArea();
+      }
+      var wd = document.getElementById('panel-dashboard');
+      if(wd && wd.classList.contains('active') && typeof buildDashboard === 'function') buildDashboard();
     }
   });
 }
@@ -134,7 +150,7 @@ function renderTasksPanel(){
         e.preventDefault();
         createTask({title: qa.value.trim()});
         qa.value = '';
-        showToast('Task added', '#3AC284');
+        showToast('Task added', 'success');
       }
     });
   }
@@ -341,7 +357,7 @@ function renderTaskRow(t){
     : '<span class="task-assignee unassigned clickable" onclick="event.stopPropagation();openAssigneePicker(\''+t.id+'\', this)"><span class="av-mini">?</span>Unassigned</span>';
   var due = t.dueDate
     ? '<span class="task-due clickable '+dueClass(t.dueDate,t.status)+'" onclick="event.stopPropagation();openDuePicker(\''+t.id+'\', this)">'+fmtDueLabel(t.dueDate)+'</span>'
-    : '<span class="task-due task-due-empty clickable" onclick="event.stopPropagation();openDuePicker(\''+t.id+'\', this)">Set date</span>';
+    : '<span class="task-due task-due-empty clickable" onclick="event.stopPropagation();openDuePicker(\''+t.id+'\', this)">+ Add due date</span>';
   // Subtask progress badge ("3/5") if task has subtasks
   var subProg = subtaskProgress(t);
   var subBadge = subProg
@@ -660,7 +676,48 @@ function maybeSpawnRecurring(existing){
   logActivity(currentUser.name, 'task_create', null, null, null, {
     taskId: id, title: rec.title, assignee: rec.assignee, recurringFrom: existing.id
   });
-  showToast('Next "'+existing.title+'" scheduled', '#3AC284');
+  showToast('Next "'+existing.title+'" scheduled', 'success');
+  // Show an inline banner inside the open drawer so the user actually sees
+  // the confirmation (the toast can be missed when focus is in the modal).
+  if(_drawerTaskId === existing.id){
+    showRecurringSpawnedBanner(id, nextDue);
+  }
+}
+
+/* Inline banner shown at the top of the open drawer's main column when a
+   recurring task spawns its next instance. Includes the next due date and
+   a quick "Open" button that switches the drawer to the new task. */
+function showRecurringSpawnedBanner(newTaskId, nextDueMs){
+  var main = document.querySelector('#tdrawer .tdrawer-main');
+  if(!main) return;
+  // Remove any prior banner so consecutive completions don't stack
+  var prior = main.querySelector('.td-recurring-banner');
+  if(prior) prior.remove();
+
+  var dateStr = new Date(nextDueMs).toLocaleDateString(undefined,
+    {weekday:'long', month:'short', day:'numeric'});
+
+  var banner = document.createElement('div');
+  banner.className = 'td-recurring-banner';
+  banner.innerHTML = ''
+    + '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+    +   '<path d="M2 6a4.5 4.5 0 0 1 8-3l1.5 1.5"/>'
+    +   '<path d="M11.5 1.5v3h-3"/>'
+    +   '<path d="M12 8a4.5 4.5 0 0 1-8 3l-1.5-1.5"/>'
+    +   '<path d="M2.5 12.5v-3h3"/>'
+    + '</svg>'
+    + '<span class="td-recurring-banner-text">Next instance scheduled for <strong>' + escapeHtml(dateStr) + '</strong></span>'
+    + '<button type="button" class="td-recurring-banner-open" onclick="openTaskDrawer(\''+newTaskId+'\')">Open</button>'
+    + '<button type="button" class="td-recurring-banner-close" onclick="this.parentElement.classList.remove(\'show\');setTimeout(function(){var p=document.querySelector(\'.td-recurring-banner\');if(p)p.remove();},250)" aria-label="Dismiss">&times;</button>';
+  main.insertBefore(banner, main.firstChild);
+  // Slide-in on next frame
+  requestAnimationFrame(function(){ banner.classList.add('show'); });
+  // Auto-dismiss after 10 s — long enough to see, short enough not to nag
+  setTimeout(function(){
+    if(!banner.parentElement) return;
+    banner.classList.remove('show');
+    setTimeout(function(){ if(banner.parentElement) banner.remove(); }, 300);
+  }, 10000);
 }
 
 function openRecurrencePicker(taskId, anchor){
@@ -753,9 +810,9 @@ function startTaskTimer(taskId){
   firebaseDb.ref('flowtive_tasks/'+taskId+'/activeTimers/'+name).set({entryId:entryId, start:now});
   firebaseDb.ref('flowtive_tasks/'+taskId+'/updatedAt').set(now);
   if(prevTitle){
-    showToast('Switched from "'+prevTitle+'" — tracking new task', '#475569');
+    showToast('Switched from "'+prevTitle+'" — tracking new task', 'neutral');
   } else {
-    showToast('Tracking Started', '#3AC284');
+    showToast('Tracking Started', 'success');
   }
 }
 
@@ -775,7 +832,7 @@ function stopTaskTimer(taskId, opts){
   firebaseDb.ref('flowtive_tasks/'+taskId+'/timeEntries/'+act.entryId).update({end:end, durationMs:dur});
   firebaseDb.ref('flowtive_tasks/'+taskId+'/activeTimers/'+name).remove();
   firebaseDb.ref('flowtive_tasks/'+taskId+'/updatedAt').set(end);
-  if(!opts.silent) showToast('Stopped · '+fmtElapsed(dur), '#991B1B');
+  if(!opts.silent) showToast('Stopped · '+fmtElapsed(dur), 'danger');
 }
 
 function toggleTaskTimer(taskId){
@@ -786,21 +843,26 @@ function toggleTaskTimer(taskId){
 }
 
 /* Per-second tick — called from clock.js's tickClockUI. Updates every visible
-   running counter (row badges, modal total) without re-rendering the DOM. */
+   running counter (row badges, modal total) without re-rendering the DOM.
+   Optimized: bails immediately when no running pills are visible (the common
+   case), and skips the modal lookup unless the drawer is open. Both checks
+   are cheap so the tick stays cheap even with many tasks rendered. */
 function tickTaskTimers(){
   if(!currentUser) return;
   var name = currentUser.name;
-  document.querySelectorAll('.task-time-pill.running').forEach(function(pill){
+  var pills = document.querySelectorAll('.task-time-pill.running');
+  var hasDrawer = !!(_drawerTaskId && document.getElementById('td-time-total'));
+  if(pills.length === 0 && !hasDrawer) return;
+  pills.forEach(function(pill){
     var taskId = pill.getAttribute('data-task-id');
     var t = tasksData[taskId]; if(!t) return;
     var span = pill.querySelector('.task-time-val');
     if(span) span.textContent = fmtElapsed(getTaskLiveMs(t, name));
   });
-  var modalTotal = document.getElementById('td-time-total');
-  if(modalTotal && _drawerTaskId){
+  if(hasDrawer){
     var dt = tasksData[_drawerTaskId];
     if(dt && dt.activeTimers && dt.activeTimers[name]){
-      modalTotal.textContent = fmtElapsed(getTaskLiveMs(dt, name));
+      document.getElementById('td-time-total').textContent = fmtElapsed(getTaskLiveMs(dt, name));
     }
   }
 }
@@ -877,19 +939,41 @@ function toggleTaskDone(id){
 function deleteTask(id){
   if(!firebaseReady) return;
   var t = tasksData[id]; if(!t) return;
+  // Snapshot for undo before mutating Firebase
+  var snapshot = {};
+  Object.keys(t).forEach(function(k){ snapshot[k] = t[k]; });
+  // Optimistic delete — actually commits when the undo toast expires
+  // For consistency we still write immediately (so other clients see it),
+  // but if the user hits Undo we restore from `snapshot`.
   firebaseDb.ref('flowtive_tasks/'+id).remove().catch(function(){ showToast('Delete Failed'); });
-  if(currentUser){
-    logActivity(currentUser.name, 'task_delete', null, null, null, {taskId: id, title: t.title});
-  }
-  showToast('Task Deleted');
   if(_drawerTaskId === id) closeTaskDrawer();
+  if(typeof showUndoToast === 'function'){
+    showUndoToast(
+      'Task deleted',
+      function(){
+        // Undo: restore the snapshot
+        firebaseDb.ref('flowtive_tasks/'+id).set(snapshot).catch(function(){ showToast('Restore failed'); });
+      },
+      function(){
+        // Commit: log activity once the window passes
+        if(currentUser){
+          logActivity(currentUser.name, 'task_delete', null, null, null, {taskId: id, title: t.title});
+        }
+      }
+    );
+  } else {
+    if(currentUser){
+      logActivity(currentUser.name, 'task_delete', null, null, null, {taskId: id, title: t.title});
+    }
+    showToast('Task Deleted');
+  }
 }
 
 function confirmDeleteTask(id){
   var t = tasksData[id]; if(!t) return;
   ftConfirm({
     title: 'Delete task?',
-    message: '"'+(t.title||'Untitled')+'" will be permanently deleted. This cannot be undone.',
+    message: '"'+(t.title||'Untitled')+'" will be deleted. You can undo for a few seconds.',
     confirmLabel: 'Delete',
     cancelLabel: 'Cancel',
     danger: true,
@@ -998,7 +1082,7 @@ function renderTaskFactRows(t){
     : '<span class="task-assignee unassigned clickable" onclick="openAssigneePicker(\''+t.id+'\', this)"><span class="av-mini">?</span>Unassigned</span>';
   var dueVal = t.dueDate
     ? '<span class="task-due clickable '+dueClass(t.dueDate,t.status)+'" onclick="openDuePicker(\''+t.id+'\', this)">'+fmtDueLabel(t.dueDate)+'</span>'
-    : '<span class="task-due task-due-empty clickable" onclick="openDuePicker(\''+t.id+'\', this)">Set date</span>';
+    : '<span class="task-due task-due-empty clickable" onclick="openDuePicker(\''+t.id+'\', this)">+ Add due date</span>';
   var recurVal = t.recurrence
     ? '<span class="recurrence-pill clickable" onclick="openRecurrencePicker(\''+t.id+'\', this)"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5a4 4 0 0 1 7-2.5L10 4M10 7a4 4 0 0 1-7 2.5L2 8"/><path d="M10 1.5V4H7.5M2 10.5V8h2.5"/></svg>'+shortRecurrenceLabel(t.recurrence)+'</span>'
     : '<span class="recurrence-pill recurrence-pill-empty clickable" onclick="openRecurrencePicker(\''+t.id+'\', this)">No repeat</span>';
@@ -1105,7 +1189,7 @@ function renderEditTaskDrawerHtml(t){
     +   '</div>'
     +   '<div class="tdrawer-head-right">'
     +     '<button class="tdrawer-icon-btn" title="Delete task" onclick="confirmDeleteTask(\''+t.id+'\')">'+icoTrash+'</button>'
-    +     '<button class="tdrawer-close" onclick="closeTaskDrawer()" type="button" aria-label="Close">×</button>'
+    +     '<button class="tdrawer-close" onclick="closeTaskDrawer()" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>'
     +   '</div>'
     + '</div>'
     + '<div class="tdrawer-body">'
@@ -1159,7 +1243,7 @@ function renderNewTaskDrawerHtml(t){
     +     '<span class="tdrawer-type-badge">'+icoTask+'New Task</span>'
     +   '</div>'
     +   '<div class="tdrawer-head-right">'
-    +     '<button class="tdrawer-close" onclick="closeTaskDrawer()" type="button" aria-label="Close">×</button>'
+    +     '<button class="tdrawer-close" onclick="closeTaskDrawer()" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>'
     +   '</div>'
     + '</div>'
     + '<div class="tdrawer-body tdrawer-body-new">'
@@ -1400,7 +1484,7 @@ function renderCommentsSection(t){
            +    '<div class="comment-av" style="background:'+avBg+'">'+avInner+'</div>'
            +    '<div class="comment-body">'
            +      '<div class="comment-meta"><span class="comment-author">'+escapeHtml(c.user||'')+'</span><span class="comment-time">'+formatTimeAgo(c.createdAt)+'</span>'
-           +        (canDelete ? '<button class="comment-del" title="Delete" onclick="deleteComment(\''+t.id+'\',\''+c.id+'\')">×</button>' : '')
+           +        (canDelete ? '<button class="comment-del" title="Delete comment" aria-label="Delete comment" onclick="deleteComment(\''+t.id+'\',\''+c.id+'\')"><span aria-hidden="true">×</span></button>' : '')
            +      '</div>'
            +      '<div class="comment-text">'+renderCommentTextWithMentions(c.text||'')+'</div>'
            +    '</div>'
@@ -1624,7 +1708,7 @@ function editTaskTitleInline(id, el){
     var v = input.value.trim();
     if(v && v !== orig){
       updateTask(id, {title: v});
-      showToast('Title updated', '#3AC284');
+      showToast('Title updated', 'success');
     } else {
       // No change — re-render as-is
       renderTasksArea();
@@ -1709,6 +1793,24 @@ function _inlineEscHandler(e){
     // one Escape press should close one thing (picker), not two.
     e.stopPropagation();
     closeInlinePicker();
+    return;
+  }
+  // Trap arrow + Tab inside the picker so keyboard users don't get pulled
+  // back into the page underneath. Up/Down moves between items; Tab cycles.
+  if(!_inlinePicker) return;
+  var items = _inlinePicker.querySelectorAll('button.inline-picker-item, input, button');
+  if(!items.length) return;
+  var arr = Array.prototype.slice.call(items);
+  var current = document.activeElement;
+  var idx = arr.indexOf(current);
+  if(e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)){
+    e.preventDefault();
+    var next = arr[(idx + 1 + arr.length) % arr.length] || arr[0];
+    next.focus();
+  } else if(e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)){
+    e.preventDefault();
+    var prev = arr[(idx - 1 + arr.length) % arr.length] || arr[arr.length-1];
+    prev.focus();
   }
 }
 
@@ -1765,7 +1867,14 @@ function openInlinePicker(anchor, items, currentValue, onPick){
   _inlinePicker = pop;
   _inlinePickerAnchor = anchor;
   _positionInlinePicker(anchor);
-  requestAnimationFrame(function(){ pop.classList.add('show'); });
+  requestAnimationFrame(function(){
+    pop.classList.add('show');
+    // Move keyboard focus into the picker — the active item if any,
+    // otherwise the first one. Combined with the Tab/Arrow trap below
+    // this gives keyboard users a contained, navigable picker.
+    var target = pop.querySelector('.inline-picker-item.active') || pop.querySelector('.inline-picker-item');
+    if(target) target.focus();
+  });
   _attachInlineCloseHandlers();
 }
 

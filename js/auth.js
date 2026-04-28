@@ -53,6 +53,8 @@ function doLogout(){
   }
   unsubscribeClock();
   unsubscribeTasks();
+  if(typeof unsubscribeProjects==='function') unsubscribeProjects();
+  if(typeof unsubscribeTags==='function')     unsubscribeTags();
   // Fix 3: Detach Firebase listeners before clearing state so they don't fire on stale data
   if(firebaseReady && firebaseDb){
     firebaseDb.ref('flowtive_progress').off();
@@ -103,7 +105,7 @@ function showApp(){
   document.getElementById('user-pill-name').textContent = currentUser.name;
 
   startClock();
-  initApp().then(function(){ applyAvatarsEverywhere(); subscribeClock(); subscribeTasks(); });
+  initApp().then(function(){ applyAvatarsEverywhere(); subscribeClock(); subscribeTasks(); if(typeof subscribeProjects==='function') subscribeProjects(); if(typeof subscribeTags==='function') subscribeTags(); });
 }
 
 

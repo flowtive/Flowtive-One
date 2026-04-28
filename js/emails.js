@@ -695,7 +695,7 @@ function openEmailModal(ind, fromLibrary){
   if(!data){ emailToast('No templates for '+ind); return; }
   _currentOpenInd = ind;
   _emailFromLibrary = !!fromLibrary;
-  document.getElementById('email-modal-title').textContent = ind+' — Email Templates';
+  document.getElementById('email-modal-title').textContent = 'Flowtive Cold Pitch · '+ind;
   document.getElementById('email-modal-sub').textContent = data.owner+' · '+data.tone;
   var backBtn = document.getElementById('email-modal-back');
   if(backBtn) backBtn.classList.toggle('app-hidden', !_emailFromLibrary);

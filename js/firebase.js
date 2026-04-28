@@ -86,7 +86,6 @@ function initFirebase(){
     firebaseApp = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDb  = firebase.database();
     firebaseReady = true;
-    console.log('Firebase connected ✓');
   }catch(e){
     console.warn('Firebase init failed:', e.message);
   }
@@ -238,11 +237,16 @@ function patchUIFromData(oldData, newData){
     });
   });
 
-  // Update sidebar counts + dashboard if open
+  // Update sidebar counts + whichever dashboard is currently visible
   updateSidebarCounts();
   if(document.getElementById('panel-dashboard') &&
      document.getElementById('panel-dashboard').classList.contains('active')){
     buildDashboard();
+  }
+  if(document.getElementById('panel-territory-dashboard') &&
+     document.getElementById('panel-territory-dashboard').classList.contains('active') &&
+     typeof buildTerritoryDashboard === 'function'){
+    buildTerritoryDashboard();
   }
 }
 
@@ -351,6 +355,11 @@ function subscribeRealtime(){
     if(document.getElementById('panel-dashboard') &&
        document.getElementById('panel-dashboard').classList.contains('active')){
       buildDashboard();
+    }
+    if(document.getElementById('panel-territory-dashboard') &&
+       document.getElementById('panel-territory-dashboard').classList.contains('active') &&
+       typeof buildTerritoryDashboard === 'function'){
+      buildTerritoryDashboard();
     }
   });
 

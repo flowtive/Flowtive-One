@@ -16,9 +16,66 @@ var _palSelected = 0;
       togglePalette();
       return;
     }
+    // Open keyboard-shortcut help overlay with `?` (only when not typing)
+    if(e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey){
+      var t = e.target;
+      var isTyping = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t.isContentEditable === true));
+      if(!isTyping){
+        e.preventDefault();
+        toggleKeyboardShortcutHelp();
+      }
+    }
     // The palette has its own internal keydown handlers wired when open
   });
 })();
+
+/* ── Keyboard-shortcut help overlay ──
+   Shows a quick reference card of all the shortcuts in the app. Toggled
+   with `?` from anywhere outside text inputs. Pure-DOM, no dependencies. */
+function toggleKeyboardShortcutHelp(){
+  var existing = document.getElementById('ksh-backdrop');
+  if(existing){ closeKeyboardShortcutHelp(); return; }
+  var rows = [
+    { keys:['?'],          desc:'Show this shortcut overlay' },
+    { keys:['⌘','K'],      desc:'Open Cmd+K palette (search tasks, members, projects, tags, emails, states)' },
+    { keys:['Esc'],        desc:'Close any open dialog, picker, or drawer' },
+    { keys:['N'],          desc:'New task (when on the Tasks panel and not typing)' },
+    { keys:['Enter'],      desc:'Submit the focused form / pick the highlighted item' },
+    { keys:['↑','↓'],      desc:'Navigate within the palette or inline pickers' },
+    { keys:['Tab'],        desc:'Move focus through the active picker / form' },
+  ];
+  var html = ''
+    + '<div class="ksh-card" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">'
+    +   '<div class="ksh-head">'
+    +     '<div class="ksh-title">Keyboard shortcuts</div>'
+    +     '<button class="ksh-close" type="button" onclick="closeKeyboardShortcutHelp()" aria-label="Close shortcuts overlay"><span aria-hidden="true">×</span></button>'
+    +   '</div>'
+    +   '<div class="ksh-body">'
+    +     rows.map(function(r){
+            return '<div class="ksh-row"><div class="ksh-keys">'
+              + r.keys.map(function(k){ return '<kbd>'+escapeHtml(k)+'</kbd>'; }).join('<span class="ksh-sep">+</span>')
+              + '</div><div class="ksh-desc">'+escapeHtml(r.desc)+'</div></div>';
+          }).join('')
+    +   '</div>'
+    +   '<div class="ksh-foot">Tip: most pills (status, priority, assignee, due) are clickable for inline editing.</div>'
+    + '</div>';
+  var bd = document.createElement('div');
+  bd.id = 'ksh-backdrop';
+  bd.className = 'ksh-backdrop';
+  bd.innerHTML = html;
+  bd.onclick = function(e){ if(e.target === bd) closeKeyboardShortcutHelp(); };
+  document.body.appendChild(bd);
+  document.addEventListener('keydown', _kshEsc);
+  requestAnimationFrame(function(){ bd.classList.add('show'); });
+}
+function closeKeyboardShortcutHelp(){
+  var bd = document.getElementById('ksh-backdrop');
+  if(!bd) return;
+  bd.classList.remove('show');
+  setTimeout(function(){ if(bd.parentElement) bd.remove(); }, 180);
+  document.removeEventListener('keydown', _kshEsc);
+}
+function _kshEsc(e){ if(e.key === 'Escape') closeKeyboardShortcutHelp(); }
 
 function togglePalette(){
   if(_palOpen) closePalette(); else openPalette();
@@ -105,14 +162,15 @@ function buildPaletteCorpus(){
   var me = currentUser ? currentUser.name : null;
 
   // Quick actions (always present)
-  rows.push({type:'action', id:'goto-dashboard',       label:'Go to Dashboard',           hint:'Switch panel', kind:'action'});
-  rows.push({type:'action', id:'goto-tasks-dashboard', label:'Go to Tasks Dashboard',     hint:'Team overview', kind:'action'});
-  rows.push({type:'action', id:'goto-tasks',           label:'Go to Tasks',               hint:'Task list / board', kind:'action'});
-  rows.push({type:'action', id:'goto-time',            label:'Go to Time Tracker',        hint:'Log + edit time', kind:'action'});
-  rows.push({type:'action', id:'goto-time-dashboard',  label:'Go to Time Tracker Dashboard', hint:'Hours analytics', kind:'action'});
-  rows.push({type:'action', id:'new-task',             label:'New Task',                  hint:'Create a task', kind:'action'});
-  rows.push({type:'action', id:'open-emails',          label:'Open Email Templates Library', hint:'All industries', kind:'action'});
-  rows.push({type:'action', id:'toggle-theme',         label:'Toggle Dark / Light Mode',  hint:'Theme', kind:'action'});
+  rows.push({type:'action', id:'goto-dashboard',           label:'Go to Workspace Dashboard',         hint:'All apps at a glance',   kind:'action'});
+  rows.push({type:'action', id:'goto-tasks-dashboard',     label:'Flowtive Workflow · Dashboard',     hint:'Team workflow overview', kind:'action'});
+  rows.push({type:'action', id:'goto-tasks',               label:'Flowtive Workflow · Board',         hint:'List / kanban',          kind:'action'});
+  rows.push({type:'action', id:'goto-time',                label:'Flowtive Logbook · Tracker',        hint:'Log + edit time',        kind:'action'});
+  rows.push({type:'action', id:'goto-time-dashboard',      label:'Flowtive Logbook · Dashboard',      hint:'Hours analytics',        kind:'action'});
+  rows.push({type:'action', id:'goto-territory-dashboard', label:'Flowtive Territory · Dashboard',    hint:'State coverage',         kind:'action'});
+  rows.push({type:'action', id:'new-task',                 label:'New Task',                          hint:'Flowtive Workflow',      kind:'action'});
+  rows.push({type:'action', id:'open-emails',              label:'Open Flowtive Cold Pitch',          hint:'18 industry templates',  kind:'action'});
+  rows.push({type:'action', id:'toggle-theme',             label:'Toggle Dark / Light Mode',          hint:'Theme',                  kind:'action'});
 
   // Tasks (incomplete first, then done)
   if(typeof tasksData === 'object' && tasksData){
@@ -143,12 +201,62 @@ function buildPaletteCorpus(){
   if(typeof EMAIL_TEMPLATES === 'object' && EMAIL_TEMPLATES){
     Object.keys(EMAIL_TEMPLATES).forEach(function(ind){
       var d = EMAIL_TEMPLATES[ind];
+      var emailCount = d && Array.isArray(d.emails) ? d.emails.length : 0;
+      var owner = d && d.owner ? d.owner : '';
+      var sequence = emailCount ? emailCount + '-email sequence' : '';
+      var hintParts = ['Cold Pitch'];
+      if(sequence) hintParts.push(sequence);
+      if(owner) hintParts.push('owner: ' + owner);
       rows.push({
         type:'email',
         id: ind,
         label: ind,
-        hint: 'Email templates · '+(d && d.owner ? d.owner : ''),
+        hint: hintParts.join(' · '),
         kind:'email'
+      });
+    });
+  }
+
+  // Projects (Flowtive Logbook) — clicking jumps to the Projects page
+  if(typeof projectsData === 'object' && projectsData){
+    Object.values(projectsData).forEach(function(p){
+      if(!p || !p.id) return;
+      rows.push({
+        type:'project',
+        id: p.id,
+        label: p.name,
+        hint: 'Flowtive Logbook · Project',
+        kind:'project',
+        color: p.color
+      });
+    });
+  }
+
+  // Tags (Flowtive Logbook) — clicking jumps to the Tags page
+  if(typeof tagsData === 'object' && tagsData){
+    Object.values(tagsData).forEach(function(t){
+      if(!t || !t.id) return;
+      rows.push({
+        type:'tag',
+        id: t.id,
+        label: t.name,
+        hint: 'Flowtive Logbook · Tag',
+        kind:'tag'
+      });
+    });
+  }
+
+  // US States (Flowtive Territory) — typing the name OR the 2-letter abbrev
+  // (e.g. "TX") matches because both go into the corpus row.
+  if(typeof US_STATES !== 'undefined' && Array.isArray(US_STATES)){
+    US_STATES.forEach(function(name){
+      var abbr = (typeof STATE_ABBREV === 'object' && STATE_ABBREV) ? (STATE_ABBREV[name] || '') : '';
+      rows.push({
+        type:'state',
+        id: name,
+        label: name,
+        hint: (abbr ? abbr+' · ' : '') + 'USA state · Flowtive Territory',
+        kind:'state'
       });
     });
   }
@@ -181,8 +289,9 @@ function runPaletteSearch(q){
     var s = scorePalette(r, q);
     if(s > 0) scored.push({score:s, row:r});
   });
-  // Sort by score desc, then by type priority (actions first when no query)
-  var typeOrder = {action:0, task:1, member:2, email:3};
+  // Sort by score desc, then by type priority (actions first when no query).
+  // Within same score: actions → tasks → members → projects → tags → emails → states.
+  var typeOrder = {action:0, task:1, member:2, project:3, tag:4, email:5, state:6};
   scored.sort(function(a,b){
     if(a.score !== b.score) return b.score - a.score;
     return (typeOrder[a.row.type]||9) - (typeOrder[b.row.type]||9);
@@ -223,15 +332,29 @@ function paletteIcon(r){
   if(r.kind === 'email'){
     return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg>';
   }
+  if(r.kind === 'project'){
+    // Color dot (project's own color) inside the swatch slot
+    return '<span class="pal-project-dot" style="background:'+(r.color||'#94A3B8')+'"></span>';
+  }
+  if(r.kind === 'tag'){
+    return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 7V2.5a1 1 0 0 1 1-1H7l5.5 5.5-5 5-6-6z"/><circle cx="4" cy="4" r="0.7" fill="currentColor" stroke="none"/></svg>';
+  }
+  if(r.kind === 'state'){
+    // Map-pin icon — matches the Flowtive Territory group head
+    return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1.5C4.5 1.5 2.5 3.5 2.5 6c0 3.2 4.5 6.5 4.5 6.5s4.5-3.3 4.5-6.5c0-2.5-2-4.5-4.5-4.5z"/><circle cx="7" cy="6" r="1.5"/></svg>';
+  }
   // action
   return '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 2"/></svg>';
 }
 function paletteTypeLabel(r){
   switch(r.kind){
-    case 'task':   return 'Task';
-    case 'member': return 'Member';
-    case 'email':  return 'Email';
-    default:       return 'Action';
+    case 'task':    return 'Task';
+    case 'member':  return 'Member';
+    case 'email':   return 'Industry';
+    case 'project': return 'Project';
+    case 'tag':     return 'Tag';
+    case 'state':   return 'State';
+    default:        return 'Action';
   }
 }
 
@@ -247,15 +370,27 @@ function onPaletteHover(i){
 /* Route the picked result to the right action. */
 function executePaletteResult(r){
   closePalette();
+  function clickSidebar(elId){ var el = document.getElementById(elId); if(el) el.click(); }
+
   if(r.type === 'task'){
     if(typeof switchPanel === 'function') switchPanel('tasks');
     else _switchToPanel('panel-tasks');
     if(typeof openTaskDrawer === 'function') openTaskDrawer(r.id);
   } else if(r.type === 'member'){
-    // Switch to that member's panel (they're rendered as #panel-{idx})
+    // Switch to that member's state-tracker panel (they're rendered as #panel-{idx})
     _switchToPanel('panel-'+r.idx);
   } else if(r.type === 'email'){
     if(typeof openEmailModal === 'function') openEmailModal(r.id, false);
+  } else if(r.type === 'project'){
+    // Open Flowtive Logbook · Projects (the project's row will be visible there)
+    clickSidebar('sid-time-projects');
+  } else if(r.type === 'tag'){
+    clickSidebar('sid-time-tags');
+  } else if(r.type === 'state'){
+    // No per-state panel exists yet — Territory Dashboard is the closest fit
+    // (state-coverage analytics, leaderboard, donut). Future: deep-link to the
+    // selected state row.
+    clickSidebar('sid-territory-dashboard');
   } else if(r.type === 'action'){
     handlePaletteAction(r.id);
   }
@@ -279,6 +414,9 @@ function handlePaletteAction(id){
       break;
     case 'goto-time-dashboard':
       clickSidebar('sid-time-dashboard');
+      break;
+    case 'goto-territory-dashboard':
+      clickSidebar('sid-territory-dashboard');
       break;
     case 'new-task':
       clickSidebar('sid-tasks');

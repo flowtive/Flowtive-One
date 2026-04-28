@@ -6,26 +6,16 @@
    so editing happens in the task modal, not here. */
 
 var _ttFilter = 'today';   // 'today' | 'yesterday' | 'this_week' | 'last_week' | 'all'
+var _ttStagedProjectId = null;  // selection waiting for next clockIn
+var _ttStagedTags      = [];
 
-/* Date helpers — start-of-day in local timezone, returns timestamp ms */
-function _ttStartOfDay(d){
-  var x = new Date(d); x.setHours(0,0,0,0);
-  return x.getTime();
-}
-function _ttStartOfWeek(d){
-  var x = new Date(d); x.setHours(0,0,0,0);
-  // Use Monday as week start (most common in business contexts)
-  var day = x.getDay();
-  var diff = (day === 0 ? -6 : 1 - day);  // Sun(0) → -6, Mon(1) → 0, etc.
-  x.setDate(x.getDate() + diff);
-  return x.getTime();
-}
+/* Date helpers — startOfDay / startOfWeek live in util.js (centralized) */
 
 /* Returns {start, end} ms range for the active filter. */
 function _ttFilterRange(){
   var now = Date.now();
-  var today = _ttStartOfDay(now);
-  var weekStart = _ttStartOfWeek(now);
+  var today = startOfDay(now);
+  var weekStart = startOfWeek(now);
   switch(_ttFilter){
     case 'today':     return { start: today, end: today + 86400000 };
     case 'yesterday': return { start: today - 86400000, end: today };
@@ -59,6 +49,8 @@ function _ttCollectEntries(){
       end: s.end,                    // null if running
       durationMs: s.durationMs,
       description: s.description || '',
+      projectId: s.projectId || null,
+      tags: Array.isArray(s.tags) ? s.tags : [],
       autoClosed: !!s.autoClosed,
       manuallyAdded: !!s.manuallyAdded,
       running: !s.end
@@ -107,7 +99,7 @@ function _ttSumMs(rows){
 function _ttGroupByDay(rows){
   var groups = {};
   rows.forEach(function(r){
-    var key = _ttStartOfDay(r.start);
+    var key = startOfDay(r.start);
     if(!groups[key]) groups[key] = [];
     groups[key].push(r);
   });
@@ -125,11 +117,11 @@ function renderTimeTrackerPanel(){
   var active = clockActive[currentUser.name];
   var todayMs = _ttSumMs(Object.keys(clockSessions||{}).map(function(id){
     var s = clockSessions[id]; if(!s || s.user !== currentUser.name) return null;
-    var dayStart = _ttStartOfDay(Date.now());
+    var dayStart = startOfDay(Date.now());
     if((s.end||Date.now()) < dayStart) return null;
     return {durationMs: s.durationMs, running: !s.end, start: s.start};
   }).filter(Boolean));
-  var weekRange = { start: _ttStartOfWeek(Date.now()), end: _ttStartOfWeek(Date.now()) + 7*86400000 };
+  var weekRange = { start: startOfWeek(Date.now()), end: startOfWeek(Date.now()) + 7*86400000 };
   var weekMs = _ttSumMs(Object.keys(clockSessions||{}).map(function(id){
     var s = clockSessions[id]; if(!s || s.user !== currentUser.name) return null;
     var end = s.end || Date.now();
@@ -164,12 +156,28 @@ function renderTimeTrackerPanel(){
 }
 
 function renderTrackerBar(active){
+  // Resolve current project + tags — from the running session if any, else
+  // the staged values waiting for the next clockIn.
+  var projectId, tags;
+  if(active){
+    var s = clockSessions[active.sessionId] || {};
+    projectId = s.projectId || null;
+    tags      = Array.isArray(s.tags) ? s.tags : [];
+  } else {
+    projectId = _ttStagedProjectId;
+    tags      = _ttStagedTags || [];
+  }
+  var projectChip = renderTrackerProjectChip(projectId);
+  var tagsChip    = renderTrackerTagsChip(tags);
+
   if(active){
     var elapsed = Date.now() - active.start;
     var existingDesc = '';
     if(clockSessions[active.sessionId]) existingDesc = clockSessions[active.sessionId].description || '';
     return '<div class="tt-tracker-bar tt-running">'
       + '<input type="text" class="tt-desc" id="tt-desc" placeholder="What are you working on?" value="'+escapeHtml(existingDesc)+'">'
+      + projectChip
+      + tagsChip
       + '<div class="tt-live-time" id="tt-live-time">'+fmtTrackerTime(elapsed)+'</div>'
       + '<button class="tt-stop-btn" onclick="ttStop()">'
       +   '<svg viewBox="0 0 14 14" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1"/></svg>'
@@ -182,6 +190,8 @@ function renderTrackerBar(active){
   }
   return '<div class="tt-tracker-bar">'
     + '<input type="text" class="tt-desc" id="tt-desc" placeholder="What are you working on?">'
+    + projectChip
+    + tagsChip
     + '<div class="tt-live-time tt-live-idle">00:00:00</div>'
     + '<button class="tt-start-btn" onclick="ttStart()">'
     +   '<svg viewBox="0 0 14 14" fill="currentColor"><path d="M4 2.5v9l7-4.5z"/></svg>'
@@ -191,6 +201,54 @@ function renderTrackerBar(active){
     +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>'
     + '</button>'
     + '</div>';
+}
+
+/* Project chip on the tracker bar — clickable to open the project picker.
+   Shows the project name + color when set, "Project" placeholder when empty. */
+function renderTrackerProjectChip(projectId){
+  var p = projectId && typeof projectsData !== 'undefined' ? projectsData[projectId] : null;
+  if(p){
+    return '<button class="tt-project-chip" onclick="onTrackerProjectClick(this)" title="Change project">'
+      +    '<span class="tt-project-dot" style="background:'+p.color+'"></span>'
+      +    '<span class="tt-project-name">'+escapeHtml(p.name)+'</span>'
+      +    '</button>';
+  }
+  return '<button class="tt-project-chip tt-project-chip-empty" onclick="onTrackerProjectClick(this)" title="Pick a project">'
+    +    '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4a1 1 0 0 1 1-1h3l1.5 1.5h5.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1V4z"/></svg>'
+    +    '<span>Project</span>'
+    +    '</button>';
+}
+
+/* Tag chip on the tracker bar — shows count if any tags, opens multi-select. */
+function renderTrackerTagsChip(tagIds){
+  var n = Array.isArray(tagIds) ? tagIds.length : 0;
+  var label = n ? n + ' tag'+(n===1?'':'s') : 'Tags';
+  return '<button class="tt-tag-chip'+(n?' tt-tag-chip-on':'')+'" onclick="onTrackerTagsClick(this)" title="Pick tags">'
+    +    '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 7V2.5a1 1 0 0 1 1-1H7l5.5 5.5-5 5-6-6z"/><circle cx="4" cy="4" r="0.7" fill="currentColor" stroke="none"/></svg>'
+    +    '<span>'+label+'</span>'
+    +    '</button>';
+}
+
+/* Handlers for the tracker bar's project/tag chips. If a timer is running,
+   changes apply to the running session immediately. Otherwise they update
+   staged state used by the next ttStart(). */
+function onTrackerProjectClick(anchor){
+  var active = currentUser ? clockActive[currentUser.name] : null;
+  var current = active ? ((clockSessions[active.sessionId]||{}).projectId || null) : _ttStagedProjectId;
+  if(typeof openProjectPicker !== 'function') return;
+  openProjectPicker(current, anchor, function(v){
+    if(active) updateSession(active.sessionId, {projectId: v || null});
+    else { _ttStagedProjectId = v || null; renderTimeTrackerPanel(); }
+  });
+}
+function onTrackerTagsClick(anchor){
+  var active = currentUser ? clockActive[currentUser.name] : null;
+  var current = active ? ((clockSessions[active.sessionId]||{}).tags || []) : (_ttStagedTags || []);
+  if(typeof openTagPicker !== 'function') return;
+  openTagPicker(current, anchor, function(v){
+    if(active) updateSession(active.sessionId, {tags: v});
+    else { _ttStagedTags = v || []; renderTimeTrackerPanel(); }
+  });
 }
 
 function renderTotalsBar(todayMs, weekMs){
@@ -268,9 +326,15 @@ function renderTimeRow(r){
             + '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 8h5L10 4"/></svg>'
             + '</button>';
   }
+  var projectHtml = (typeof renderProjectChip === 'function') ? renderProjectChip(r.projectId) : '';
+  var tagsHtml    = (typeof renderTagPills    === 'function') ? renderTagPills(r.tags)        : '';
   return '<div class="tt-row '+(r.running?'tt-row-running':'')+'">'
     + '<div class="tt-row-desc">'
-    +   '<span class="tt-row-text">'+escapeHtml(desc)+'</span>'
+    +   '<div class="tt-row-text-wrap">'
+    +     '<span class="tt-row-text">'+escapeHtml(desc)+'</span>'
+    +     (projectHtml ? projectHtml : '')
+    +     (tagsHtml    ? tagsHtml    : '')
+    +   '</div>'
     +   (badges ? '<span class="tt-row-badges">'+badges+'</span>' : '')
     + '</div>'
     + '<div class="tt-row-times">'+startStr+' <span class="tt-arrow">–</span> '+endStr+'</div>'
@@ -301,7 +365,7 @@ function formatTrackerClock(ts){
 }
 function formatTrackerDayLabel(ts){
   var d = new Date(ts);
-  var today = _ttStartOfDay(Date.now());
+  var today = startOfDay(Date.now());
   if(ts === today) return 'Today, '+d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   if(ts === today - 86400000) return 'Yesterday, '+d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   return d.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric',year: (d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined)});
@@ -311,10 +375,15 @@ function formatTrackerDayLabel(ts){
 function ttStart(){
   var inp = document.getElementById('tt-desc');
   var desc = inp ? inp.value : '';
-  clockIn(desc);
+  clockIn(desc, { projectId: _ttStagedProjectId || null, tags: _ttStagedTags || [] });
+  // Don't clear staged state here — keep it so consecutive sessions reuse the
+  // same project/tags. User can change via the chips at any time.
 }
 function ttStop(){
   clockOut();
+  // Reset staged state on stop so the bar starts clean for the next session.
+  _ttStagedProjectId = null;
+  _ttStagedTags = [];
 }
 function confirmDeleteEntry(sessionId){
   var s = clockSessions[sessionId]; if(!s) return;
@@ -363,26 +432,44 @@ function openEditEntryDialog(sessionId){
     description: s.description || '',
     start: s.start,
     end:   s.end,
+    projectId: s.projectId || null,
+    tags:      Array.isArray(s.tags) ? s.tags : [],
     onSave: function(data){
       updateSession(sessionId, data);
-      showToast('Entry updated', '#3AC284');
+      showToast('Entry updated', 'success');
     }
   });
+}
+
+/* ── Manual-entry pre-fill API ──────────────────────────────────
+   Either of {Calendar, Timesheet} can call stageManualEntry({start,end})
+   to pre-fill the dialog with a specific time range, then call
+   openManualEntryDialog(). The staged value is read once and cleared.
+   This decouples the dialog from any single feature's globals. */
+var _ttPendingManualEntry = null;
+function stageManualEntry(payload){
+  _ttPendingManualEntry = payload && payload.start && payload.end ? payload : null;
 }
 
 /* ── Manual-entry dialog ── */
 function openManualEntryDialog(){
   if(!currentUser) return;
-  // Calendar can pre-fill the start/end via _calPendingManualEntry — that
-  // lets clicking an empty slot in the week grid open the dialog at the
-  // right time. Falls back to "1-hour block ending now" otherwise.
+  // Read+clear the staged pre-fill (set by Calendar or Timesheet via
+  // stageManualEntry). Legacy: still honors the older _calPendingManualEntry
+  // global if some caller hasn't switched over yet.
+  var pending = _ttPendingManualEntry;
+  _ttPendingManualEntry = null;
+  if(!pending && typeof _calPendingManualEntry !== 'undefined' && _calPendingManualEntry){
+    pending = _calPendingManualEntry;
+    _calPendingManualEntry = null;
+  }
   var startTs, endTs;
-  if(typeof _calPendingManualEntry !== 'undefined' && _calPendingManualEntry){
-    startTs = _calPendingManualEntry.start;
-    endTs   = _calPendingManualEntry.end;
+  if(pending){
+    startTs = pending.start;
+    endTs   = pending.end;
   } else {
     var now = Date.now();
-    var dayStart = _ttStartOfDay(now);
+    var dayStart = startOfDay(now);
     endTs = Math.min(now, dayStart + 23*3600*1000 + 59*60*1000);
     startTs = Math.max(dayStart, endTs - 3600*1000);
   }
@@ -391,9 +478,14 @@ function openManualEntryDialog(){
     description: '',
     start: startTs,
     end:   endTs,
+    projectId: _ttStagedProjectId || null,
+    tags:      _ttStagedTags || [],
     onSave: function(data){
-      addManualSession(data.start, data.end, data.description);
-      showToast('Entry added', '#3AC284');
+      addManualSession(data.start, data.end, data.description, {
+        projectId: data.projectId || null,
+        tags:      data.tags || []
+      });
+      showToast('Entry added', 'success');
     }
   });
 }
@@ -407,8 +499,12 @@ function _showEntryDialog(opts){
   function pad(n){ return n<10?'0'+n:''+n; }
   function dateVal(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
   function timeVal(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+  // Track project + tags inside the dialog (mutable across picker callbacks)
+  var dialogProjectId = opts.projectId || null;
+  var dialogTags      = Array.isArray(opts.tags) ? opts.tags.slice() : [];
+
   bd.innerHTML =
-    '<div class="ftc-modal" role="dialog" aria-modal="true" style="width:min(440px,calc(100vw - 32px))">'
+    '<div class="ftc-modal" role="dialog" aria-modal="true" style="width:min(460px,calc(100vw - 32px))">'
     +  '<div class="ftc-title">'+escapeHtml(opts.title)+'</div>'
     +  '<div class="te-form">'
     +    '<label class="te-label">Description</label>'
@@ -419,6 +515,10 @@ function _showEntryDialog(opts){
     +      '<div><label class="te-label">End</label><input type="time" class="te-input" id="te-end" value="'+timeVal(endD)+'"></div>'
     +    '</div>'
     +    '<div class="te-duration" id="te-duration"></div>'
+    +    '<div class="te-grid2">'
+    +      '<div><label class="te-label">Project</label><div id="te-project-slot"></div></div>'
+    +      '<div><label class="te-label">Tags</label><div id="te-tags-slot"></div></div>'
+    +    '</div>'
     +  '</div>'
     +  '<div class="ftc-actions">'
     +    '<button class="ftc-btn ftc-cancel" type="button">Cancel</button>'
@@ -427,6 +527,42 @@ function _showEntryDialog(opts){
     +'</div>';
   document.body.appendChild(bd);
   requestAnimationFrame(function(){ bd.classList.add('show'); });
+
+  // Render project + tag chip-buttons inside their slots (re-rendered on change)
+  function renderProjectSlot(){
+    var slot = bd.querySelector('#te-project-slot'); if(!slot) return;
+    var p = dialogProjectId && typeof projectsData !== 'undefined' ? projectsData[dialogProjectId] : null;
+    slot.innerHTML = p
+      ? '<button type="button" class="te-chip-btn"><span class="tt-project-dot" style="background:'+p.color+'"></span><span>'+escapeHtml(p.name)+'</span></button>'
+      : '<button type="button" class="te-chip-btn te-chip-empty"><span>No project</span></button>';
+    var btn = slot.querySelector('button');
+    if(btn) btn.addEventListener('click', function(){
+      if(typeof openProjectPicker === 'function'){
+        openProjectPicker(dialogProjectId, btn, function(v){
+          dialogProjectId = v || null;
+          renderProjectSlot();
+        });
+      }
+    });
+  }
+  function renderTagsSlot(){
+    var slot = bd.querySelector('#te-tags-slot'); if(!slot) return;
+    var n = dialogTags.length;
+    slot.innerHTML = '<button type="button" class="te-chip-btn'+(n?'':' te-chip-empty')+'">'
+      + '<span>'+(n ? n+' tag'+(n===1?'':'s')+' selected' : 'No tags')+'</span>'
+      + '</button>';
+    var btn = slot.querySelector('button');
+    if(btn) btn.addEventListener('click', function(){
+      if(typeof openTagPicker === 'function'){
+        openTagPicker(dialogTags, btn, function(v){
+          dialogTags = v || [];
+          renderTagsSlot();
+        });
+      }
+    });
+  }
+  renderProjectSlot();
+  renderTagsSlot();
 
   function recalcDur(){
     var d = bd.querySelector('#te-date').value;
@@ -465,7 +601,13 @@ function _showEntryDialog(opts){
     if(eMs <= sMs){ showToast('End must be after start'); return; }
     var desc = bd.querySelector('#te-desc').value;
     cleanup();
-    if(opts.onSave) opts.onSave({description: desc, start: sMs, end: eMs});
+    if(opts.onSave) opts.onSave({
+      description: desc,
+      start: sMs,
+      end: eMs,
+      projectId: dialogProjectId || null,
+      tags: dialogTags || []
+    });
   };
   bd.onclick = function(e){ if(e.target === bd) cleanup(); };
   var keyHandler = function(e){

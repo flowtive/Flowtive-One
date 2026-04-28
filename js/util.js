@@ -37,14 +37,74 @@ function copyKeyword(btn,keyword){
   }
 }
 
+/* Standardized toast palette — keyed semantic names map to a single set of
+   colors so the UI doesn't show 4 different shades of "green" for "success".
+   Backward-compat: any hex string still works as before. */
+var _TOAST_PALETTE = {
+  success: '#3AC284',
+  danger:  '#991B1B',
+  warning: '#E67E22',
+  neutral: '#475569',
+  info:    '#1A1A2E'
+};
 function showToast(msg, color){
-  color = color || '#1A1A2E';
+  // Map semantic tokens to palette colors; raw hex values pass through.
+  var resolved = (color && _TOAST_PALETTE[color]) ? _TOAST_PALETTE[color] : (color || _TOAST_PALETTE.info);
   var t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+color+';color:#fff;font-size:13px;font-weight:500;padding:10px 20px;border-radius:99px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+resolved+';color:#fff;font-size:13px;font-weight:500;padding:10px 20px;border-radius:99px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap';
   t.textContent = msg;
   document.body.appendChild(t);
   requestAnimationFrame(function(){ t.style.opacity = '1'; });
   setTimeout(function(){ t.style.opacity = '0'; setTimeout(function(){ t.remove(); }, 250); }, 2500);
+}
+
+/* Undoable toast — used for destructive deletes. Shows a "msg • Undo" pill
+   at the bottom for `duration` ms (default 5s). Clicking Undo runs onUndo
+   and skips onCommit. If the toast times out, onCommit is invoked once. */
+function showUndoToast(msg, onUndo, onCommit, duration){
+  duration = duration || 5000;
+  // Dismiss any prior undo toast first (commit it if still pending)
+  if(window.__undoToast){
+    try{ window.__undoToast._commitNow(); }catch(e){}
+  }
+  var t = document.createElement('div');
+  t.className = 'undo-toast';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;font-size:13px;font-weight:500;padding:8px 8px 8px 16px;border-radius:99px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:9999;opacity:0;transition:opacity 0.2s;display:flex;align-items:center;gap:12px;white-space:nowrap';
+  var label = document.createElement('span');
+  label.textContent = msg;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'Undo';
+  btn.style.cssText = 'background:rgba(255,255,255,0.18);color:#fff;border:0;border-radius:99px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  btn.onmouseenter = function(){ btn.style.background = 'rgba(255,255,255,0.28)'; };
+  btn.onmouseleave = function(){ btn.style.background = 'rgba(255,255,255,0.18)'; };
+  t.appendChild(label);
+  t.appendChild(btn);
+  document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.style.opacity = '1'; });
+
+  var done = false;
+  function close(){
+    if(!t.parentElement) return;
+    t.style.opacity = '0';
+    setTimeout(function(){ if(t.parentElement) t.remove(); }, 250);
+    if(window.__undoToast === api) window.__undoToast = null;
+  }
+  function commit(){
+    if(done) return; done = true;
+    try{ if(typeof onCommit === 'function') onCommit(); }catch(e){}
+    close();
+  }
+  function undo(){
+    if(done) return; done = true;
+    try{ if(typeof onUndo === 'function') onUndo(); }catch(e){}
+    close();
+  }
+  btn.onclick = undo;
+  var timer = setTimeout(commit, duration);
+  var api = { _commitNow: function(){ clearTimeout(timer); commit(); } };
+  window.__undoToast = api;
+  return api;
 }
 
 
@@ -60,3 +120,86 @@ function formatTimeAgo(ts){
 function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+
+/* ── Date helpers ──────────────────────────────────────────────
+   Centralized so each feature file (timetracker, calendar, reports,
+   timesheet, dashboards) doesn't carry its own _xxStartOfDay/Week.
+   All return a millisecond timestamp at midnight local time. */
+function startOfDay(d){
+  var x = new Date(d);
+  x.setHours(0,0,0,0);
+  return x.getTime();
+}
+function startOfWeek(d){
+  // Monday as the first day of the week — most common in business contexts.
+  // Sunday(0) → -6 days, Mon(1) → 0, Tue(2) → -1, etc.
+  var x = new Date(d);
+  x.setHours(0,0,0,0);
+  var day = x.getDay();
+  x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
+  return x.getTime();
+}
+function startOfMonth(d){
+  var x = new Date(d);
+  x.setHours(0,0,0,0);
+  x.setDate(1);
+  return x.getTime();
+}
+function startOfYear(d){
+  var x = new Date(d);
+  x.setHours(0,0,0,0);
+  x.setMonth(0, 1);
+  return x.getTime();
+}
+
+/* ── Render coalescing ─────────────────────────────────────────
+   Multiple Firebase listeners can fire in rapid succession (e.g. when
+   subscribeClock + subscribeTasks both refresh the workspace dashboard).
+   `scheduleRender(key, fn)` collapses repeat calls per key into a single
+   rAF-batched render — fixes both 8a (full rebuilds on every FB update)
+   and 8c (no debounce on rapid updates) in one mechanism. */
+var _renderQueue = {};
+function scheduleRender(key, fn){
+  if(typeof fn !== 'function') return;
+  _renderQueue[key] = fn;
+  if(scheduleRender._raf) return;
+  scheduleRender._raf = requestAnimationFrame(function(){
+    var queued = _renderQueue;
+    _renderQueue = {};
+    scheduleRender._raf = 0;
+    Object.keys(queued).forEach(function(k){
+      try{ queued[k](); }catch(e){}
+    });
+  });
+}
+
+/* ── Accessibility helper ──────────────────────────────────────
+   Many icon buttons in the app set `title="…"` for hover hints but lack
+   an explicit `aria-label`. Title-only buttons are inconsistent for
+   screen readers. This sweeps the DOM and copies `title` → `aria-label`
+   on any element with `role="button"`, <button>, or <a> when the latter
+   is missing. Runs on load + a MutationObserver picks up dynamic UI. */
+function _ensureAriaLabels(root){
+  root = root || document.body;
+  if(!root.querySelectorAll) return;
+  var sel = 'button[title]:not([aria-label]),a[title]:not([aria-label]),[role="button"][title]:not([aria-label])';
+  root.querySelectorAll(sel).forEach(function(el){
+    var t = el.getAttribute('title');
+    if(t && t.trim()) el.setAttribute('aria-label', t);
+  });
+}
+document.addEventListener('DOMContentLoaded', function(){
+  _ensureAriaLabels(document.body);
+  // Watch for dynamically inserted UI (modals, drawers, list items, etc.)
+  try{
+    var mo = new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        m.addedNodes.forEach(function(n){
+          if(n.nodeType === 1) _ensureAriaLabels(n);
+        });
+      });
+    });
+    mo.observe(document.body, { childList:true, subtree:true });
+  }catch(e){}
+});

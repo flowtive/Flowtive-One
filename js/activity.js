@@ -73,12 +73,46 @@ function subscribeActivity(){
 
 /* ── Browser notifications ──
    Three event types worth interrupting for: someone assigned you a task,
-   someone commented on your task, someone completed a task you assigned. */
+   someone commented on your task, someone completed a task you assigned.
+   The user can mute these in-app via the bell button in the sidebar footer. */
+var NOTIFS_MUTED_KEY = 'flowtive_notifications_muted';
+function isNotificationsMuted(){
+  try{ return localStorage.getItem(NOTIFS_MUTED_KEY) === '1'; }catch(e){ return false; }
+}
+function setNotificationsMuted(v){
+  try{ localStorage.setItem(NOTIFS_MUTED_KEY, v ? '1' : '0'); }catch(e){}
+}
+
+/* Wired to the sidebar bell button. Toggles mute state, prompts for browser
+   permission if we're enabling and permission hasn't been asked yet, and
+   re-renders the button + shows a toast. */
+function toggleNotifications(){
+  var nowMuted = !isNotificationsMuted();
+  setNotificationsMuted(nowMuted);
+
+  // If unmuting and we never asked for permission, ask now
+  if(!nowMuted && typeof Notification !== 'undefined' && Notification.permission === 'default'){
+    if(typeof requestNotificationPermission === 'function') requestNotificationPermission();
+  }
+
+  // Refresh the bell's visual state + tooltip
+  var btn = document.getElementById('sid-notifs-btn');
+  if(btn){
+    btn.classList.toggle('muted', nowMuted);
+    btn.title = nowMuted ? 'Notifications muted — click to enable' : 'Notifications on — click to mute';
+  }
+
+  if(typeof showToast === 'function'){
+    showToast(nowMuted ? 'Notifications muted' : 'Notifications enabled', nowMuted ? '#475569' : '#3AC284');
+  }
+}
+
 function maybeNotifyActivityEvent(entry){
   if(!entry || !currentUser) return;
   if(entry.who === currentUser.name) return;            // never notify yourself
   if(typeof Notification === 'undefined') return;       // unsupported browser
   if(Notification.permission !== 'granted') return;
+  if(isNotificationsMuted()) return;                    // user opted out via the bell button
   if(document.hidden === false && document.hasFocus && document.hasFocus()){
     // Tab is focused — user already sees the activity feed update; skip noise
     // EXCEPT for direct mentions (assigned/commented) which deserve a ping
@@ -234,6 +268,13 @@ function buildActivityFeed(){
       text='<strong>'+entry.who+'</strong> updated '+loc+' '+indBadge;
     }
     var timeStr=formatTimeAgo(entry.ts);
+    var absTimeStr = '';
+    try{
+      absTimeStr = new Date(entry.ts).toLocaleString(undefined, {
+        weekday:'short', month:'short', day:'numeric',
+        hour:'numeric', minute:'2-digit'
+      });
+    }catch(e){ absTimeStr = ''; }
 
     var item=document.createElement('div');
     item.className='activity-item';
@@ -241,7 +282,7 @@ function buildActivityFeed(){
       '<div style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;margin-top:1px">'+avHtml+'</div>'+
       '<div class="activity-body">'+
         '<div class="activity-text">'+text+'</div>'+
-        '<div class="activity-time">'+timeStr+'</div>'+
+        '<div class="activity-time" title="'+escapeHtml(absTimeStr)+'">'+timeStr+'</div>'+
       '</div>';
     el.appendChild(item);
   });

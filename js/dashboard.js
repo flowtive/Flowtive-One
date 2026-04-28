@@ -1,7 +1,74 @@
-/* Flowtive One — Dashboard: build, KPIs, leaderboard, charts */
+/* Flowtive One — Dashboards: workspace overview + Territory drill-down */
 
-/* ── Dashboard ── */
+/* ── Workspace Dashboard ──
+   Cross-product KPIs (Workflow / Logbook / Territory) + the team activity
+   feed + charts that read from cross-product data. The Territory-specific
+   widgets (leaderboard, donut, bar, industry grid) live on the Territory
+   dashboard now — not here. */
 function buildDashboard(){
+  if(!currentUser) return;
+
+  // KPI 1 — Open tasks across the team
+  var openTasks = 0;
+  if(typeof tasksData === 'object' && tasksData){
+    Object.values(tasksData).forEach(function(t){
+      if(t && t.status !== 'done') openTasks++;
+    });
+  }
+  var elTasks = document.getElementById('ws-kpi-tasks');
+  if(elTasks) elTasks.textContent = openTasks.toLocaleString();
+
+  // KPI 2 — Hours this week (team-wide)
+  var weekStart = startOfWeek(Date.now());
+  var totalMs = 0;
+  Object.values(clockSessions||{}).forEach(function(s){
+    if(!s || !s.start) return;
+    var end = s.end || Date.now();
+    if(end < weekStart) return;
+    totalMs += end - Math.max(s.start, weekStart);
+  });
+  var elHours = document.getElementById('ws-kpi-hours');
+  if(elHours){
+    // Smart formatter — drop the parts that read as noise:
+    //   0          → "—"     (cleaner than "0h 00m" when nothing tracked)
+    //   < 1 hour   → "30m"   (single unit, no padded zeros)
+    //   exact hour → "2h"    ("2h 00m" reads weird)
+    //   mixed      → "1h 30m"
+    if(!totalMs || totalMs <= 0){
+      elHours.textContent = '—';
+    } else {
+      var h = Math.floor(totalMs/3600000);
+      var m = Math.floor((totalMs%3600000)/60000);
+      if(h === 0)      elHours.textContent = m + 'm';
+      else if(m === 0) elHours.textContent = h + 'h';
+      else             elHours.textContent = h + 'h ' + m + 'm';
+    }
+  }
+
+  // KPI 3 — Active members right now
+  var activeNow = 0;
+  Object.values(clockActive||{}).forEach(function(a){ if(a) activeNow++; });
+  var elActive = document.getElementById('ws-kpi-active');
+  if(elActive) elActive.textContent = activeNow.toString();
+
+  // KPI 4 — Territory coverage % (USA cities done)
+  var territoryTotal = 0, territoryDone = totalCitiesDoneAll();
+  MEMBERS.forEach(function(_,i){ territoryTotal += totalCitiesForMember(i); });
+  var territoryPct = territoryTotal > 0 ? Math.round(territoryDone/territoryTotal*100) : 0;
+  var elTerritory = document.getElementById('ws-kpi-territory');
+  if(elTerritory) elTerritory.textContent = territoryPct + '%';
+
+  // Cross-product widgets
+  buildWeeklyChart();
+  buildActivityFeed();
+  renderOnTheClockCard();
+  renderHoursThisWeek();
+}
+
+/* ── Flowtive Territory · Dashboard ──
+   Was the original main dashboard — now the dedicated state-tracker drill-down.
+   KPIs, leaderboard, donut, bar, industry progress. */
+function buildTerritoryDashboard(){
   var total=0,done=totalCitiesDoneAll();
   MEMBERS.forEach(function(_,i){ total+=totalCitiesForMember(i); });
   var pct=total>0?Math.round(done/total*100):0;
@@ -136,10 +203,6 @@ function buildDashboard(){
     indEl.appendChild(item);
   });
 
-  // New features
-  buildWeeklyChart();
-  buildActivityFeed();
-  renderOnTheClockCard();
-  renderHoursThisWeek();
+  // (cross-product widgets moved to buildDashboard — workspace owns those now)
 }
 
