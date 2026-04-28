@@ -12,8 +12,28 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.3.0';
+var APP_VERSION = '2.4.0';
 var APP_CHANGELOG = [
+  {
+    version: '2.4.0',
+    date:    '2026-04-28',
+    title:   'Time Tracker · Calendar (week + day view)',
+    notes:   'Visual calendar grid for tracked time. See your week at a glance with colored blocks, click any empty slot to add an entry at that time, click a block to edit. Switch between week and day view, browse past weeks, filter by yourself or the whole team.',
+    changes: [
+      {type:'new', text:'Time Tracker → Calendar — Clockify-style week and day grid'},
+      {type:'new', text:'Sessions render as colored blocks at their actual start/end positions, colored by member'},
+      {type:'new', text:'Click an empty slot in any day column to add a manual entry at that exact time (15-minute snap)'},
+      {type:'new', text:'Click a block to edit the session (or open the linked task)'},
+      {type:'new', text:'Date navigation — prev / next / today, with the current day highlighted'},
+      {type:'new', text:'View toggle — Week (7-day grid) or Day (single column, wider)'},
+      {type:'new', text:'Filter — Only Me or All Team'},
+      {type:'new', text:'Live "now" line shows the current time across the active day'},
+      {type:'new', text:'Day totals shown in each column header'},
+      {type:'new', text:'Running entries pulse with a green indicator'},
+      {type:'improvement', text:'Manual entry dialog now respects calendar pre-fills — clicking an empty slot opens the dialog at that time'},
+      {type:'improvement', text:'Mobile auto-switches to Day view (Week is too cramped on phones)'}
+    ]
+  },
   {
     version: '2.3.0',
     date:    '2026-04-28',

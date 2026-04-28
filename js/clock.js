@@ -72,6 +72,10 @@ function subscribeClock(){
     if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function'){
       renderTimeTrackerPanel();
     }
+    var cal = document.getElementById('panel-time-calendar');
+    if(cal && cal.classList.contains('active') && typeof renderTimeCalendarPanel === 'function'){
+      renderTimeCalendarPanel();
+    }
   });
 }
 function unsubscribeClock(){
@@ -328,6 +332,8 @@ function tickClockUI(){
   if(typeof tickTaskTimers === 'function') tickTaskTimers();
   // Update the Time Tracker panel live counter when it's the active panel
   if(typeof tickTimeTrackerPanel === 'function') tickTimeTrackerPanel();
+  // Update the calendar's now-line + running blocks every second
+  if(typeof tickCalendarPanel === 'function') tickCalendarPanel();
   // Update sidebar badges + otc card every minute (less frequent than per-second to save reflows)
   var now = Date.now();
   if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 30000){

@@ -49,7 +49,7 @@ function buildSidebar(){
       { id:'sid-time',           label:'Time Tracker', panelId:'panel-time',
         onActivate:function(){ if(typeof renderTimeTrackerPanel==='function') renderTimeTrackerPanel(); } },
       { id:'sid-time-calendar',  label:'Calendar',     panelId:'panel-time-calendar',
-        onActivate:function(){ if(typeof renderTimeCalendarStub==='function') renderTimeCalendarStub(); } },
+        onActivate:function(){ if(typeof renderTimeCalendarPanel==='function') renderTimeCalendarPanel(); } },
       { id:'sid-time-dashboard', label:'Dashboard',    panelId:'panel-time-dashboard',
         onActivate:function(){ if(typeof renderTimeDashboardPanel==='function') renderTimeDashboardPanel(); } },
       { id:'sid-time-reports',   label:'Reports',      panelId:'panel-time-reports',

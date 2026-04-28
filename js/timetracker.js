@@ -373,11 +373,19 @@ function openEditEntryDialog(sessionId){
 /* ── Manual-entry dialog ── */
 function openManualEntryDialog(){
   if(!currentUser) return;
-  // Default: an hour-long block ending now, on today's date
-  var now = Date.now();
-  var dayStart = _ttStartOfDay(now);
-  var endTs = Math.min(now, dayStart + 23*3600*1000 + 59*60*1000);
-  var startTs = Math.max(dayStart, endTs - 3600*1000);
+  // Calendar can pre-fill the start/end via _calPendingManualEntry — that
+  // lets clicking an empty slot in the week grid open the dialog at the
+  // right time. Falls back to "1-hour block ending now" otherwise.
+  var startTs, endTs;
+  if(typeof _calPendingManualEntry !== 'undefined' && _calPendingManualEntry){
+    startTs = _calPendingManualEntry.start;
+    endTs   = _calPendingManualEntry.end;
+  } else {
+    var now = Date.now();
+    var dayStart = _ttStartOfDay(now);
+    endTs = Math.min(now, dayStart + 23*3600*1000 + 59*60*1000);
+    startTs = Math.max(dayStart, endTs - 3600*1000);
+  }
   _showEntryDialog({
     title: 'Add Manual Entry',
     description: '',

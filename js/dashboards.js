@@ -346,12 +346,6 @@ function _renderStub(bodyId, title, description, eta){
     + '</div>';
 }
 
-function renderTimeCalendarStub(){
-  _renderStub('time-calendar-body',
-    'Calendar — Coming Soon',
-    'A week / day grid with draggable time blocks. Click empty space to add a session, drag a block to reschedule.',
-    'Phase 2');
-}
 function renderTimeReportsStub(){
   _renderStub('time-reports-body',
     'Reports — Coming Soon',
