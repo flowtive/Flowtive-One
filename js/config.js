@@ -12,8 +12,22 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.2.0';
+var APP_VERSION = '2.3.0';
 var APP_CHANGELOG = [
+  {
+    version: '2.3.0',
+    date:    '2026-04-28',
+    title:   'Sidebar groups + Tasks Dashboard + Time Tracker Dashboard',
+    notes:   'Sidebar restructured with collapsible Tasks and Time Tracker groups. Two new analytics pages — Tasks Dashboard (status breakdown, overdue, member workload) and Time Tracker Dashboard (weekly hours chart, top contributor, top tracked tasks). Calendar / Reports / Tags / Projects / Team are scaffolded with "Coming soon" placeholders so the navigation works while we build them out.',
+    changes: [
+      {type:'new', text:'Tasks group in sidebar — Tasks Dashboard + Tasks (collapsible, state remembered)'},
+      {type:'new', text:'Time Tracker group in sidebar — Time Tracker / Calendar / Dashboard / Reports / Projects / Tags / Team'},
+      {type:'new', text:'Tasks Dashboard sub-page: open / overdue / done-this-week KPIs, status breakdown bar, top overdue list, per-member workload table'},
+      {type:'new', text:'Time Tracker Dashboard sub-page: weekly hours stacked bar chart, top contributor KPI, top tracked tasks, per-member time breakdown'},
+      {type:'new', text:'"Coming soon" stub pages for Calendar, Reports, Projects, Tags, Team — each labeled with its target Phase'},
+      {type:'improvement', text:'Cmd+K palette now includes the new sub-pages (Tasks Dashboard, Time Tracker Dashboard)'}
+    ]
+  },
   {
     version: '2.2.0',
     date:    '2026-04-28',

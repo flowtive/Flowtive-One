@@ -35,6 +35,13 @@ function buildMain(){
     '</div>';
   main.appendChild(dash);
 
+  // Tasks Dashboard panel
+  var tasksDashPanel=document.createElement('div');
+  tasksDashPanel.className='panel';
+  tasksDashPanel.id='panel-tasks-dashboard';
+  tasksDashPanel.innerHTML='<div class="dash-title">Tasks Dashboard</div><div class="dash-sub">Team-wide task overview — status breakdown, overdue, and who\'s busy.</div><div id="tasks-dashboard-body"></div>';
+  main.appendChild(tasksDashPanel);
+
   // Tasks panel container (rendered on demand by renderTasksPanel)
   var tasksPanel=document.createElement('div');
   tasksPanel.className='panel';
@@ -48,6 +55,48 @@ function buildMain(){
   timePanel.id='panel-time';
   timePanel.innerHTML='<div class="dash-title">Time Tracker</div><div class="dash-sub">Log your work, edit past entries, and review where your time went.</div><div id="time-panel-body"></div>';
   main.appendChild(timePanel);
+
+  // Time Tracker · Calendar (stub for now — Phase 2)
+  var timeCalPanel=document.createElement('div');
+  timeCalPanel.className='panel';
+  timeCalPanel.id='panel-time-calendar';
+  timeCalPanel.innerHTML='<div class="dash-title">Calendar</div><div class="dash-sub">Visual week / day view of your tracked time.</div><div id="time-calendar-body"></div>';
+  main.appendChild(timeCalPanel);
+
+  // Time Tracker · Dashboard (analytics — built in Phase 1)
+  var timeDashPanel=document.createElement('div');
+  timeDashPanel.className='panel';
+  timeDashPanel.id='panel-time-dashboard';
+  timeDashPanel.innerHTML='<div class="dash-title">Time Tracker · Dashboard</div><div class="dash-sub">Hours tracked, top contributor, and weekly trend across the team.</div><div id="time-dashboard-body"></div>';
+  main.appendChild(timeDashPanel);
+
+  // Time Tracker · Reports (stub for now — Phase 4)
+  var timeRepPanel=document.createElement('div');
+  timeRepPanel.className='panel';
+  timeRepPanel.id='panel-time-reports';
+  timeRepPanel.innerHTML='<div class="dash-title">Reports</div><div class="dash-sub">Filter, group, and export tracked time for any range.</div><div id="time-reports-body"></div>';
+  main.appendChild(timeRepPanel);
+
+  // Time Tracker · Projects (stub for now — Phase 3)
+  var timeProjPanel=document.createElement('div');
+  timeProjPanel.className='panel';
+  timeProjPanel.id='panel-time-projects';
+  timeProjPanel.innerHTML='<div class="dash-title">Projects</div><div class="dash-sub">Group time entries under projects and track per-project totals.</div><div id="time-projects-body"></div>';
+  main.appendChild(timeProjPanel);
+
+  // Time Tracker · Tags (stub for now — Phase 3)
+  var timeTagsPanel=document.createElement('div');
+  timeTagsPanel.className='panel';
+  timeTagsPanel.id='panel-time-tags';
+  timeTagsPanel.innerHTML='<div class="dash-title">Tags</div><div class="dash-sub">Categorize time entries with cross-project labels.</div><div id="time-tags-body"></div>';
+  main.appendChild(timeTagsPanel);
+
+  // Time Tracker · Team (stub for now — Phase later)
+  var timeTeamPanel=document.createElement('div');
+  timeTeamPanel.className='panel';
+  timeTeamPanel.id='panel-time-team';
+  timeTeamPanel.innerHTML='<div class="dash-title">Team</div><div class="dash-sub">Per-member time tracked and team activity.</div><div id="time-team-body"></div>';
+  main.appendChild(timeTeamPanel);
 
   // Member panels — open logged-in user's panel by default
   var defaultMi = currentUser ? MEMBERS.findIndex(function(m){return m.name===currentUser.name;}) : -1;

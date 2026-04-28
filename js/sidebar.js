@@ -24,38 +24,44 @@ function buildSidebar(){
   };
   sb.appendChild(dashItem);
 
-  // Tasks sidebar entry
-  var tasksItem=document.createElement('div');
-  tasksItem.className='sid-dashboard';
-  tasksItem.id='sid-tasks';
-  tasksItem.innerHTML=
-    '<div class="sid-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/><path d="M4 7.5L6 9.5 10 5.5"/></svg></div>'+
-    '<span style="flex:1">Tasks</span>'+
-    '<span class="sid-tasks-count zero" id="sid-tasks-count">0</span>';
-  tasksItem.onclick=function(){
-    document.querySelectorAll('.sid-item,.sid-dashboard').forEach(function(s){s.classList.remove('active');});
-    document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-    tasksItem.classList.add('active');
-    document.getElementById('panel-tasks').classList.add('active');
-    renderTasksPanel();
-  };
-  sb.appendChild(tasksItem);
+  // ── Tasks group (collapsible) ───────────────────────────────────
+  buildSidebarGroup(sb, {
+    id:        'tasks',
+    label:     'Tasks',
+    icon:      '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/><path d="M4 7.5L6 9.5 10 5.5"/></svg>',
+    storageKey:'flowtive_sidebar_tasks_open',
+    countId:   'sid-tasks-count',          // open-tasks badge on the parent row
+    items: [
+      { id:'sid-tasks-dashboard', label:'Tasks Dashboard', panelId:'panel-tasks-dashboard',
+        onActivate:function(){ if(typeof renderTasksDashboardPanel==='function') renderTasksDashboardPanel(); } },
+      { id:'sid-tasks',           label:'Tasks',           panelId:'panel-tasks',
+        onActivate:function(){ if(typeof renderTasksPanel==='function') renderTasksPanel(); } }
+    ]
+  });
 
-  // Time Tracker sidebar entry
-  var timeItem=document.createElement('div');
-  timeItem.className='sid-dashboard';
-  timeItem.id='sid-time';
-  timeItem.innerHTML=
-    '<div class="sid-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 2"/></svg></div>'+
-    'Time Tracker';
-  timeItem.onclick=function(){
-    document.querySelectorAll('.sid-item,.sid-dashboard').forEach(function(s){s.classList.remove('active');});
-    document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-    timeItem.classList.add('active');
-    document.getElementById('panel-time').classList.add('active');
-    if(typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
-  };
-  sb.appendChild(timeItem);
+  // ── Time Tracker group (collapsible) ────────────────────────────
+  buildSidebarGroup(sb, {
+    id:        'time',
+    label:     'Time Tracker',
+    icon:      '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 2"/></svg>',
+    storageKey:'flowtive_sidebar_time_open',
+    items: [
+      { id:'sid-time',           label:'Time Tracker', panelId:'panel-time',
+        onActivate:function(){ if(typeof renderTimeTrackerPanel==='function') renderTimeTrackerPanel(); } },
+      { id:'sid-time-calendar',  label:'Calendar',     panelId:'panel-time-calendar',
+        onActivate:function(){ if(typeof renderTimeCalendarStub==='function') renderTimeCalendarStub(); } },
+      { id:'sid-time-dashboard', label:'Dashboard',    panelId:'panel-time-dashboard',
+        onActivate:function(){ if(typeof renderTimeDashboardPanel==='function') renderTimeDashboardPanel(); } },
+      { id:'sid-time-reports',   label:'Reports',      panelId:'panel-time-reports',
+        onActivate:function(){ if(typeof renderTimeReportsStub==='function') renderTimeReportsStub(); } },
+      { id:'sid-time-projects',  label:'Projects',     panelId:'panel-time-projects',
+        onActivate:function(){ if(typeof renderTimeProjectsStub==='function') renderTimeProjectsStub(); } },
+      { id:'sid-time-tags',      label:'Tags',         panelId:'panel-time-tags',
+        onActivate:function(){ if(typeof renderTimeTagsStub==='function') renderTimeTagsStub(); } },
+      { id:'sid-time-team',      label:'Team',         panelId:'panel-time-team',
+        onActivate:function(){ if(typeof renderTimeTeamStub==='function') renderTimeTeamStub(); } }
+    ]
+  });
 
   var collapsed = localStorage.getItem('flowtive_sidebar_members_collapsed') === '1';
   var sec2=document.createElement('div');
@@ -142,6 +148,60 @@ function updateSidebarCounts(){
     var total=totalCitiesForMember(i);
     var done=countTotalCitiesForMember(i);
     if(el)el.textContent=done+'/'+total;
+  });
+}
+
+/* ── Collapsible sidebar group ─────────────────────────────────────
+   Used for "Tasks" and "Time Tracker" headers with sub-items beneath.
+   Click the header to expand/collapse; state is persisted to localStorage.
+   Each item in cfg.items has {id, label, panelId, onActivate?}. */
+function buildSidebarGroup(sb, cfg){
+  var openByDefault = true;
+  var stored = null;
+  try{ stored = localStorage.getItem(cfg.storageKey); }catch(e){}
+  var isOpen = stored === null ? openByDefault : stored === '1';
+
+  // Group header (clickable)
+  var header = document.createElement('div');
+  header.className = 'sid-group-head' + (isOpen ? ' open' : '');
+  header.id = 'sid-group-head-' + cfg.id;
+  header.innerHTML =
+    '<svg class="sid-group-chev" viewBox="0 0 10 10" fill="none"><path d="M3.5 2l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+    '<div class="sid-icon">' + (cfg.icon || '') + '</div>' +
+    '<span class="sid-group-label">' + escapeHtml(cfg.label) + '</span>' +
+    (cfg.countId ? '<span class="sid-tasks-count zero" id="' + cfg.countId + '">0</span>' : '');
+  sb.appendChild(header);
+
+  // Group body — child items stacked, collapsible via class
+  var body = document.createElement('div');
+  body.className = 'sid-group-body' + (isOpen ? '' : ' collapsed');
+  body.id = 'sid-group-body-' + cfg.id;
+  sb.appendChild(body);
+
+  header.onclick = function(){
+    var nowOpen = !header.classList.contains('open');
+    header.classList.toggle('open', nowOpen);
+    body.classList.toggle('collapsed', !nowOpen);
+    try{ localStorage.setItem(cfg.storageKey, nowOpen ? '1' : '0'); }catch(e){}
+  };
+
+  // Sub-items
+  cfg.items.forEach(function(item){
+    var sub = document.createElement('div');
+    sub.className = 'sid-subitem';
+    sub.id = item.id;
+    sub.innerHTML = '<span class="sid-subitem-dot"></span>' +
+                    '<span class="sid-subitem-label">' + escapeHtml(item.label) + '</span>';
+    sub.onclick = function(){
+      // Clear active state across all sidebar entries
+      document.querySelectorAll('.sid-item,.sid-dashboard,.sid-subitem').forEach(function(s){s.classList.remove('active');});
+      document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+      sub.classList.add('active');
+      var panel = document.getElementById(item.panelId);
+      if(panel) panel.classList.add('active');
+      if(typeof item.onActivate === 'function') item.onActivate();
+    };
+    body.appendChild(sub);
   });
 }
 

@@ -105,11 +105,14 @@ function buildPaletteCorpus(){
   var me = currentUser ? currentUser.name : null;
 
   // Quick actions (always present)
-  rows.push({type:'action', id:'goto-dashboard', label:'Go to Dashboard',  hint:'Switch panel', kind:'action'});
-  rows.push({type:'action', id:'goto-tasks',     label:'Go to Tasks',      hint:'Switch panel', kind:'action'});
-  rows.push({type:'action', id:'new-task',       label:'New Task',         hint:'Create a task', kind:'action'});
-  rows.push({type:'action', id:'open-emails',    label:'Open Email Templates Library', hint:'All industries', kind:'action'});
-  rows.push({type:'action', id:'toggle-theme',   label:'Toggle Dark / Light Mode', hint:'Theme', kind:'action'});
+  rows.push({type:'action', id:'goto-dashboard',       label:'Go to Dashboard',           hint:'Switch panel', kind:'action'});
+  rows.push({type:'action', id:'goto-tasks-dashboard', label:'Go to Tasks Dashboard',     hint:'Team overview', kind:'action'});
+  rows.push({type:'action', id:'goto-tasks',           label:'Go to Tasks',               hint:'Task list / board', kind:'action'});
+  rows.push({type:'action', id:'goto-time',            label:'Go to Time Tracker',        hint:'Log + edit time', kind:'action'});
+  rows.push({type:'action', id:'goto-time-dashboard',  label:'Go to Time Tracker Dashboard', hint:'Hours analytics', kind:'action'});
+  rows.push({type:'action', id:'new-task',             label:'New Task',                  hint:'Create a task', kind:'action'});
+  rows.push({type:'action', id:'open-emails',          label:'Open Email Templates Library', hint:'All industries', kind:'action'});
+  rows.push({type:'action', id:'toggle-theme',         label:'Toggle Dark / Light Mode',  hint:'Theme', kind:'action'});
 
   // Tasks (incomplete first, then done)
   if(typeof tasksData === 'object' && tasksData){
@@ -259,19 +262,27 @@ function executePaletteResult(r){
 }
 
 function handlePaletteAction(id){
+  function clickSidebar(elId){ var el = document.getElementById(elId); if(el) el.click(); }
   switch(id){
     case 'goto-dashboard':
       _switchToPanel('panel-dashboard');
       if(typeof buildDashboard === 'function') buildDashboard();
       break;
+    case 'goto-tasks-dashboard':
+      clickSidebar('sid-tasks-dashboard');
+      break;
     case 'goto-tasks':
-      _switchToPanel('panel-tasks');
-      if(typeof renderTasksPanel === 'function') renderTasksPanel();
+      clickSidebar('sid-tasks');
+      break;
+    case 'goto-time':
+      clickSidebar('sid-time');
+      break;
+    case 'goto-time-dashboard':
+      clickSidebar('sid-time-dashboard');
       break;
     case 'new-task':
-      _switchToPanel('panel-tasks');
-      if(typeof renderTasksPanel === 'function') renderTasksPanel();
-      setTimeout(function(){ if(typeof openTaskDrawerForNew === 'function') openTaskDrawerForNew(); }, 50);
+      clickSidebar('sid-tasks');
+      setTimeout(function(){ if(typeof openTaskDrawerForNew === 'function') openTaskDrawerForNew(); }, 80);
       break;
     case 'open-emails':
       if(typeof openEmailLibrary === 'function') openEmailLibrary();
