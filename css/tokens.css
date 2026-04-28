@@ -3,6 +3,11 @@
    Light + Dark theme color/spacing/type/radius/shadow/motion variables.
    ════════════════════════════════════════════════════════════════════════ */
 :root{
+  /* Tells browsers to render native UI controls (calendar picker icon,
+     scrollbars, autofill bg) in light mode by default. Dark theme below
+     flips this to "dark" so the calendar picker icon inverts to white. */
+  color-scheme: light;
+
   /* ── Surfaces ── */
   --bg-app:        #F6F9FC;            /* page bg — subtle cool tint (Stripe Dashboard) */
   --bg-surface:    #FFFFFF;            /* cards, modals, inputs */
@@ -208,6 +213,10 @@
 @media (max-width:479px){ :root{ --topbar-h:44px; } }
 
 :root[data-theme="dark"]{
+  /* Flips native UI to dark — calendar picker icon, scrollbars, autofill bg,
+     etc. all switch to their dark-theme variants. */
+  color-scheme: dark;
+
   /* ── Surfaces — inboxkit-style: clean near-black with calm elevation ── */
   --bg-app:        #0A0B0E;            /* page bg */
   --bg-surface:    #14171C;            /* cards, modals (raised over page) */

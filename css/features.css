@@ -327,8 +327,13 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .inline-picker-divider{height:1px;background:var(--border);margin:4px 6px}
 .due-picker-input-row{display:flex;align-items:center;gap:8px;padding:6px 8px}
 .due-picker-label{font-size:11px;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;flex-shrink:0}
-.due-picker-date{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;outline:none;color-scheme:light dark;transition:border-color 0.12s}
+.due-picker-date{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;outline:none;transition:border-color 0.12s}
 .due-picker-date:focus{border-color:var(--accent)}
+/* Native calendar-picker icon — invert it in dark mode so it's visible
+   against dark surfaces. The cursor:pointer keeps the affordance obvious. */
+input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.7}
+input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1)}
 .due-picker-clear{color:var(--danger-strong)!important;margin-top:2px}
 .due-picker-clear svg{width:11px;height:11px;color:var(--danger-strong)}
 .due-picker-clear:hover{background:var(--danger-bg)!important}

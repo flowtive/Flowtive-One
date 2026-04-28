@@ -12,8 +12,18 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.1.1';
+var APP_VERSION = '2.1.2';
 var APP_CHANGELOG = [
+  {
+    version: '2.1.2',
+    date:    '2026-04-28',
+    title:   'Dark-mode calendar icon fix',
+    notes:   'The native date picker icon was rendering black in dark mode, making it invisible against dark inputs. Now inverts properly when the theme is dark.',
+    changes: [
+      {type:'fix', text:'Date picker calendar icon is now visible in dark mode (was rendering black against dark backgrounds)'},
+      {type:'improvement', text:'Native form controls (scrollbars, autofill backgrounds, calendar pickers) globally honour the active theme via color-scheme'}
+    ]
+  },
   {
     version: '2.1.1',
     date:    '2026-04-28',
