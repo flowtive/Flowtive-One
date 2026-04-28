@@ -1409,7 +1409,10 @@ function renderCommentsSection(t){
     html += '</div>';
   }
   html += '<div class="comment-add">'
-       +    '<textarea id="td-comment-input" class="comment-add-input" placeholder="Write a comment… use @Name to mention a teammate · ⌘/Ctrl + Enter to send" rows="2" onkeydown="onCommentInputKey(event,\''+t.id+'\')"></textarea>'
+       +    '<textarea id="td-comment-input" class="comment-add-input" placeholder="Write a comment… use @Name to mention a teammate · ⌘/Ctrl + Enter to send" rows="2" '
+       +      'oninput="onCommentInput(event,\''+t.id+'\')" '
+       +      'onkeydown="onCommentInputKey(event,\''+t.id+'\')" '
+       +      'onblur="setTimeout(closeMentionPicker, 150)"></textarea>'
        +    '<button class="comment-add-btn" onclick="submitCommentInput(\''+t.id+'\')">Comment</button>'
        +  '</div>';
   return html;
@@ -1431,7 +1434,156 @@ function renderCommentTextWithMentions(text){
   return safe;
 }
 
+/* ── @-mention autocomplete ──
+   Triggered when the user types '@' in the comment textarea. Shows a popover
+   of matching team members; arrow keys navigate, Enter/Tab inserts, Esc closes.
+   Filters live as you type after the @. */
+var _mentionPicker = null;
+var _mentionResults = [];
+var _mentionSelected = 0;
+
+/* Returns {atIdx, query, endIdx} if the cursor is currently inside an @-token,
+   else null. The @ must be at start of input or preceded by whitespace so we
+   don't trigger on email addresses. */
+function detectMentionContext(input){
+  var pos = (typeof input.selectionStart === 'number') ? input.selectionStart : input.value.length;
+  var text = input.value;
+  var atIdx = -1;
+  for(var i = pos - 1; i >= 0; i--){
+    var ch = text[i];
+    if(ch === '@'){ atIdx = i; break; }
+    if(/\s/.test(ch)) return null;        // hit whitespace before finding @
+  }
+  if(atIdx === -1) return null;
+  if(atIdx > 0 && !/\s/.test(text[atIdx - 1])) return null; // @ must follow whitespace
+  return { atIdx: atIdx, endIdx: pos, query: text.substring(atIdx + 1, pos) };
+}
+
+function onCommentInput(e, taskId){
+  var input = e.target;
+  var ctx = detectMentionContext(input);
+  if(!ctx){ closeMentionPicker(); return; }
+  showMentionPicker(taskId, input, ctx.query);
+}
+
+function showMentionPicker(taskId, input, query){
+  var q = (query || '').toLowerCase();
+  var matches = MEMBERS.map(function(m){
+    var name = m.name.toLowerCase();
+    var score = 0;
+    if(!q)                     score = 1;
+    else if(name === q)        score = 100;
+    else if(name.indexOf(q)===0) score = 80;
+    else if(name.indexOf(q)>=0)  score = 50;
+    return {m: m, score: score};
+  }).filter(function(x){ return x.score > 0; })
+    .sort(function(a,b){ return b.score - a.score; })
+    .map(function(x){ return x.m; });
+
+  if(!matches.length){ closeMentionPicker(); return; }
+
+  _mentionResults = matches;
+  if(_mentionSelected >= matches.length) _mentionSelected = 0;
+
+  if(!_mentionPicker){
+    _mentionPicker = document.createElement('div');
+    _mentionPicker.className = 'mention-picker';
+    document.body.appendChild(_mentionPicker);
+  }
+  _mentionPicker.innerHTML = matches.map(function(m, i){
+    var img = (typeof loadAvatar === 'function') ? loadAvatar(m.name) : null;
+    var inner = img ? '<img src="'+img+'" alt="'+escapeHtml(m.name)+'">' : escapeHtml(m.name.substring(0,2).toUpperCase());
+    var bg = img ? 'transparent' : m.color;
+    return '<button type="button" class="mention-item'+(i===_mentionSelected?' selected':'')+'" data-idx="'+i+'" '
+      +    'onmousedown="event.preventDefault();pickMention('+i+')" '
+      +    'onmouseenter="hoverMention('+i+')">'
+      +    '<span class="mention-av" style="background:'+bg+'">'+inner+'</span>'
+      +    '<span class="mention-name">'+escapeHtml(m.name)+'</span>'
+      +    '</button>';
+  }).join('');
+
+  // Position above the textarea (left-aligned to it). Fixed positioning so
+  // it stays put if the modal scrolls.
+  var rect = input.getBoundingClientRect();
+  _mentionPicker.style.position = 'fixed';
+  _mentionPicker.style.left = rect.left + 'px';
+  _mentionPicker.style.width = Math.min(rect.width, 280) + 'px';
+  // Measure picker height after render, then position above input
+  var ph = _mentionPicker.offsetHeight;
+  var top = rect.top - ph - 6;
+  if(top < 8){ // not enough room above — fall back to below
+    top = rect.bottom + 6;
+  }
+  _mentionPicker.style.top = top + 'px';
+}
+
+function closeMentionPicker(){
+  if(_mentionPicker){
+    _mentionPicker.remove();
+    _mentionPicker = null;
+  }
+  _mentionResults = [];
+  _mentionSelected = 0;
+}
+
+function hoverMention(idx){
+  _mentionSelected = idx;
+  updateMentionSelection();
+}
+function updateMentionSelection(){
+  if(!_mentionPicker) return;
+  var items = _mentionPicker.querySelectorAll('.mention-item');
+  items.forEach(function(el, i){
+    el.classList.toggle('selected', i === _mentionSelected);
+    if(i === _mentionSelected) el.scrollIntoView({block:'nearest'});
+  });
+}
+
+function pickMention(idx){
+  var m = _mentionResults[idx];
+  if(!m) return;
+  var input = document.getElementById('td-comment-input');
+  if(!input) return;
+  var ctx = detectMentionContext(input);
+  if(!ctx) return;
+  var before = input.value.substring(0, ctx.atIdx);
+  var after  = input.value.substring(ctx.endIdx);
+  var inserted = '@' + m.name + ' ';
+  input.value = before + inserted + after;
+  var newPos = before.length + inserted.length;
+  input.selectionStart = newPos;
+  input.selectionEnd   = newPos;
+  input.focus();
+  closeMentionPicker();
+}
+
 function onCommentInputKey(e, taskId){
+  // Mention picker keyboard nav (only when picker is open)
+  if(_mentionPicker && _mentionResults.length){
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      _mentionSelected = Math.min(_mentionResults.length - 1, _mentionSelected + 1);
+      updateMentionSelection();
+      return;
+    }
+    if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      _mentionSelected = Math.max(0, _mentionSelected - 1);
+      updateMentionSelection();
+      return;
+    }
+    if(e.key === 'Enter' || e.key === 'Tab'){
+      e.preventDefault();
+      pickMention(_mentionSelected);
+      return;
+    }
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      closeMentionPicker();
+      return;
+    }
+  }
+  // Cmd/Ctrl + Enter sends the comment (existing behavior)
   if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){
     e.preventDefault();
     submitCommentInput(taskId);

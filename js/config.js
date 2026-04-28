@@ -12,8 +12,19 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.1.0';
+var APP_VERSION = '2.1.1';
 var APP_CHANGELOG = [
+  {
+    version: '2.1.1',
+    date:    '2026-04-28',
+    title:   '@mention autocomplete',
+    notes:   'Type @ in a comment and a picker now suggests team members — type a few letters to filter, ↑/↓ to navigate, Enter or Tab to insert.',
+    changes: [
+      {type:'new', text:'@-autocomplete in the comment box — picker shows team members as you type, filters live'},
+      {type:'new', text:'Arrow keys to navigate the picker, Enter or Tab to insert, Esc to dismiss'},
+      {type:'improvement', text:'Smart matching — exact match first, then "starts with", then "contains"'}
+    ]
+  },
   {
     version: '2.1.0',
     date:    '2026-04-28',
