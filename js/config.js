@@ -12,8 +12,22 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.0.0';
+var APP_VERSION = '2.1.0';
 var APP_CHANGELOG = [
+  {
+    version: '2.1.0',
+    date:    '2026-04-28',
+    title:   '@mentions + Tasks polish',
+    notes:   'Mention teammates directly in task comments — they get a notification right away. Plus a focused round of polish: rich-text toolbar bug fixed, mobile-friendly buttons, smoother comment posting, and clearer feedback when switching active timers.',
+    changes: [
+      {type:'new', text:'@mentions in comments — type @Name to ping a teammate, they get a browser notification immediately'},
+      {type:'new', text:'Mentions render as highlighted pills in the comment text'},
+      {type:'fix', text:'Rich-text toolbar (B / I / U / list / link / clear) now works correctly — was silently no-op due to focus theft'},
+      {type:'fix', text:'Comment delete + subtask delete buttons are always visible on mobile (no hover required)'},
+      {type:'fix', text:'Comment list auto-scrolls to the latest post after submit'},
+      {type:'improvement', text:'Switching active timer between tasks now shows a "Switched from X" toast so you know the previous one stopped'}
+    ]
+  },
   {
     version: '2.0.0',
     date:    '2026-04-27',

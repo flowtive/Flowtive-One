@@ -91,7 +91,15 @@ function maybeNotifyActivityEvent(entry){
   var title = '', body = '', taskId = entry.taskId || null;
   var t = taskId && typeof tasksData !== 'undefined' ? tasksData[taskId] : null;
 
-  if(entry.type === 'task_assign' && entry.toAssignee === currentUser.name){
+  // @mention takes priority over generic comment notification — louder signal
+  var mentionedMe = entry.type === 'task_comment' && entry.mentions
+                    && Array.isArray(entry.mentions)
+                    && entry.mentions.indexOf(currentUser.name) >= 0;
+
+  if(mentionedMe){
+    title = entry.who + ' mentioned you';
+    body  = entry.title ? 'In: '+entry.title : '';
+  } else if(entry.type === 'task_assign' && entry.toAssignee === currentUser.name){
     title = entry.who + ' assigned you a task';
     body  = entry.title || '';
   } else if(entry.type === 'task_create' && entry.assignee === currentUser.name){

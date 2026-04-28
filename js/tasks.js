@@ -739,14 +739,24 @@ function startTaskTimer(taskId){
   var name = currentUser.name;
   var existing = getActiveTaskIdFor(name);
   if(existing === taskId) return; // already running on this task
-  if(existing) stopTaskTimer(existing, {silent:true});
+  // Capture the previous task's title so we can show "switched from X" toast
+  var prevTitle = '';
+  if(existing){
+    var prev = tasksData[existing];
+    prevTitle = prev && prev.title ? prev.title : '';
+    stopTaskTimer(existing, {silent:true});
+  }
   var entryRef = firebaseDb.ref('flowtive_tasks/'+taskId+'/timeEntries').push();
   var entryId = entryRef.key;
   var now = Date.now();
   entryRef.set({user:name, start:now, end:null, durationMs:null}).catch(function(){ showToast('Save Failed'); });
   firebaseDb.ref('flowtive_tasks/'+taskId+'/activeTimers/'+name).set({entryId:entryId, start:now});
   firebaseDb.ref('flowtive_tasks/'+taskId+'/updatedAt').set(now);
-  showToast('Tracking Started', '#3AC284');
+  if(prevTitle){
+    showToast('Switched from "'+prevTitle+'" — tracking new task', '#475569');
+  } else {
+    showToast('Tracking Started', '#3AC284');
+  }
 }
 
 function stopTaskTimer(taskId, opts){
@@ -818,15 +828,38 @@ function deleteSubtask(taskId, subId){
 }
 
 /* ── Comments ─────────────────────────────────────────────────────
-   Stored as task.comments = {[id]: {id, user, text, createdAt}}. */
+   Stored as task.comments = {[id]: {id, user, text, createdAt, mentions?}}.
+   mentions is an array of MEMBER names extracted from @Name patterns. */
+
+/* Extract @Name mentions where Name matches a known team member.
+   Matches @SingleWord or @"Multi Word" — keeps it simple, case-sensitive
+   on first letter to avoid matching every "@" sign in casual writing. */
+function parseMentions(text){
+  if(!text || typeof MEMBERS === 'undefined') return [];
+  var found = {};
+  // Sort members by name length DESC so "John Smith" wins over "John"
+  var names = MEMBERS.map(function(m){ return m.name; }).sort(function(a,b){ return b.length - a.length; });
+  names.forEach(function(name){
+    // Word-boundary @Name — case-insensitive, but only at start of a word
+    var re = new RegExp('@' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?![A-Za-z])', 'gi');
+    if(re.test(text)) found[name] = true;
+  });
+  return Object.keys(found);
+}
+
 function addComment(taskId, text){
   if(!firebaseReady || !currentUser || !text) return;
   var t = tasksData[taskId]; if(!t) return;
   var ref = firebaseDb.ref('flowtive_tasks/'+taskId+'/comments').push();
-  var rec = {id: ref.key, user: currentUser.name, text: text.trim(), createdAt: Date.now()};
+  var trimmed = text.trim();
+  var mentions = parseMentions(trimmed);
+  var rec = {id: ref.key, user: currentUser.name, text: trimmed, createdAt: Date.now()};
+  if(mentions.length) rec.mentions = mentions;
   ref.set(rec).catch(function(){ showToast('Save Failed'); });
   firebaseDb.ref('flowtive_tasks/'+taskId+'/updatedAt').set(Date.now());
-  logActivity(currentUser.name, 'task_comment', null, null, null, {taskId: taskId, title: t.title});
+  logActivity(currentUser.name, 'task_comment', null, null, null, {
+    taskId: taskId, title: t.title, mentions: mentions.length ? mentions : null
+  });
 }
 function deleteComment(taskId, commentId){
   var t = tasksData[taskId]; if(!t || !t.comments || !t.comments[commentId]) return;
@@ -1082,15 +1115,15 @@ function renderEditTaskDrawerHtml(t){
     +     '<div class="tdrawer-section">'
     +       '<label class="tdrawer-section-title-h">Description</label>'
     +       '<div class="td-rich-toolbar">'
-    +         '<button type="button" class="td-rich-btn" title="Bold (⌘B)" onclick="richExec(\'bold\')"><b>B</b></button>'
-    +         '<button type="button" class="td-rich-btn" title="Italic (⌘I)" onclick="richExec(\'italic\')"><i>I</i></button>'
-    +         '<button type="button" class="td-rich-btn" title="Underline (⌘U)" onclick="richExec(\'underline\')"><u>U</u></button>'
+    +         '<button type="button" class="td-rich-btn" title="Bold (⌘B)" onmousedown="event.preventDefault();richExec(\'bold\')"><b>B</b></button>'
+    +         '<button type="button" class="td-rich-btn" title="Italic (⌘I)" onmousedown="event.preventDefault();richExec(\'italic\')"><i>I</i></button>'
+    +         '<button type="button" class="td-rich-btn" title="Underline (⌘U)" onmousedown="event.preventDefault();richExec(\'underline\')"><u>U</u></button>'
     +         '<span class="td-rich-sep"></span>'
-    +         '<button type="button" class="td-rich-btn" title="Bulleted list" onclick="richExec(\'insertUnorderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="2.5" cy="3.5" r="0.7" fill="currentColor"/><circle cx="2.5" cy="7" r="0.7" fill="currentColor"/><circle cx="2.5" cy="10.5" r="0.7" fill="currentColor"/><path d="M5 3.5h7M5 7h7M5 10.5h7"/></svg></button>'
-    +         '<button type="button" class="td-rich-btn" title="Numbered list" onclick="richExec(\'insertOrderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><text x="1" y="5" font-size="4" font-weight="700" fill="currentColor" stroke="none">1.</text><text x="1" y="10" font-size="4" font-weight="700" fill="currentColor" stroke="none">2.</text><path d="M5.5 3.5h7M5.5 7h7M5.5 10.5h7"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" title="Bulleted list" onmousedown="event.preventDefault();richExec(\'insertUnorderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="2.5" cy="3.5" r="0.7" fill="currentColor"/><circle cx="2.5" cy="7" r="0.7" fill="currentColor"/><circle cx="2.5" cy="10.5" r="0.7" fill="currentColor"/><path d="M5 3.5h7M5 7h7M5 10.5h7"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" title="Numbered list" onmousedown="event.preventDefault();richExec(\'insertOrderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><text x="1" y="5" font-size="4" font-weight="700" fill="currentColor" stroke="none">1.</text><text x="1" y="10" font-size="4" font-weight="700" fill="currentColor" stroke="none">2.</text><path d="M5.5 3.5h7M5.5 7h7M5.5 10.5h7"/></svg></button>'
     +         '<span class="td-rich-sep"></span>'
-    +         '<button type="button" class="td-rich-btn" title="Insert link" onclick="richInsertLink()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 8a2 2 0 0 0 2.8 0l2-2a2 2 0 0 0-2.8-2.8l-1 1M8 6a2 2 0 0 0-2.8 0l-2 2a2 2 0 0 0 2.8 2.8l1-1"/></svg></button>'
-    +         '<button type="button" class="td-rich-btn" title="Clear formatting" onclick="richClearFormat()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3l8 8M5 3h6M5 11h2M9 3l-2 8"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" title="Insert link" onmousedown="event.preventDefault();richInsertLink()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 8a2 2 0 0 0 2.8 0l2-2a2 2 0 0 0-2.8-2.8l-1 1M8 6a2 2 0 0 0-2.8 0l-2 2a2 2 0 0 0 2.8 2.8l1-1"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" title="Clear formatting" onmousedown="event.preventDefault();richClearFormat()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3l8 8M5 3h6M5 11h2M9 3l-2 8"/></svg></button>'
     +       '</div>'
     +       '<div class="tdrawer-textarea tdrawer-desc td-rich-editor" id="td-desc" contenteditable="true" data-placeholder="Add a description…">'+sanitizeRichHtml(t.description||'')+'</div>'
     +     '</div>'
@@ -1369,17 +1402,33 @@ function renderCommentsSection(t){
            +      '<div class="comment-meta"><span class="comment-author">'+escapeHtml(c.user||'')+'</span><span class="comment-time">'+formatTimeAgo(c.createdAt)+'</span>'
            +        (canDelete ? '<button class="comment-del" title="Delete" onclick="deleteComment(\''+t.id+'\',\''+c.id+'\')">×</button>' : '')
            +      '</div>'
-           +      '<div class="comment-text">'+escapeHtml(c.text||'')+'</div>'
+           +      '<div class="comment-text">'+renderCommentTextWithMentions(c.text||'')+'</div>'
            +    '</div>'
            +  '</div>';
     });
     html += '</div>';
   }
   html += '<div class="comment-add">'
-       +    '<textarea id="td-comment-input" class="comment-add-input" placeholder="Write a comment… (⌘/Ctrl + Enter to send)" rows="2" onkeydown="onCommentInputKey(event,\''+t.id+'\')"></textarea>'
+       +    '<textarea id="td-comment-input" class="comment-add-input" placeholder="Write a comment… use @Name to mention a teammate · ⌘/Ctrl + Enter to send" rows="2" onkeydown="onCommentInputKey(event,\''+t.id+'\')"></textarea>'
        +    '<button class="comment-add-btn" onclick="submitCommentInput(\''+t.id+'\')">Comment</button>'
        +  '</div>';
   return html;
+}
+
+/* Render a comment's plain text with @mentions highlighted. We escape the
+   text first (XSS-safe), then replace escaped @Name occurrences with a
+   styled span. Only matches names that resolve to real members. */
+function renderCommentTextWithMentions(text){
+  var safe = escapeHtml(text || '');
+  if(typeof MEMBERS === 'undefined' || !MEMBERS) return safe;
+  // Sort by length DESC so "John Smith" wins over "John"
+  var names = MEMBERS.map(function(m){ return m.name; }).sort(function(a,b){ return b.length - a.length; });
+  names.forEach(function(name){
+    var safeName = escapeHtml(name);
+    var re = new RegExp('@' + safeName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?![A-Za-z])', 'gi');
+    safe = safe.replace(re, '<span class="comment-mention">@'+safeName+'</span>');
+  });
+  return safe;
 }
 
 function onCommentInputKey(e, taskId){
@@ -1396,6 +1445,12 @@ function submitCommentInput(taskId){
   addComment(taskId, v);
   inp.value = '';
   inp.focus();
+  // Scroll the modal so the just-posted comment + input are in view —
+  // the comment renders above the input, so scrolling the input into view
+  // brings the latest comment along with it.
+  setTimeout(function(){
+    if(inp && inp.scrollIntoView) inp.scrollIntoView({behavior:'smooth', block:'end'});
+  }, 100);
 }
 
 /* ── Inline title edit ── double-click any task title in list or board view */
