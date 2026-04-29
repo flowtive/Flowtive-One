@@ -12,8 +12,325 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.10.0';
+var APP_VERSION = '2.27.2';
 var APP_CHANGELOG = [
+  {
+    version: '2.27.2',
+    date:    '2026-04-30',
+    title:   'Hotfix — email listener ReferenceError',
+    notes:   'The Firebase listener for `flowtive_email_templates` lived in firebase.js (eager) but referenced globals from emails.js (lazy-loaded after Tier 2). At app boot, before Cold Pitch was ever opened, the listener\'s first-fire callback threw `ReferenceError: emailOverrides is not defined`, causing repeated console errors. Moved the listener into emails.js so it subscribes only when Cold Pitch is first opened.',
+    changes: [
+      {type:'fix', text:'Moved the `flowtive_email_templates` Firebase listener from `subscribeRealtime` (firebase.js) into `subscribeEmailTemplates()` (emails.js), called the first time `openEmailLibrary` runs. Cross-user sync of email edits still works — it just kicks in when the user opens Cold Pitch instead of at app boot. Eliminates the ReferenceError that fired on every page load post-Tier 2.'},
+      {type:'improvement', text:'Listener subscription is idempotent via the existing `_emailListener` guard, so re-opening Cold Pitch doesn\'t stack listeners.'}
+    ]
+  },
+  {
+    version: '2.27.1',
+    date:    '2026-04-30',
+    title:   'Hotfix — Workflow Dashboard + Chart.js eager load',
+    notes:   'Two regressions surfaced by the v2.25–v2.27 performance pass: the Workflow Dashboard rendered empty because its sidebar `onActivate` wasn\'t wrapped in `loadModule()` after `sub-dashboards.js` became lazy-loaded, and the Workspace Dashboard charts didn\'t paint because the dynamic `<script>` injection for Chart.js had a timing issue. Both fixed.',
+    changes: [
+      {type:'fix', text:'Workflow Dashboard sidebar item now loads `js/sub-dashboards.js` before calling `renderTasksDashboardPanel`. Was missed in Tier 2.3 — Logbook Dashboard was wrapped (it\'s in the same module) but the Workflow Dashboard entry wasn\'t. The `typeof === \'function\'` guard silently no-op\'d, leaving the panel empty after the title bar.'},
+      {type:'fix', text:'Chart.js back to eager-loading via `<script defer>`. The Tier 2 lazy-load via dynamic `<script>` injection had a timing edge case where the `.then()` chain in `buildWeeklyChart` and `renderHoursThisWeek` didn\'t reliably fire across all browsers, leaving the Workspace Dashboard charts blank. Eager-loading restores the synchronous code path; the gates inside chart functions are now defensive no-ops.'},
+      {type:'improvement', text:'Tier 2 lazy-loading still saves ~370 KB of panel-specific JS (`calendar-view`, `timesheet`, `reports`, `sub-dashboards`, `emails`) from the initial bundle — those modules load on first activation as designed. Only Chart.js was reverted to eager.'}
+    ]
+  },
+  {
+    version: '2.27.0',
+    date:    '2026-04-30',
+    title:   'Performance pass — Tier 3: render memoization + tick throttle',
+    notes:   'Final tier of the performance program. Reports tab cycling, Tasks filter clicks, and the per-second clock tick all do less work for the same visible result. Closes out the three-tier program with no behavior changes — just less wasted CPU.',
+    changes: [
+      {type:'improvement', text:'`tickClockUI` runs every second but the topbar "Stop Work · Xh Ym" label only changes at minute boundaries (fmtElapsed floors to minutes for ≥1 minute durations). The label update + `querySelectorAll(\'.clock-btn .clock-btn-label-text\')` now skip 59 out of 60 ticks — invisible from a user perspective, real CPU savings idle on the dashboard.'},
+      {type:'improvement', text:'`getFilteredTasks` now memoizes its result with a dirty flag. The Tasks panel calls it 4-5× per render (toolbar count, list head count, list body, count badges) and each call walked Object.values(tasksData) plus 1-2 filter passes. Now the second-through-Nth call within a render returns the cached array. Invalidated by Firebase updates, filter / sort / search changes, and login.'},
+      {type:'improvement', text:'`_repCollectEntries` (Reports) now memoizes by filter state. Switching between Summary / Detailed / Weekly tabs of Reports — which previously re-walked all clockSessions + all task.timeEntries 4× — now hits a cache. Filter changes, range changes, search changes invalidate. Firebase data changes invalidate.'},
+      {type:'improvement', text:'`tickTimesheetPanel` moved into the minute-boundary block of `tickClockUI` (it was being called every second but only updates totals on minute changes anyway).'}
+    ]
+  },
+  {
+    version: '2.26.0',
+    date:    '2026-04-30',
+    title:   'Performance pass — Tier 2: lazy-loaded panels',
+    notes:   'Five panel-specific JS modules and Chart.js itself now load on-demand instead of on page boot. Users who never open Reports, Calendar, Timesheet, Logbook Dashboard, or Cold Pitch never download those modules at all. Initial JS payload drops by ~370 KB plus the ~200 KB Chart.js bundle. First Contentful Paint should improve noticeably on slower connections.',
+    changes: [
+      {type:'new', text:'New `loadModule(src)` helper in util.js — lazy-injects a script tag and returns a Promise that resolves on `onload`. Caches the Promise (not a boolean) so concurrent callers requesting the same script dedupe to one network request. New `ensureChartJs()` gate uses it to lazy-load Chart.js the first time a chart needs to render.'},
+      {type:'improvement', text:'Removed from initial-load bundle (now lazy-loaded on first activation): `js/calendar-view.js` (~20K), `js/timesheet.js` (~16K), `js/reports.js` (~40K), `js/sub-dashboards.js` (~16K), `js/emails.js` (~76K). ~370 KB total off the critical path.'},
+      {type:'improvement', text:'Chart.js (~200 KB CDN) is no longer in the eager `<script>` tag list. It loads when the first chart paints — for the main dashboard that\'s essentially immediately, but for users who never open chart-bearing panels (just the Tracker, for instance), it never loads at all.'},
+      {type:'improvement', text:'Sidebar `onActivate` handlers wrap their renderXPanel call in `loadModule(...).then(...)`. Existing `typeof renderXPanel === \'function\'` guards in the Firebase listener cascade already handle the "module not loaded yet" case — scheduled renders simply no-op until the module arrives.'},
+      {type:'improvement', text:'Cold Pitch is now lazy-loaded too — `js/emails.js` (~76 KB) downloads only when the user clicks the sidebar item. Inline `onclick` handlers in the Cold Pitch HTML modals are safe because those modals only become reachable after `openEmailLibrary` runs (which is now gated on the module load).'}
+    ]
+  },
+  {
+    version: '2.25.0',
+    date:    '2026-04-30',
+    title:   'Performance pass — Tier 1: faster initial load + render refinements',
+    notes:   'First wave of a three-tier performance program. Initial paint is faster (parallelized Firebase reads, stale-while-revalidate from localStorage, network preconnect, deferred script parsing). Runtime is smoother (charts reuse instances instead of destroy+recreate, member lookups are O(1), Tracker totals memoize, listener-fired renders coalesce through rAF). No behavior changes — same UI, same data, just less work to get there.',
+    changes: [
+      {type:'improvement', text:'All app `<script>` tags are now `defer` — HTML parsing no longer blocks on JS download or evaluation. Combined with `<link rel="preconnect">` hints to the Chart.js CDN, Firebase SDK, and Firebase RTDB, the network sockets warm up in parallel with parsing.'},
+      {type:'improvement', text:'Initial Firebase reads now run in parallel where possible. The redundant `.once()` reads for progress / status / notes / email_templates were removed entirely — those paths are subscribed via realtime listeners whose first callback delivers the same data. Avatars stay as a one-shot because they cache to per-user localStorage. Net: 5×RTT collapsed to ~1×RTT on first paint.'},
+      {type:'improvement', text:'Stale-while-revalidate first paint. The dashboard now hydrates from localStorage caches synchronously before any network call, so users see populated KPIs / sidebar / tasks in <100ms even on slow connections. Firebase listeners then patch in fresh data via the existing `patchUIFromData` (which only touches changed nodes — no flicker, no full rebuild).'},
+      {type:'improvement', text:'Member lookups (`MEMBERS.find(m => m.name === x)`) replaced with an O(1) `membersByName()` map across 17 callsites in render hot paths — entry log, reports, calendar, activity feed, dashboard, sidebar. Was O(N) per row × N rows; now O(1) per row. Static config never changes so the map never invalidates.'},
+      {type:'improvement', text:'Charts (`charts.weekly`, `charts.hoursWeek`, `charts.timeWeek`, `charts.donut`, `charts.bar`) now reuse instances via `.update(\'none\')` instead of `.destroy() + new Chart()` on every Firebase tick. Saves GPU buffer reallocation and skips the entry-animation replay. The mobile/desktop bar-chart orientation flip still uses destroy+recreate (Chart.js can\'t pick that up via update) but only on actual orientation changes, not every tick.'},
+      {type:'improvement', text:'`flowtive_time_active` listener no longer fires three synchronous renders before its scheduled ones — every render now flows through `scheduleRender` (rAF-batched per key), so back-to-back updates (someone starting + immediately stopping a session) collapse to one paint instead of stacking.'},
+      {type:'improvement', text:'`_ttSumForRange` memoizes results within a single render pass. The Tracker panel calls it 2-3× per render (Today, This Week, sometimes a custom range) — each call walked all sessions + all task entries. Now the second and third calls hit a cache. Skipped while the user has a running timer (live counter must stay honest). Invalidated on every Firebase update.'}
+    ]
+  },
+  {
+    version: '2.24.1',
+    date:    '2026-04-30',
+    title:   'Tracker typewriter survives panel re-renders',
+    notes:   'The "What are you working on?" placeholder typewriter used to restart from a fresh random phrase every time the Tracker panel rebuilt — filter chip clicks (Today / Yesterday / This Week / Last Week / All Time), scope toggle, or any teammate Firebase update. Now it picks up exactly where it left off, so navigation feels smooth instead of jumpy.',
+    changes: [
+      {type:'fix', text:'Typewriter state (current phrase, character position, mode) now lives at module scope instead of being closed over by each render. A re-render kills the DOM but preserves the state; the next start paints the current text immediately and resumes the chain. Visually seamless across filter clicks.'},
+      {type:'improvement', text:'Reduced-motion fallback also caches its chosen phrase — was previously picking a fresh random phrase on each render, which is itself a kind of motion that defeats the OS preference.'},
+      {type:'improvement', text:'Lead-in pause (320ms cursor-only beat before typing starts) only fires on the very first run now. Subsequent re-renders resume immediately so navigation feels instant.'}
+    ]
+  },
+  {
+    version: '2.24.0',
+    date:    '2026-04-30',
+    title:   'QA Round 3 — reliability + a11y fixes',
+    notes:   'Eight bugs surfaced in the third deep QA pass on Logbook. The headline three were silent data loss in the description inputs (tracker bar + entry-log inline edit) and a missing keyboard activation on the inline-edit span. Plus a dead "Show all time" CTA, an Esc-key conflict between bulk bar + delete confirm modal, and a dead-code branch in the calendar Day/Week toggle.',
+    changes: [
+      {type:'fix', text:'No more silent data loss when editing an entry-log description inline. The 30-second tick re-render and Firebase listener-driven re-renders used to wipe the inline-edit input without firing blur — typed text vanished. Render now captures focus + caret + typed value before innerHTML, restores them after, and re-arms the inline edit on the matching row.'},
+      {type:'fix', text:'Same fix for the tracker bar "What are you working on?" input. Typed-but-not-yet-saved text used to disappear when any teammate touched a session, project, or tag. Now preserved across re-renders, plus debounced auto-save commits each pause-in-typing to Firebase as a belt-and-suspenders.'},
+      {type:'fix', text:'Click-to-edit description span (`role="button"`, `tabindex="0"`) now responds to Space/Enter for keyboard-only users. Previously tabbing to the span and pressing the keyboard activator did nothing — accessibility blocker on a feature whose whole point was "click to edit".'},
+      {type:'fix', text:'Reports empty-state "Show all time" CTA actually works now. Was emitting `setRepRange(\'all\')` but the valid value is `\'all_time\'`; the click silently fell through to "this week" — confusing dead-end on the most obvious recovery path.'},
+      {type:'fix', text:'Esc inside the bulk-delete confirm modal closes the modal on the first press. The bulk-bar Esc handler used to swallow the keystroke (capture-phase + stopPropagation), eating the modal\'s bubble-phase Esc. Now bails when any modal / drawer / picker is open.'},
+      {type:'fix', text:'Calendar Week → Day toggle now lands on TODAY instead of stranding you on Monday. The "snap to today on first entry into Day mode" check tested the wrong variable (compared the just-assigned value to itself, always false), so the snap never fired.'},
+      {type:'fix', text:'Project + tag pickers can no longer latch onto an unrelated chip in a different surface (e.g. tracker bar chip when picker was opened from the Manual Entry dialog). Re-anchor fallback is now scoped to the original anchor\'s containing modal/drawer/body.'},
+      {type:'fix', text:'`createProject` rollback (when the Firebase write rejects) now clears `projectId` on any session that was optimistically tagged with the failed project. Prevents orphaned project references silently lingering in session records.'},
+      {type:'fix', text:'Tag + project pickers now float ABOVE the Manual Entry / Edit Entry dialogs instead of getting hidden behind the modal\'s semi-transparent backdrop. Picker z-index lifted from 1900 to 2700 — clear of every modal, drawer, palette, and keyboard-shortcuts overlay, but still beneath transient toasts.'},
+      {type:'fix', text:'Tag + project pickers are now mutually exclusive — opening one closes the other. Previously you could stack both open at once inside the Manual Entry dialog, which read as broken layout. They also now close together when the dialog closes, instead of one or both lingering on the page as orphan popovers.'}
+    ]
+  },
+  {
+    version: '2.23.1',
+    date:    '2026-04-30',
+    title:   'Typewriter placeholder on the Tracker description input',
+    notes:   'The "What are you working on?" input now has a classic typewriter animation as its placeholder — types each phrase out one character at a time with a blinking cursor, holds for a beat, deletes it, picks a new phrase, repeats. Cycles through ~30 short work prompts. Plus the loud focus halo around the tracker bar is gone.',
+    changes: [
+      {type:'new',         text:'Typewriter placeholder. Phrases type out at ~75ms per character (with subtle ±18ms jitter so the rhythm reads as human, not metronomic), hold for 1.5s on the full phrase, backspace at ~35ms per character, then a brief gap with the cursor blinking on its own before the next phrase starts.'},
+      {type:'new',         text:'Cycles through ~30 short work prompts at random — e.g. "Polishing the onboarding flow", "Reviewing this week\'s analytics", "Drafting cold-pitch templates", "Mapping Texas territory leads". Spans design, dev, copy, analytics, leads, admin.'},
+      {type:'new',         text:'CSS-driven blinking caret sits at the end of the typed text — same look as a real terminal cursor. Independent of the text element so it never stutters when characters are added or removed.'},
+      {type:'improvement', text:'Removed the accent-tinted focus ring that wrapped the entire tracker bar whenever the description input was focused. Felt loud during routine typing — bar stays quiet until you press Start.'},
+      {type:'improvement', text:'Running-state ring (green, when a timer is active) is unchanged — that\'s a deliberate "I\'m tracking" cue, not a focus indicator.'},
+      {type:'improvement', text:'Animation cancels the moment you start typing in the field, restarts on blur if you leave it empty, and self-stops when the tracker bar re-renders so nothing accumulates in the background.'},
+      {type:'improvement', text:'Honors `prefers-reduced-motion: reduce` — users with that OS preference see a single static random phrase, no animation, no caret blink.'}
+    ]
+  },
+  {
+    version: '2.23.0',
+    date:    '2026-04-30',
+    title:   'Click-to-edit description on Tracker entry log rows',
+    notes:   'Click any time entry\'s description text in the log to edit it inline — Enter saves, Esc reverts. Previously you had to open the edit dialog just to fix a typo or add a missing description.',
+    changes: [
+      {type:'new',         text:'Click any of your own entry\'s description (or "(no description)" placeholder) in the Tracker entry log → it becomes an editable input. Enter saves; Esc reverts; clicking elsewhere also saves.'},
+      {type:'improvement', text:'Empty descriptions show a faded italic "(no description)" placeholder that invites a click — clearer signal than the old plain-text version.'},
+      {type:'improvement', text:'Hovering an editable row underlines the description with a subtle dotted line (same pattern as task titles) so the click affordance is discoverable.'},
+      {type:'improvement', text:'Descriptions on task-linked entries and other users\' entries stay non-clickable — those aren\'t yours to edit here.'}
+    ]
+  },
+  {
+    version: '2.22.0',
+    date:    '2026-04-29',
+    title:   'Tracker idle timer is now a click-to-add shortcut',
+    notes:   'Click the "00:00:00" display on the Tracker bar to open the manual-entry dialog. Faster path than reaching for the small + button at the end of the row.',
+    changes: [
+      {type:'new',         text:'Idle timer (00:00:00 on the Tracker bar) is now clickable — opens the same Add Manual Entry dialog the + button opens. Subtle hover background + focus ring signal it\'s interactive. Tooltip reads "Click to add time manually".'},
+      {type:'improvement', text:'The explicit + button at the end of the bar stays for discoverability and consistent placement; the clickable timer is a faster alternative for users who notice it.'}
+    ]
+  },
+  {
+    version: '2.21.1',
+    date:    '2026-04-29',
+    title:   'Manual Entry dialog spacing + field uniformity',
+    notes:   'The Add/Edit Manual Entry dialog\'s Project + Tags chip-buttons were a different shape and height (rounded pill, 7px padding) than the Date / Start / End inputs above (rectangular, 8px padding). Same form, two field styles. Plus the section spacing was uneven.',
+    changes: [
+      {type:'fix',         text:'Project + Tags chip-buttons now match the Date/Time inputs exactly — same 36px height, same 6px corner radius, same padding and font size. Dialog reads as one cohesive form.'},
+      {type:'improvement', text:'Consistent 14px gap above each labeled section (Description, Date row, Duration, Project/Tags row). Was 0 / 10 / 10 / 10 — now uniform.'},
+      {type:'improvement', text:'Labels sit 6px above their fields (was 5px) — a touch more breathing room.'}
+    ]
+  },
+  {
+    version: '2.21.0',
+    date:    '2026-04-29',
+    title:   'Inline-create on the project picker',
+    notes:   'The project chip on the Tracker bar now opens a search picker (same shape as the tag picker). Type to filter existing projects, or type a new name + Enter to create it inline — no separate prompt modal.',
+    changes: [
+      {type:'new',         text:'Project picker has a Filter / Add input at the top. Typing filters the list as you go; pressing Enter on a name that doesn\'t match an existing project creates it (with the next color in the palette) and selects it for the running session in one keystroke.'},
+      {type:'improvement', text:'Removed the awkward "Create your first project…" placeholder + native prompt() flow that only appeared when the project list was empty. The new inline-create works regardless of how many projects already exist.'},
+      {type:'improvement', text:'Project chip on the tracker bar now carries the same data-pt-pick-anchor attribute as the tag chip — picker stays anchored even if the tracker bar re-renders mid-pick.'},
+      {type:'fix',         text:'Project picker reuses the tag picker\'s position-caching helper, so the same "snap to top-left" bug we fixed for tags can\'t happen here either.'}
+    ]
+  },
+  {
+    version: '2.20.1',
+    date:    '2026-04-29',
+    title:   'Tag picker no longer snaps to top-left',
+    notes:   'Bug fix: clicking the Tags chip on the Tracker bar opened the picker correctly, but if anything caused the tracker bar to re-render (Firebase update, scope toggle, manual edit) while the picker was open, the picker would snap to the top-left corner of the page on the next interaction.',
+    changes: [
+      {type:'fix', text:'Tag picker on the Tracker bar now caches the chip\'s position when it opens AND re-queries via a stable data-pt-pick-anchor attribute on every reposition. If the original chip element gets replaced by a re-render mid-picker, the picker stays put instead of snapping to (0, 0).'}
+    ]
+  },
+  {
+    version: '2.20.0',
+    date:    '2026-04-29',
+    title:   'Polish round — Logbook + Workflow deferred items',
+    notes:   'Eleven small fixes from the parked Round 1 deferred lists across both apps. Each is a self-contained polish item; together they tighten daily-use surfaces (calendars, time pills, project palette, etc.).',
+    changes: [
+      {type:'new',         text:'Project palette gained 3 neutral grays (#94A3B8 / #64748B / #475569) for "background" projects like Admin, Overhead, Internal.'},
+      {type:'improvement', text:'Calendar block colors now adapt to dark mode — bumped from 0.18 alpha to 0.30 alpha when data-theme="dark" so blocks stay readable on dark backgrounds.'},
+      {type:'improvement', text:'Timesheet empty cells show a faint "+" at 0.35 opacity by default (was hidden until hover) so cells look clickable on first scan.'},
+      {type:'improvement', text:'Sidebar elapsed-time pill ticks every 60s instead of 30s — labels show "Xh Ym" so sub-minute updates are invisible anyway. Halves the reflow rate.'},
+      {type:'improvement', text:'"Working Now" card on the Workspace Dashboard gained a small "longest first" sort label so users know what they\'re looking at.'},
+      {type:'improvement', text:'Reports tag-grouped table shows a "ⓘ multi-tag" hint chip — explains that entries with N tags count toward each tag\'s total (sum across rows can exceed grand total).'},
+      {type:'improvement', text:'Tasks comment delete button tooltip clarified to "Delete your comment" (only your own comments show the button).'},
+      {type:'new',         text:'Tasks time pill distinguishes "never tracked" (em-dash, faintest) from "0m" (entries logged but sum to 0) — easier to spot truly unworked tasks.'},
+      {type:'improvement', text:'Subtask order is now stable across renders — added id tiebreaker for subtasks created within the same millisecond (no more flicker on re-render).'},
+      {type:'improvement', text:'Drag-card-on-board feedback is more tactile: the card scales 3% + tilts 1° + lifts via shadow while dragging (was opacity-only).'},
+      {type:'fix',         text:'Logbook Calendar block hover Stop / Delete buttons sit on rgba(0,0,0,0.55) backdrop with backdrop-filter blur for legibility on any color block.'}
+    ]
+  },
+  {
+    version: '2.19.0',
+    date:    '2026-04-29',
+    title:   'Projects + Tags hardening',
+    notes:   'Six concrete fixes from a deep code review of the Projects + Tags surface. The big ones: optimistic creates now roll back if Firebase rejects (no more "saved" UI lying about a failed save), the project list rejects duplicate names just like tags do, and tag delete + undo correctly restores BOTH the tag and every entry that referenced it.',
+    changes: [
+      {type:'fix',         text:'Optimistic project / tag creates now roll back on Firebase rejection. Previously the new entry would appear in the list even though the save failed — refresh would make it vanish. Now if Firebase says no, the row disappears and the error toast explains why.'},
+      {type:'new',         text:'Project name duplicate check (parity with Tags). Trying to add a second "Marketing" shows "Project already exists" and refuses.'},
+      {type:'fix',         text:'Delete-a-tag undo now restores BOTH the tag AND its references on every time entry. Previously undo brought the tag back but left entries un-tagged.'},
+      {type:'fix',         text:'Removed a redundant "Tag deleted" toast that fought the undo toast on tag deletion.'},
+      {type:'improvement', text:'Project-with-entries delete flow ("Move to No project" / "Delete entries too") now logs Firebase errors via the standard error path instead of silently swallowing them — same diagnostic format as the rest of the surface.'},
+      {type:'improvement', text:'Tag picker (used by the tracker bar) re-renders immediately after creating a new tag inline — no more arbitrary 200ms wait, since createTag already does an optimistic write.'}
+    ]
+  },
+  {
+    version: '2.18.0',
+    date:    '2026-04-29',
+    title:   'Logbook QA Round 2 — keyboard a11y, multi-day clarity, offline feedback',
+    notes:   'Five real-bug fixes from the second deep audit of Flowtive Logbook. The audit surfaced 18 candidates; most were false alarms (DST is already handled, the CSV filename is already YYYY-MM-DD, day grouping has an explicit numeric sort, etc.). Round 1 deferred polish remains parked.',
+    changes: [
+      {type:'fix',         text:'Space and Enter now toggle bulk-select checkboxes when keyboard-focused. Was a real a11y gap — keyboard-only users couldn\'t access bulk-select on Tasks or Tracker.'},
+      {type:'improvement', text:'Calendar × delete on multi-day sessions now reads "Delete entire session (spans multiple days)" in the tooltip + confirm modal. Same single-click behavior, clearer warning so the user knows all days will be removed.'},
+      {type:'fix',         text:'Reports → All Time on a flaky / offline connection now flips the "Loading older entries…" hint to "Couldn\'t load older entries — check your connection" after 10s instead of silently disappearing.'},
+      {type:'improvement', text:'Bulk action bar z-index lifted from 1700 → 1850 so it stays above the mobile sidebar drawer + backdrop without being covered.'},
+      {type:'improvement', text:'Timesheet free-hour finder ignores task entries that ended in the last 5 seconds — fixes the edge case where you click a cell at the same moment a teammate just stopped a task timer.'}
+    ]
+  },
+  {
+    version: '2.17.0',
+    date:    '2026-04-29',
+    title:   'Select-all on bulk select',
+    notes:   'Tri-state master checkboxes plus "Select all (N)" / "Deselect all" links on every bulk action bar. Speeds up the common case of "I want to act on every visible row".',
+    changes: [
+      {type:'new', text:'Tasks list: master checkbox in the table header. Empty / mixed (horizontal bar) / checked (✓) — click to select or deselect every visible task at once.'},
+      {type:'new', text:'Tracker entry log: per-day master checkbox in each day header. Selects only your own non-running entries for that day. Tri-state, same visual as the row checkbox.'},
+      {type:'new', text:'Both bulk bars now show a "Select all (N)" link next to the count. Flips to "Deselect all" when everything is already selected.'},
+      {type:'improvement', text:'All select-all helpers respect the active filter, scope, and ownership rules — they never accidentally select task entries, other users\' time, or rows outside your filter.'}
+    ]
+  },
+  {
+    version: '2.16.0',
+    date:    '2026-04-29',
+    title:   'Tracker — see the whole team',
+    notes:   'A new "Only Me / All Team" toggle on the Tracker shows whose entries you\'re looking at. When set to All Team, every row shows an avatar + name so you can see who tracked what at a glance.',
+    changes: [
+      {type:'new',         text:'Scope toggle on the Tracker filter row — Only Me (default) or All Team. Persists per browser.'},
+      {type:'new',         text:'In All Team scope, each entry shows the owner\'s avatar + name. Your own entries are tagged "(you)".'},
+      {type:'improvement', text:'Today / This Week / Filtered totals follow the toggle — flip to All Team and the KPIs reflect the team\'s combined hours.'},
+      {type:'improvement', text:'Day-grouped totals already follow scope (they sum whatever rows are visible). Day labels still group by the entry start date.'},
+      {type:'improvement', text:'Other people\'s entries are read-only here — no edit / delete buttons, no bulk-select checkbox. Only your own rows can be modified, just like before.'}
+    ]
+  },
+  {
+    version: '2.15.1',
+    date:    '2026-04-29',
+    title:   'Inline delete on Calendar blocks',
+    notes:   'Hover any tracked entry on the Logbook Calendar — a small × appears in the top-right corner. One click confirms + deletes with the standard undo toast.',
+    changes: [
+      {type:'new',         text:'× delete button on calendar blocks (hover for pointer / always-on for touch). Reuses the existing confirm + undo flow so you can always reverse a mistake.'},
+      {type:'improvement', text:'Skipped on task-linked entries (managed via the task drawer) and currently-running entries (use Stop first). Stop and Delete corners don\'t collide — Stop sits bottom-right, Delete sits top-right.'}
+    ]
+  },
+  {
+    version: '2.15.0',
+    date:    '2026-04-29',
+    title:   'Bulk delete on Logbook Tracker',
+    notes:   'Same multi-select pattern from Tasks v2.14, applied to the Time Tracker entry log. Tick one or more entries and a bottom action bar appears with a Delete button — all selected entries vanish at once, with a single undo toast that restores the lot.',
+    changes: [
+      {type:'new',         text:'Each editable entry row now has a checkbox on the left. Click to select, click again to deselect. Task-linked + currently-running rows aren\'t selectable (managed elsewhere).'},
+      {type:'new',         text:'Bulk action bar slides up from the bottom with "{N} selected" + Delete + × clear. Esc clears too.'},
+      {type:'new',         text:'Bulk delete uses one confirm + one undo toast — undo restores every deleted entry at once.'},
+      {type:'improvement', text:'Selected rows tint with the accent color so you can scan your selection while scrolling.'},
+      {type:'improvement', text:'Selection auto-clears when you switch off the Tracker panel (same MutationObserver pattern as Tasks).'}
+    ]
+  },
+  {
+    version: '2.14.0',
+    date:    '2026-04-29',
+    title:   'Bulk select on Tasks list',
+    notes:   'The row checkbox now selects tasks for bulk editing. Tick one or more rows and a floating action bar slides up from the bottom with Status / Priority / Assignee / Due / Delete — apply the change to all selected at once.',
+    changes: [
+      {type:'new',         text:'Row checkbox now drives multi-select. Click to toggle a row, click again to deselect.'},
+      {type:'new',         text:'Bulk action bar — fixed at the bottom, shows "{N} selected" + 5 action buttons (Status, Priority, Assignee, Due, Delete) + a × to clear. Esc also clears.'},
+      {type:'new',         text:'Bulk delete uses a single undo toast — restore all the deleted tasks at once if you didn\'t mean it.'},
+      {type:'improvement', text:'Selected rows get a subtle accent tint so they\'re easy to scan even when the checkbox is off-screen.'},
+      {type:'improvement', text:'Selection auto-clears when you switch panels (Workflow → Logbook etc.). On phones the bar sits above the bottom nav and labels collapse to icons under 480px.'},
+      {type:'change',      text:'Heads up — clicking the row checkbox no longer toggles "done". To mark a task done: open the row, click the status pill, pick Done. Or select the row and use Bulk → Status → Done.'}
+    ]
+  },
+  {
+    version: '2.13.0',
+    date:    '2026-04-29',
+    title:   'Workflow board upgrades — density, badges, per-column quick-add, completed section',
+    notes:   'Four board / list improvements: fit more cards on screen, see card progress without opening, create cards directly into any column, and tuck completed tasks below open ones in the list.',
+    changes: [
+      {type:'new', text:'Card density toggle — Cozy / Compact / Roomy. Compact fits roughly 2× more cards on screen by tightening padding and hiding secondary card meta. Persists per browser.'},
+      {type:'new', text:'Comment count badge on cards — paired with the existing subtask progress badge so you can see at a glance which tasks have discussion or remaining work without opening the drawer.'},
+      {type:'new', text:'Per-column quick-add on the board — every column gets its own input at the bottom. Type a title + Enter and the card appears directly in that column\'s status. Removes the "create in Todo, drag to In Progress" friction.'},
+      {type:'new', text:'List view splits into open + "Completed (N)" sections — done tasks tuck below open ones in the same table with strikethrough + faded styling. Click the header to collapse / expand; state persists.'}
+    ]
+  },
+  {
+    version: '2.12.0',
+    date:    '2026-04-29',
+    title:   'Workflow QA Round 1 — drawer, pickers, and editor fixes',
+    notes:   'Eleven Tasks fixes: comment + subtask typing now survive teammate updates, drawer locks page scroll, browser back closes the drawer, due-picker arrow keys behave natively, rich-text toolbar reflects active formatting, search has a clear button, and more.',
+    changes: [
+      {type:'fix',         text:'Typing a comment with the @ autocomplete open no longer gets interrupted when a teammate updates the same task — the section refresh skips while the textarea is focused.'},
+      {type:'fix',         text:'Same for the subtask add-input — keystrokes / inline renames are no longer clobbered by remote updates.'},
+      {type:'improvement', text:'Task drawer locks page scroll while open — no more scrolling the page beneath the modal on long lists or mobile.'},
+      {type:'new',         text:'Browser back button (or iOS swipe-back) closes the open task drawer — drawer is now part of the navigation stack.'},
+      {type:'fix',         text:'Due-date picker — arrow keys on the date input now step the focused day/month/year segment natively instead of jumping focus to other picker buttons.'},
+      {type:'improvement', text:'New-task drawer focuses the title field reliably even on slow devices (replaced a brittle 250ms timeout with double rAF).'},
+      {type:'fix',         text:'Drag a card → press Esc mid-drag → no more stuck .drag-over highlights or invisible drag state. Next drag works cleanly.'},
+      {type:'fix',         text:'Description blur no longer triggers a spurious Firebase write + flicker when nothing actually changed (both sides now sanitize before comparing).'},
+      {type:'new',         text:'× clear button on the tasks search input + Esc-to-clear when the search is focused.'},
+      {type:'new',         text:'Rich-text toolbar (Bold / Italic / Underline / lists) now shows an active state when the current selection has the format applied.'},
+      {type:'improvement', text:'Task titles get a subtle dotted underline on hover so the double-click-to-rename affordance is discoverable.'}
+    ]
+  },
+  {
+    version: '2.11.0',
+    date:    '2026-04-28',
+    title:   'Logbook QA Round 1 — data integrity, totals, project cleanup',
+    notes:   'Twelve fixes targeting Logbook\'s biggest pain points: silent session loss, mismatched totals, project-delete orphans, calendar Stop button, and more.',
+    changes: [
+      {type:'fix',         text:'Fixed silent data loss — sessions older than ~17 days were being dropped from views due to a 500-entry Firebase cap. Default load is now last 12 months, with on-demand fetch when you pick All Time / This Year in Reports or navigate Calendar/Timesheet further back.'},
+      {type:'fix',         text:'Time Tracker "Today" and "This Week" totals now include task time entries — they were showing only global Start Work sessions before, so the KPI cards disagreed with the entry log below them.'},
+      {type:'improvement', text:'Filter chips now drive a "Filtered total" card. Switching to Yesterday or Last Week or All Time updates the totals, not just the entry log.'},
+      {type:'fix',         text:'Live duration math centralized into a single helper — Reports, Calendar, Tracker bar, and Dashboard now all tick in lockstep instead of drifting by a second.'},
+      {type:'new',         text:'Project delete with entries now asks: "Move entries to No project" or "Delete entries too" or "Cancel". Both destructive paths show an undo toast that restores the project AND original entry assignments.'},
+      {type:'fix',         text:'Manual edits no longer carry stale staged project/tags into your next Start Work — opening the edit dialog now clears any queued staging.'},
+      {type:'improvement', text:'Newly-created projects + tags appear instantly in pickers (optimistic local write) — no more waiting for the Firebase round-trip.'},
+      {type:'fix',         text:'Time-entry descriptions are capped at 500 characters with a soft-trim toast — prevents accidental 10MB pastes from stalling Firebase writes.'},
+      {type:'improvement', text:'Time Tracker panel no longer re-renders every second when the active filter excludes the running session (e.g. filter = "Last Week"). Topbar pill keeps ticking either way.'},
+      {type:'new',         text:'Stop button on running blocks in the Calendar — hover (or tap on touch) any running entry to halt the timer in place. No more bouncing back to the Tracker bar to stop.'},
+      {type:'improvement', text:'Timesheet on mobile: scrollbar hidden, sticky project column gets a subtle pinned-edge shadow so it\'s clear what stays put while you scroll the days.'},
+    ]
+  },
   {
     version: '2.10.0',
     date:    '2026-04-26',

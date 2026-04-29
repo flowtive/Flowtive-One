@@ -113,7 +113,7 @@ function renderAv(name, color, size, extraClass){
 function applyAvatarsEverywhere(){
   if(!currentUser) return;
   var name = currentUser.name;
-  var m = MEMBERS.find(function(m){ return m.name === name; });
+  var m = membersByName()[name];
   var color = m ? m.color : '#406093';
   var img = loadAvatar(name);
 
@@ -203,7 +203,7 @@ function removeAvatar(){
     });
   }
   // Update topbar pill back to initials
-  var m = MEMBERS.find(function(m){ return m.name === name; });
+  var m = membersByName()[name];
   var color = m ? m.color : '#406093';
   var pillEl = document.getElementById('user-pill-av');
   if(pillEl){ pillEl.innerHTML = name.substring(0,2).toUpperCase(); pillEl.style.background = color; }

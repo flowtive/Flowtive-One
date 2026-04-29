@@ -20,7 +20,249 @@ var _taskFilter = 'all';       // 'all' | 'mine' | 'overdue' | 'open' | 'done'
 var _taskSearch = '';
 var _taskSort   = 'smart';     // 'smart' | 'newest' | 'oldest' | 'due' | 'priority' | 'alpha'
 var _taskGroup  = false;       // group list view by date bucket
+var _taskDensity = (function(){ try{ return localStorage.getItem('flowtive_tasks_density') || 'comfortable'; }catch(e){ return 'comfortable'; } })();
+var _taskDoneCollapsed = (function(){ try{ return localStorage.getItem('flowtive_tasks_done_collapsed') === '1'; }catch(e){ return false; } })();
 var _drawerTaskId = null;
+
+/* ── Bulk selection ────────────────────────────────────────────
+   Each row's checkbox toggles selection. When 1+ are selected, a fixed
+   bottom action bar appears with Status / Priority / Assignee / Due /
+   Delete. Selections persist across filter / sort / search changes
+   (we filter dead IDs on each render) but clear on panel switch + Esc. */
+var _selectedTaskIds = {};
+function toggleTaskSelected(id){
+  if(_selectedTaskIds[id]) delete _selectedTaskIds[id];
+  else _selectedTaskIds[id] = true;
+  renderTasksArea();
+  renderBulkBar();
+}
+function clearTaskSelection(){
+  _selectedTaskIds = {};
+  renderTasksArea();
+  renderBulkBar();
+}
+function _selectedTaskCount(){
+  // Drop dead IDs (deleted by another client)
+  var alive = {};
+  Object.keys(_selectedTaskIds).forEach(function(id){
+    if(tasksData[id]) alive[id] = true;
+  });
+  _selectedTaskIds = alive;
+  return Object.keys(alive).length;
+}
+function _selectedTaskIdsList(){
+  return Object.keys(_selectedTaskIds).filter(function(id){ return tasksData[id]; });
+}
+
+/* Render (or remove) the fixed bottom bulk-action bar based on the
+   current selection count. Also hides + clears selection when the user
+   navigates away from the Tasks panel (watched via MutationObserver). */
+function renderBulkBar(){
+  // If user has navigated off the Tasks panel, drop selection silently
+  // and don't show the bar. Bar will only reappear when they return + select.
+  var taskPanel = document.getElementById('panel-tasks');
+  var onTasksPanel = taskPanel && taskPanel.classList.contains('active');
+  if(!onTasksPanel){
+    if(Object.keys(_selectedTaskIds).length){
+      _selectedTaskIds = {};
+    }
+    var stale = document.getElementById('tasks-bulk-bar');
+    if(stale) stale.remove();
+    return;
+  }
+  // Set up the panel-active observer once. Fires renderBulkBar on every
+  // class change so the cleanup-on-leave path runs.
+  if(taskPanel && !renderBulkBar._panelObserver){
+    renderBulkBar._panelObserver = new MutationObserver(function(){ renderBulkBar(); });
+    renderBulkBar._panelObserver.observe(taskPanel, { attributes: true, attributeFilter: ['class'] });
+  }
+  var count = _selectedTaskCount();
+  var bar = document.getElementById('tasks-bulk-bar');
+  if(count === 0){
+    if(bar){
+      bar.classList.remove('show');
+      setTimeout(function(){ if(bar.parentElement) bar.remove(); }, 220);
+    }
+    document.removeEventListener('keydown', _bulkBarEscHandler, true);
+    return;
+  }
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'tasks-bulk-bar';
+    bar.className = 'tasks-bulk-bar';
+    document.body.appendChild(bar);
+    requestAnimationFrame(function(){ bar.classList.add('show'); });
+    document.addEventListener('keydown', _bulkBarEscHandler, true);
+  }
+  // "Select all" link spans the whole filtered list (open + completed
+   //sections). Flips to "Deselect all" when everything's already selected.
+  var allVisible = getFilteredTasks();
+  var allIds = allVisible.map(function(t){ return t.id; });
+  var selectedAll = allIds.length > 0 && allIds.every(function(id){ return _selectedTaskIds[id]; });
+  var selectAllLabel = (selectedAll ? 'Deselect all' : 'Select all') + ' (' + allIds.length + ')';
+  bar.innerHTML = ''
+    + '<div class="tbb-count" aria-live="polite">'+count+' selected</div>'
+    + '<button class="tbb-link" type="button" onclick="toggleSelectAllTasks()">'+escapeHtml(selectAllLabel)+'</button>'
+    + '<div class="tbb-divider"></div>'
+    + '<button class="tbb-btn" type="button" onclick="openBulkStatusPicker(this)" title="Set status">'
+    +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M5 7l1.5 1.5L9.5 5.5"/></svg>'
+    +   '<span>Status</span>'
+    + '</button>'
+    + '<button class="tbb-btn" type="button" onclick="openBulkPriorityPicker(this)" title="Set priority">'
+    +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5v11M3 2h7l-1.5 2.5L10 7H3"/></svg>'
+    +   '<span>Priority</span>'
+    + '</button>'
+    + '<button class="tbb-btn" type="button" onclick="openBulkAssigneePicker(this)" title="Set assignee">'
+    +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="5.5" r="2.2"/><path d="M2.5 12c0-2.2 2-3.7 4.5-3.7s4.5 1.5 4.5 3.7"/></svg>'
+    +   '<span>Assignee</span>'
+    + '</button>'
+    + '<button class="tbb-btn" type="button" onclick="openBulkDuePicker(this)" title="Set due date">'
+    +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="1.5" y="3" width="11" height="9.5" rx="1"/><path d="M1.5 5.5h11"/><path d="M4 1.5v3M10 1.5v3"/></svg>'
+    +   '<span>Due</span>'
+    + '</button>'
+    + '<div class="tbb-divider"></div>'
+    + '<button class="tbb-btn tbb-danger" type="button" onclick="bulkDeleteSelected()" title="Delete selected">'
+    +   '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.5 8h5L10 4"/></svg>'
+    +   '<span>Delete</span>'
+    + '</button>'
+    + '<button class="tbb-clear" type="button" onclick="clearTaskSelection()" aria-label="Clear selection (Esc)" title="Clear selection (Esc)">×</button>';
+}
+function _bulkBarEscHandler(e){
+  if(e.key !== 'Escape') return;
+  // Don't swallow Esc when a modal / drawer / picker is open. ftConfirm's
+  // Esc handler is bubble-phase, so capture-stopPropagation here would
+  // eat the first press and leave the modal open. Bail and let Esc bubble.
+  if(document.querySelector('.ftc-backdrop, .tdrawer-backdrop.show, .pal-backdrop.show, .wn-backdrop.show, .pt-tag-picker, .pt-project-picker')) return;
+  if(_selectedTaskCount() > 0){
+    e.stopPropagation();
+    clearTaskSelection();
+  }
+}
+
+/* ── Bulk pickers — reuse the existing inline-picker infrastructure ── */
+function openBulkStatusPicker(anchor){
+  var items = TASK_STATUSES.map(function(s){
+    return { value: s.v, html: '<span class="status-pill s-'+s.v+'" style="pointer-events:none">'+s.l+'</span>' };
+  });
+  openInlinePicker(anchor, items, '', function(v){
+    bulkApplyPatch({status: v}, 'Status');
+  });
+}
+function openBulkPriorityPicker(anchor){
+  var items = TASK_PRIORITIES.map(function(p){
+    return { value: p.v, html: '<span class="priority-pill p-'+p.v+'" style="pointer-events:none">'+p.l+'</span>' };
+  });
+  openInlinePicker(anchor, items, '', function(v){
+    bulkApplyPatch({priority: v}, 'Priority');
+  });
+}
+function openBulkAssigneePicker(anchor){
+  var items = [{
+    value: '__null__',
+    html: '<span class="ip-assignee"><span class="av-mini ip-av-empty">?</span><span class="ip-name ip-name-muted">Unassigned</span></span>'
+  }];
+  MEMBERS.forEach(function(m){
+    var img = (typeof loadAvatar==='function') ? loadAvatar(m.name) : null;
+    var inner = img ? '<img src="'+img+'" alt="'+escapeHtml(m.name)+'">' : escapeHtml(m.name.substring(0,2).toUpperCase());
+    var bg = img ? 'transparent' : m.color;
+    items.push({
+      value: m.name,
+      html: '<span class="ip-assignee"><span class="av-mini" style="background:'+bg+'">'+inner+'</span><span class="ip-name">'+escapeHtml(m.name)+'</span></span>'
+    });
+  });
+  openInlinePicker(anchor, items, '', function(v){
+    bulkApplyPatch({assignee: v === '__null__' ? null : v}, 'Assignee');
+  });
+}
+function openBulkDuePicker(anchor){
+  // Lightweight bulk due picker — preset days + clear. (We don't reuse
+  // the bespoke single-task openDuePicker because it expects a taskId.)
+  var todayStart = (function(){ var d = new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+  var presets = [
+    { v: todayStart,                label: 'Today' },
+    { v: todayStart + 86400000,     label: 'Tomorrow' },
+    { v: todayStart + 3*86400000,   label: 'In 3 days' },
+    { v: todayStart + 7*86400000,   label: 'Next week' },
+    { v: '__clear__',               label: 'Clear due date' }
+  ];
+  var items = presets.map(function(p){
+    var labelHtml;
+    if(p.v === '__clear__'){
+      labelHtml = '<span class="due-preset-label" style="color:var(--muted)">'+p.label+'</span>';
+    } else {
+      var dateStr = new Date(p.v).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+      labelHtml = '<span class="due-preset-label">'+p.label+'</span><span class="due-preset-date">'+dateStr+'</span>';
+    }
+    return { value: p.v, html: labelHtml };
+  });
+  openInlinePicker(anchor, items, '', function(v){
+    var newDue = (v === '__clear__') ? null : v;
+    bulkApplyPatch({dueDate: newDue}, 'Due date');
+  });
+}
+
+/* Apply a patch to every selected task. Logs activity per-task via the
+   existing updateTask path so the activity feed stays accurate. Selection
+   stays alive after the action so users can chain edits. */
+function bulkApplyPatch(patch, label){
+  var ids = _selectedTaskIdsList();
+  if(!ids.length) return;
+  ids.forEach(function(id){ updateTask(id, patch); });
+  showToast(label + ' set for ' + ids.length + ' task' + (ids.length===1?'':'s'), 'success');
+  // Re-render so checkboxes reflect any cascading state (e.g. status=done
+  // gets the strikethrough class).
+  renderTasksArea();
+  renderBulkBar();
+}
+
+/* Bulk delete — single confirm, single undo toast that restores all. */
+function bulkDeleteSelected(){
+  var ids = _selectedTaskIdsList();
+  if(!ids.length) return;
+  ftConfirm({
+    title: 'Delete ' + ids.length + ' task' + (ids.length===1?'':'s') + '?',
+    message: 'These tasks will be deleted. You can undo for a few seconds.',
+    confirmLabel: 'Delete',
+    cancelLabel: 'Cancel',
+    danger: true,
+    onConfirm: function(){
+      // Snapshot all before removing so a single undo can restore the lot.
+      var snapshots = {};
+      ids.forEach(function(id){
+        var t = tasksData[id];
+        if(t){ snapshots[id] = JSON.parse(JSON.stringify(t)); }
+      });
+      // If the drawer happens to show one of these tasks, close it
+      if(_drawerTaskId && snapshots[_drawerTaskId]) closeTaskDrawer();
+      // Remove all from Firebase (parallel; failures swallowed per-id)
+      ids.forEach(function(id){
+        firebaseDb.ref('flowtive_tasks/'+id).remove().catch(function(){});
+      });
+      _selectedTaskIds = {};
+      renderTasksArea();
+      renderBulkBar();
+      if(typeof showUndoToast === 'function'){
+        showUndoToast(
+          ids.length + ' task' + (ids.length===1?'':'s') + ' deleted',
+          function(){
+            // Restore snapshots; the listener will repopulate the panel.
+            Object.keys(snapshots).forEach(function(id){
+              firebaseDb.ref('flowtive_tasks/'+id).set(snapshots[id]).catch(function(){});
+            });
+          },
+          function(){
+            // On commit (undo window closed), log activity for each
+            if(currentUser){
+              ids.forEach(function(id){
+                logActivity(currentUser.name, 'task_delete', null, null, null, {taskId: id, title: snapshots[id] && snapshots[id].title});
+              });
+            }
+          }
+        );
+      }
+    }
+  });
+}
 
 function subscribeTasks(){
   if(!firebaseReady || _tasksSubscribed) return;
@@ -29,6 +271,15 @@ function subscribeTasks(){
     tasksData = snap.val() || {};
     autoCloseStaleTaskTimer();
     updateSidebarTasksCount();
+    // Tasks contribute to Tracker totals via task.timeEntries — any
+    // change to the task tree could mean a different sum, so invalidate.
+    if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
+    // Reports also pulls task.timeEntries into its row collection.
+    if(typeof _repInvalidate === 'function') _repInvalidate();
+    // Filtered-tasks cache is keyed off tasksData identity — fresh data
+    // means stale filter result. Cheap O(1) flag flip; refilter happens
+    // lazily on the next getFilteredTasks() call.
+    _gftInvalidate();
     // Drawer refresh is cheap + needs to run immediately so users don't
     // see stale data while typing.
     if(_drawerTaskId){
@@ -104,7 +355,24 @@ function taskPriorityLabel(v){
   var p = TASK_PRIORITIES.find(function(x){return x.v===v;}); return p ? p.l : v;
 }
 
+/* Cached result of getFilteredTasks. Tasks panel renders call this 4-5×
+   per pass (toolbar count + list head count + list body + done-collapse +
+   per-row count badges), each one walking Object.values(tasksData) and
+   running 1-2 filter passes. The cache lets the second-through-Nth call
+   reuse the first call's result.
+   Invalidated by:
+     • subscribeTasks listener — when tasksData changes server-side
+     • setTaskFilter, setTaskSort, setTaskSearch helpers
+     • auth.js when currentUser changes (the 'mine' filter pivots on it)
+   The `_taskFilter === 'overdue'` branch reads Date.now() — but the
+   overdue threshold only crosses minute boundaries, so a stale cache
+   for up to one render is acceptable here. The next listener tick or
+   user interaction freshens it. */
+var _gftCache = null;
+var _gftDirty = true;
+function _gftInvalidate(){ _gftDirty = true; _gftCache = null; }
 function getFilteredTasks(){
+  if(!_gftDirty && _gftCache) return _gftCache;
   var arr = Object.values(tasksData).filter(Boolean);
   // Search
   if(_taskSearch){
@@ -125,6 +393,8 @@ function getFilteredTasks(){
   } else if(_taskFilter === 'done'){
     arr = arr.filter(function(t){ return t.status === 'done'; });
   }
+  _gftCache = arr;
+  _gftDirty = false;
   return arr;
 }
 
@@ -139,7 +409,32 @@ function renderTasksPanel(){
   if(searchEl){
     searchEl.addEventListener('input', function(e){
       _taskSearch = e.target.value;
+      _gftInvalidate(); // search query changed → cached filter result is stale
       renderTasksArea();
+    });
+    // W11: Esc clears the search (only when the input is focused, so it
+    // doesn't conflict with drawer close / picker close handlers).
+    searchEl.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && _taskSearch){
+        e.stopPropagation();
+        _taskSearch = '';
+        _gftInvalidate();
+        renderTasksArea();
+        // Re-focus the new input that just got rendered
+        var fresh = document.getElementById('tasks-search');
+        if(fresh) fresh.focus();
+      }
+    });
+  }
+  // W11: × clear button next to the search input
+  var searchClear = document.getElementById('tasks-search-clear');
+  if(searchClear){
+    searchClear.addEventListener('click', function(){
+      _taskSearch = '';
+      _gftInvalidate();
+      renderTasksArea();
+      var fresh = document.getElementById('tasks-search');
+      if(fresh) fresh.focus();
     });
   }
   // Wire quick-add (Enter to create)
@@ -175,7 +470,11 @@ function renderTasksToolbar(){
   var labels = {all:'All', mine:'My Tasks', open:'Open', overdue:'Overdue', done:'Done'};
   var sortLabels = {smart:'Smart', newest:'Newest', oldest:'Oldest', due:'Due Date', priority:'Priority', alpha:'A → Z'};
   var html = '<div class="tasks-toolbar">';
-  html +=   '<input type="search" class="tasks-search" id="tasks-search" placeholder="Search tasks…" value="'+escapeHtml(_taskSearch)+'">';
+  // W11: search input gets a × clear button when non-empty (also clears on Esc).
+  html +=   '<div class="tasks-search-wrap">'
+       +      '<input type="search" class="tasks-search" id="tasks-search" placeholder="Search tasks…" value="'+escapeHtml(_taskSearch)+'">'
+       +      (_taskSearch ? '<button type="button" class="tasks-search-clear" id="tasks-search-clear" aria-label="Clear search" title="Clear search">×</button>' : '')
+       +    '</div>';
   html +=   '<div class="task-filter-chips">';
   ['all','mine','open','overdue','done'].forEach(function(f){
     html += '<button class="'+(_taskFilter===f?'active':'')+'" onclick="setTaskFilter(\''+f+'\')">'
@@ -202,12 +501,24 @@ function renderTasksToolbar(){
   html +=     '<button class="'+(_taskView==='list'?'active':'')+'" onclick="setTaskView(\'list\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h10M2 7h10M2 10h10"/></svg>List</button>';
   html +=     '<button class="'+(_taskView==='board'?'active':'')+'" onclick="setTaskView(\'board\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="1.5" width="3.5" height="11" rx="0.5"/><rect x="6.5" y="1.5" width="3.5" height="7" rx="0.5"/><rect x="11" y="1.5" width="1.5" height="9" rx="0.5"/></svg>Board</button>';
   html +=   '</div>';
+  // Density cycler — comfortable (default) → compact → spacious → repeat.
+  // Persists in localStorage so each user keeps their preferred mode.
+  var densityIcon = {
+    comfortable: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h10M2 7h10M2 10h10"/></svg>',
+    compact:     '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3.5h10M2 6h10M2 8.5h10M2 11h10"/></svg>',
+    spacious:    '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h10M2 10h10"/></svg>'
+  };
+  var densityLabel = {comfortable:'Cozy', compact:'Compact', spacious:'Roomy'};
+  html +=   '<button class="task-density-btn" type="button" onclick="cycleTaskDensity()" title="Density: '+densityLabel[_taskDensity]+' — click to change">'
+       +      densityIcon[_taskDensity]
+       +      '<span>'+densityLabel[_taskDensity]+'</span>'
+       +    '</button>';
   html +=   '<button class="btn-new-task" onclick="openTaskDrawerForNew()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>New Task</button>';
   html += '</div>';
   return html;
 }
 
-function setTaskSort(v){ _taskSort = v; renderTasksArea(); }
+function setTaskSort(v){ _taskSort = v; _gftInvalidate(); renderTasksArea(); }
 function toggleTaskGroup(){ _taskGroup = !_taskGroup; renderTasksPanel(); }
 
 /* Quick-add: type → Enter → task created. The fastest path to capture an idea. */
@@ -222,14 +533,36 @@ function renderQuickAdd(){
 function renderTasksArea(){
   var area = document.getElementById('tasks-area');
   if(!area) return;
+  // Reflect density on the panel root so CSS can adjust paddings + content
+  var panel = document.getElementById('panel-tasks');
+  if(panel){
+    panel.classList.remove('tasks-density-compact','tasks-density-comfortable','tasks-density-spacious');
+    panel.classList.add('tasks-density-' + _taskDensity);
+  }
   var tasks = getFilteredTasks();
   area.innerHTML = (_taskView === 'list')
     ? renderTaskList(tasks)
     : renderTaskBoard(tasks);
+  // Wire per-column quick-add inputs (board only — no-op when missing)
+  if(_taskView === 'board') _wireKanbanColAdd();
+  // Refresh the bulk action bar (selections may have changed via Firebase)
+  renderBulkBar();
+}
+
+function setTaskDensity(d){
+  if(d !== 'compact' && d !== 'comfortable' && d !== 'spacious') return;
+  _taskDensity = d;
+  try{ localStorage.setItem('flowtive_tasks_density', d); }catch(e){}
+  renderTasksPanel();
+}
+function cycleTaskDensity(){
+  var order = ['comfortable','compact','spacious'];
+  var i = order.indexOf(_taskDensity);
+  setTaskDensity(order[(i + 1) % order.length]);
 }
 
 function setTaskView(v){ _taskView = v; renderTasksPanel(); }
-function setTaskFilter(f){ _taskFilter = f; renderTasksPanel(); }
+function setTaskFilter(f){ _taskFilter = f; _gftInvalidate(); renderTasksPanel(); }
 
 /* Sort tasks by the chosen mode. Smart = incomplete first by priority/due,
    Newest/Oldest = createdAt, Due = dueDate (no-due last), Priority,
@@ -328,19 +661,64 @@ function renderTaskList(tasks){
     return html;
   }
 
-  // Flat (no grouping)
+  // Flat (no grouping). Split into open + completed sections so done
+  // tasks fall to the bottom under a clear header (with the existing
+  // strikethrough on titles already provided by .task-row.done CSS).
+  // When the active filter is 'done' or 'open', skip the split — only
+  // one bucket would be populated, the header would be redundant noise.
+  var openTasks = [];
+  var doneTasks = [];
+  tasks.forEach(function(t){
+    if(t.status === 'done') doneTasks.push(t); else openTasks.push(t);
+  });
+  var skipSplit = (_taskFilter === 'done') || (_taskFilter === 'open')
+                  || (openTasks.length === 0) || (doneTasks.length === 0);
+  if(skipSplit){
+    var html = '<div class="task-list">';
+    html += taskListHeadHtml();
+    tasks.forEach(function(t){ html += renderTaskRow(t); });
+    html += '</div>';
+    return html;
+  }
+  // Split layout: open list on top, "Completed (N)" collapsible below.
   var html = '<div class="task-list">';
   html += taskListHeadHtml();
-  tasks.forEach(function(t){
-    html += renderTaskRow(t);
-  });
+  openTasks.forEach(function(t){ html += renderTaskRow(t); });
   html += '</div>';
+  // Completed header — click to toggle. Persists in localStorage.
+  html += '<div class="task-completed-section'+(_taskDoneCollapsed?' collapsed':'')+'">'
+       +    '<button type="button" class="task-completed-head" onclick="toggleTaskDoneCollapsed()" aria-expanded="'+(_taskDoneCollapsed?'false':'true')+'">'
+       +      '<svg class="task-completed-chev" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 2l3 3-3 3"/></svg>'
+       +      '<span class="task-completed-label">Completed</span>'
+       +      '<span class="task-completed-count">'+doneTasks.length+'</span>'
+       +    '</button>'
+       +    '<div class="task-list task-completed-list">'
+       +      taskListHeadHtml();
+  doneTasks.forEach(function(t){ html += renderTaskRow(t); });
+  html += '</div>'
+       + '</div>';
   return html;
 }
 
+function toggleTaskDoneCollapsed(){
+  _taskDoneCollapsed = !_taskDoneCollapsed;
+  try{ localStorage.setItem('flowtive_tasks_done_collapsed', _taskDoneCollapsed ? '1' : '0'); }catch(e){}
+  renderTasksArea();
+}
+
 function taskListHeadHtml(){
+  // Master select-all checkbox — tri-state. Computes against the
+  // currently filtered list (whatever the user can see right now).
+  var visible = getFilteredTasks();
+  var visIds = visible.map(function(t){ return t.id; });
+  var selectedHere = visIds.filter(function(id){ return _selectedTaskIds[id]; }).length;
+  var allOn = visIds.length > 0 && selectedHere === visIds.length;
+  var someOn = selectedHere > 0 && !allOn;
+  var ariaState = allOn ? 'true' : (someOn ? 'mixed' : 'false');
+  var cls = 'task-cb' + (allOn ? ' selected' : '') + (someOn ? ' indeterminate' : '');
+  var title = allOn ? 'Deselect all' : 'Select all visible';
   return '<div class="task-list-head">'
-    +      '<div></div>'
+    +      '<div class="task-checkbox-cell"><div class="'+cls+'" role="checkbox" aria-checked="'+ariaState+'" tabindex="0" title="'+title+'" onclick="toggleSelectAllTasks()"></div></div>'
     +      '<div>Title</div>'
     +      '<div>Status</div>'
     +      '<div>Priority</div>'
@@ -348,6 +726,22 @@ function taskListHeadHtml(){
     +      '<div>Due</div>'
     +      '<div></div>'
     +    '</div>';
+}
+
+/* Toggle select-all for the currently filtered (visible) tasks. If any
+   visible task is unselected, select them all; otherwise clear the lot. */
+function toggleSelectAllTasks(){
+  var visible = getFilteredTasks();
+  var ids = visible.map(function(t){ return t.id; });
+  if(!ids.length) return;
+  var anyMissing = ids.some(function(id){ return !_selectedTaskIds[id]; });
+  if(anyMissing){
+    ids.forEach(function(id){ _selectedTaskIds[id] = true; });
+  } else {
+    ids.forEach(function(id){ delete _selectedTaskIds[id]; });
+  }
+  renderTasksArea();
+  renderBulkBar();
 }
 
 function renderTaskRow(t){
@@ -366,13 +760,23 @@ function renderTaskRow(t){
        + subProg.done+'/'+subProg.total
        + '</span>'
     : '';
-  return '<div class="task-row '+doneClass+'" data-id="'+t.id+'" onclick="openTaskDrawer(\''+t.id+'\')">'
-    +    '<div class="task-checkbox-cell"><div class="task-cb '+(t.status==='done'?'on':'')+'" onclick="event.stopPropagation();toggleTaskDone(\''+t.id+'\')"></div></div>'
+  // Comment count badge ("💬 3") if task has comments
+  var rcc = taskCommentCount(t);
+  var commentBadge = rcc
+    ? '<span class="comment-count" title="'+rcc+' comment'+(rcc===1?'':'s')+'">'
+       + '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H6L4 10V8.5H3a1 1 0 0 1-1-1z"/></svg>'
+       + rcc
+       + '</span>'
+    : '';
+  var isSelected = !!_selectedTaskIds[t.id];
+  return '<div class="task-row '+doneClass+(isSelected?' is-selected':'')+'" data-id="'+t.id+'" onclick="openTaskDrawer(\''+t.id+'\')">'
+    +    '<div class="task-checkbox-cell"><div class="task-cb'+(isSelected?' selected':'')+'" role="checkbox" aria-checked="'+(isSelected?'true':'false')+'" tabindex="0" title="Select for bulk action" onclick="event.stopPropagation();toggleTaskSelected(\''+t.id+'\')"></div></div>'
     +    '<div class="task-title-cell">'
     +      '<div class="task-title-row">'
     +        (t.recurrence ? '<span class="task-recurring-ico" title="Repeats: '+escapeHtml(shortRecurrenceLabel(t.recurrence))+'"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5a4 4 0 0 1 7-2.5L10 4M10 7a4 4 0 0 1-7 2.5L2 8"/><path d="M10 1.5V4H7.5M2 10.5V8h2.5"/></svg></span>' : '')
     +        '<div class="task-title" title="Double-click to rename" ondblclick="event.stopPropagation();editTaskTitleInline(\''+t.id+'\', this)">'+escapeHtml(t.title||'(Untitled)')+'</div>'
     +        subBadge
+    +        commentBadge
     +        renderTaskTimePill(t)
     +      '</div>'
     +      (t.description?'<div class="task-title-sub">'+escapeHtml(richHtmlToText(t.description).substring(0,80))+'</div>':'')
@@ -395,6 +799,12 @@ function subtaskProgress(t){
   return { total: arr.length, done: arr.filter(function(s){return s.done;}).length };
 }
 
+/* Comment count for the card badge. Returns 0 if no comments. */
+function taskCommentCount(t){
+  if(!t || !t.comments) return 0;
+  return Object.values(t.comments).filter(Boolean).length;
+}
+
 /* Compact Start/Stop time pill — always shown in row title cell + kanban-card-meta
    so a user can start tracking from any task without opening the modal. Shows
    the live total when running or completed, or "0m" placeholder when fresh. */
@@ -403,12 +813,24 @@ function renderTaskTimePill(t){
   var name = currentUser.name;
   var myActive = !!(t.activeTimers && t.activeTimers[name]);
   var liveMs = getTaskLiveMs(t, name);
+  // Distinguish "never tracked" (no entries at all) from "tracked but
+  // sums to zero" — important signal for spotting unworked tasks at
+  // a glance vs. tasks where someone briefly started/stopped.
+  var hasAnyEntries = !!(t.timeEntries && Object.keys(t.timeEntries).length);
+  var neverTracked = !myActive && liveMs === 0 && !hasAnyEntries;
   var icon = myActive
     ? '<svg viewBox="0 0 12 12" fill="currentColor"><rect x="3" y="3" width="6" height="6" rx="0.5"/></svg>'
     : '<svg viewBox="0 0 12 12" fill="currentColor"><path d="M3.5 2v8l6-4z"/></svg>';
-  var title = myActive ? 'Click to stop tracking' : (liveMs > 0 ? 'Click to resume tracking' : 'Click to start tracking time');
-  var label = liveMs > 0 ? fmtElapsed(liveMs) : '0m';
-  var emptyCls = (!myActive && liveMs === 0) ? ' empty' : '';
+  var title;
+  if(myActive) title = 'Click to stop tracking';
+  else if(liveMs > 0) title = 'Click to resume tracking';
+  else if(neverTracked) title = 'Never tracked — click to start';
+  else title = 'Time entries logged but sum to 0 — click to start';
+  var label;
+  if(myActive || liveMs > 0) label = fmtElapsed(liveMs);
+  else if(neverTracked) label = '—';
+  else label = '0m';
+  var emptyCls = (!myActive && liveMs === 0) ? (neverTracked ? ' empty empty-untracked' : ' empty') : '';
   return '<span class="task-time-pill'+(myActive?' running':'')+emptyCls+'" data-task-id="'+t.id+'" title="'+title+'" onclick="event.stopPropagation();toggleTaskTimer(\''+t.id+'\')">'
     +    icon
     +    '<span class="task-time-val">'+label+'</span>'
@@ -416,7 +838,7 @@ function renderTaskTimePill(t){
 }
 
 function renderTaskAssignee(name, taskId){
-  var m = MEMBERS.find(function(x){return x.name===name;}) || {name:name, color:'#6B7280'};
+  var m = membersByName()[name] || {name:name, color:'#6B7280'};
   var img = (typeof loadAvatar==='function') ? loadAvatar(name) : null;
   var inner = img ? '<img src="'+img+'" alt="'+escapeHtml(name)+'">' : escapeHtml(name.substring(0,2).toUpperCase());
   var bg = img ? 'transparent' : m.color;
@@ -449,7 +871,7 @@ function renderTaskBoard(tasks){
     col.forEach(function(t){
       var img, inner='', bg='#9CA3AF';
       if(t.assignee){
-        var m = MEMBERS.find(function(x){return x.name===t.assignee;}) || {color:'#6B7280'};
+        var m = membersByName()[t.assignee] || {color:'#6B7280'};
         img = loadAvatar(t.assignee);
         inner = img ? '<img src="'+img+'" alt="'+escapeHtml(t.assignee)+'">' : escapeHtml(t.assignee.substring(0,2).toUpperCase());
         bg = img ? 'transparent' : m.color;
@@ -467,21 +889,63 @@ function renderTaskBoard(tasks){
           + prog.done+'/'+prog.total
           + '</span>'
         : '';
+      var cn = taskCommentCount(t);
+      var commentHtml = cn
+        ? '<span class="comment-count" title="'+cn+' comment'+(cn===1?'':'s')+'">'
+          + '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H6L4 10V8.5H3a1 1 0 0 1-1-1z"/></svg>'
+          + cn
+          + '</span>'
+        : '';
       html += '<div class="kanban-card" draggable="true" data-id="'+t.id+'" ondragstart="onTaskDragStart(event,\''+t.id+'\')" ondragend="onTaskDragEnd(event)" onclick="openTaskDrawer(\''+t.id+'\')">'
            +    '<div class="kanban-card-title" title="Double-click to rename" ondblclick="event.stopPropagation();editTaskTitleInline(\''+t.id+'\', this)">'+escapeHtml(t.title||'(Untitled)')+'</div>'
            +    '<div class="kanban-card-meta">'
            +      '<span class="priority-pill p-'+t.priority+' clickable" onclick="event.stopPropagation();openPriorityPicker(\''+t.id+'\', this)">'+taskPriorityLabel(t.priority)+'</span>'
            +      dueHtml
            +      subHtml
+           +      commentHtml
            +      renderTaskTimePill(t)
            +      avHtml
            +    '</div>'
            +  '</div>';
     });
+    // Per-column quick-add — type a title + Enter creates a card directly in
+    // this column's status. Removes the "create in Todo, drag to In Progress"
+    // friction. Tab from the input also focuses the next column's input.
+    html += '<div class="kanban-col-add-row">'
+         +    '<input type="text" class="kanban-col-add-input" data-status="'+s.v+'" placeholder="+ Add to '+escapeHtml(s.l)+'…" maxlength="200">'
+         +  '</div>';
     html += '</div>';
   });
   html += '</div>';
   return html;
+}
+
+/* Per-column quick-add: Enter creates the task in the row's status, then
+   clears the input + refocuses for rapid entry. */
+function _wireKanbanColAdd(){
+  var inputs = document.querySelectorAll('.kanban-col-add-input');
+  inputs.forEach(function(inp){
+    if(inp._wired) return;
+    inp._wired = true;
+    inp.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        var title = (inp.value || '').trim();
+        if(!title) return;
+        var status = inp.getAttribute('data-status') || 'todo';
+        // Reuse the same fast path as the global quick-add (createTask)
+        if(typeof createTask === 'function'){
+          createTask({ title: title, status: status });
+          inp.value = '';
+          // Stay focused for the next keystroke
+          inp.focus();
+        }
+      } else if(e.key === 'Escape'){
+        if(inp.value){ inp.value = ''; }
+        else inp.blur();
+      }
+    });
+  });
 }
 
 /* Per-filter empty state — different message for each filter context */
@@ -931,10 +1395,6 @@ function deleteComment(taskId, commentId){
   firebaseDb.ref('flowtive_tasks/'+taskId+'/updatedAt').set(Date.now());
 }
 
-function toggleTaskDone(id){
-  var t = tasksData[id]; if(!t) return;
-  setTaskStatus(id, t.status === 'done' ? 'todo' : 'done');
-}
 
 function deleteTask(id){
   if(!firebaseReady) return;
@@ -1121,11 +1581,18 @@ function wireDrawerAutosave(taskId){
   if(descEl){
     descEl.addEventListener('blur', function(){
       var t = tasksData[taskId]; if(!t) return;
-      // Rich-text editor stores HTML, not plain text
+      // W10: sanitize BOTH sides before comparing. Browsers normalize
+      // whitespace, inject <br>, and tweak &nbsp; differently — comparing
+      // raw innerHTML against the stored value would falsely report
+      // "changed" on no-op blurs, triggering a Firebase write + re-render
+      // and a visible flicker on the description content.
       var v = descEl.isContentEditable
         ? sanitizeRichHtml(descEl.innerHTML)
         : descEl.value;
-      if(v !== (t.description||'')) updateTask(taskId, {description: v});
+      var stored = descEl.isContentEditable
+        ? sanitizeRichHtml(t.description || '')
+        : (t.description || '');
+      if(v !== stored) updateTask(taskId, {description: v});
     });
     if(descEl.isContentEditable){
       // Toggle is-empty class so the placeholder shows even after type-then-delete
@@ -1133,6 +1600,31 @@ function wireDrawerAutosave(taskId){
       descEl.addEventListener('input', syncEmpty);
       descEl.addEventListener('blur', syncEmpty);
       syncEmpty(); // initial state
+      // W12: reflect active formatting state on the toolbar buttons.
+      // Single document-level selectionchange listener, idempotent —
+      // queries the live drawer's editor each time, so re-opening the
+      // drawer doesn't accumulate listeners.
+      if(!wireDrawerAutosave._toolbarSyncBound){
+        wireDrawerAutosave._toolbarSyncBound = true;
+        var rafScheduled = false;
+        var syncToolbar = function(){
+          if(rafScheduled) return;
+          rafScheduled = true;
+          requestAnimationFrame(function(){
+            rafScheduled = false;
+            var ed = document.getElementById('td-desc');
+            if(!ed || document.activeElement !== ed) return;
+            var btns = document.querySelectorAll('.td-rich-toolbar .td-rich-btn[data-cmd]');
+            btns.forEach(function(b){
+              var cmd = b.getAttribute('data-cmd');
+              var on = false;
+              try{ on = !!document.queryCommandState(cmd); }catch(e){}
+              b.classList.toggle('active', on);
+            });
+          });
+        };
+        document.addEventListener('selectionchange', syncToolbar);
+      }
     }
   }
 }
@@ -1161,12 +1653,38 @@ function showTaskDrawer(t, isNew){
 
   bd.classList.add('show');
   requestAnimationFrame(function(){ dr.classList.add('show'); });
+  // Lock the body so the page beneath doesn't scroll while the modal
+  // is open (matches the body.sidebar-open pattern from v2.10).
+  document.body.classList.add('tdrawer-open');
+  // W14: push a history state so the browser back button / iOS back-swipe
+  // closes the drawer instead of navigating away. The popstate handler
+  // (registered once on first open) detects this state and calls close.
+  try{
+    if(!(history.state && history.state.tdrawer)){
+      history.pushState({tdrawer: t.id || '__new__'}, '');
+    }
+  }catch(e){}
+  if(!showTaskDrawer._popBound){
+    showTaskDrawer._popBound = true;
+    window.addEventListener('popstate', function(){
+      if(document.body.classList.contains('tdrawer-open')){
+        closeTaskDrawer({fromPop: true});
+      }
+    });
+  }
   // Esc closes the modal — bubble phase so the inline picker's capture-phase
   // handler can stopPropagation() and intercept Esc when a picker is open.
   document.addEventListener('keydown', _drawerEscHandler);
-  setTimeout(function(){
-    var ti = document.getElementById('td-title'); if(ti){ ti.focus(); if(isNew) ti.select(); }
-  }, 250);
+  // W5: Focus the title field deterministically via double rAF — runs
+  // after the show transition kicks in regardless of CPU load. Replaces
+  // a brittle 250ms setTimeout that swallowed early keystrokes on slow
+  // devices.
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      var ti = document.getElementById('td-title');
+      if(ti){ ti.focus(); if(isNew) ti.select(); }
+    });
+  });
 }
 function _drawerEscHandler(e){
   if(e.key !== 'Escape') return;
@@ -1199,12 +1717,12 @@ function renderEditTaskDrawerHtml(t){
     +     '<div class="tdrawer-section">'
     +       '<label class="tdrawer-section-title-h">Description</label>'
     +       '<div class="td-rich-toolbar">'
-    +         '<button type="button" class="td-rich-btn" title="Bold (⌘B)" onmousedown="event.preventDefault();richExec(\'bold\')"><b>B</b></button>'
-    +         '<button type="button" class="td-rich-btn" title="Italic (⌘I)" onmousedown="event.preventDefault();richExec(\'italic\')"><i>I</i></button>'
-    +         '<button type="button" class="td-rich-btn" title="Underline (⌘U)" onmousedown="event.preventDefault();richExec(\'underline\')"><u>U</u></button>'
+    +         '<button type="button" class="td-rich-btn" data-cmd="bold" title="Bold (⌘B)" onmousedown="event.preventDefault();richExec(\'bold\')"><b>B</b></button>'
+    +         '<button type="button" class="td-rich-btn" data-cmd="italic" title="Italic (⌘I)" onmousedown="event.preventDefault();richExec(\'italic\')"><i>I</i></button>'
+    +         '<button type="button" class="td-rich-btn" data-cmd="underline" title="Underline (⌘U)" onmousedown="event.preventDefault();richExec(\'underline\')"><u>U</u></button>'
     +         '<span class="td-rich-sep"></span>'
-    +         '<button type="button" class="td-rich-btn" title="Bulleted list" onmousedown="event.preventDefault();richExec(\'insertUnorderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="2.5" cy="3.5" r="0.7" fill="currentColor"/><circle cx="2.5" cy="7" r="0.7" fill="currentColor"/><circle cx="2.5" cy="10.5" r="0.7" fill="currentColor"/><path d="M5 3.5h7M5 7h7M5 10.5h7"/></svg></button>'
-    +         '<button type="button" class="td-rich-btn" title="Numbered list" onmousedown="event.preventDefault();richExec(\'insertOrderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><text x="1" y="5" font-size="4" font-weight="700" fill="currentColor" stroke="none">1.</text><text x="1" y="10" font-size="4" font-weight="700" fill="currentColor" stroke="none">2.</text><path d="M5.5 3.5h7M5.5 7h7M5.5 10.5h7"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" data-cmd="insertUnorderedList" title="Bulleted list" onmousedown="event.preventDefault();richExec(\'insertUnorderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="2.5" cy="3.5" r="0.7" fill="currentColor"/><circle cx="2.5" cy="7" r="0.7" fill="currentColor"/><circle cx="2.5" cy="10.5" r="0.7" fill="currentColor"/><path d="M5 3.5h7M5 7h7M5 10.5h7"/></svg></button>'
+    +         '<button type="button" class="td-rich-btn" data-cmd="insertOrderedList" title="Numbered list" onmousedown="event.preventDefault();richExec(\'insertOrderedList\')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><text x="1" y="5" font-size="4" font-weight="700" fill="currentColor" stroke="none">1.</text><text x="1" y="10" font-size="4" font-weight="700" fill="currentColor" stroke="none">2.</text><path d="M5.5 3.5h7M5.5 7h7M5.5 10.5h7"/></svg></button>'
     +         '<span class="td-rich-sep"></span>'
     +         '<button type="button" class="td-rich-btn" title="Insert link" onmousedown="event.preventDefault();richInsertLink()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 8a2 2 0 0 0 2.8 0l2-2a2 2 0 0 0-2.8-2.8l-1 1M8 6a2 2 0 0 0-2.8 0l-2 2a2 2 0 0 0 2.8 2.8l1-1"/></svg></button>'
     +         '<button type="button" class="td-rich-btn" title="Clear formatting" onmousedown="event.preventDefault();richClearFormat()"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3 3l8 8M5 3h6M5 11h2M9 3l-2 8"/></svg></button>'
@@ -1269,16 +1787,34 @@ function renderNewTaskDrawerHtml(t){
     + '</div>';
 }
 
-function closeTaskDrawer(){
+function closeTaskDrawer(opts){
+  opts = opts || {};
+  // W7: if a drag was in progress when the drawer was forced closed (e.g.
+  // user pressed Esc mid-drag), the dragend event won't fire. Reset the
+  // drag state ourselves so the kanban doesn't get stuck with stale
+  // .drag-over highlights or a non-null _draggingTaskId.
+  if(typeof _draggingTaskId !== 'undefined' && _draggingTaskId){
+    _draggingTaskId = null;
+    document.querySelectorAll('.kanban-col.drag-over').forEach(function(c){ c.classList.remove('drag-over'); });
+    document.querySelectorAll('.task-row.dragging,.task-card.dragging').forEach(function(c){ c.classList.remove('dragging'); });
+  }
   var bd = document.getElementById('tdrawer-backdrop');
   var dr = document.getElementById('tdrawer');
   if(dr) dr.classList.remove('show');
   if(bd) bd.classList.remove('show');
   _drawerTaskId = null;
+  // Restore body scroll
+  document.body.classList.remove('tdrawer-open');
   // If an inline picker (status/priority/assignee/due) was open, drop it too —
   // its anchor element is gone now.
   closeInlinePicker();
   document.removeEventListener('keydown', _drawerEscHandler);
+  // W14: pop the history state we pushed on open, unless we're being
+  // called BY the popstate handler (in which case the browser already
+  // popped it).
+  if(!opts.fromPop && history.state && history.state.tdrawer){
+    try{ history.back(); }catch(e){}
+  }
 }
 
 /* Only used for the new-task variant — edits autosave via wireDrawerAutosave +
@@ -1321,18 +1857,23 @@ function refreshDrawerLiveSections(t){
   // Time tracking
   var timeEl = document.getElementById('td-time-section');
   if(timeEl) timeEl.innerHTML = renderTimeTrackingSection(t);
-  // Subtasks
+  // Subtasks — skip the refresh entirely if the user is currently typing
+  // inside this section. Replacing innerHTML mid-keystroke would destroy
+  // the focused input, lose the caret, and (for subtask renames) drop
+  // the in-flight value. Stale view catches up on the next render.
   var subEl = document.getElementById('td-subtasks-section');
-  if(subEl) subEl.innerHTML = renderSubtasksSection(t);
-  // Comments — preserve in-progress text in the comment input
+  if(subEl && (!document.activeElement || !subEl.contains(document.activeElement))){
+    subEl.innerHTML = renderSubtasksSection(t);
+  }
+  // Comments — same skip-while-typing guard. Especially important when
+  // the @-mention autocomplete is open: the picker is anchored to the
+  // textarea, and replacing the textarea would orphan the picker.
   var comEl = document.getElementById('td-comments-section');
   if(comEl){
     var commentInput = document.getElementById('td-comment-input');
-    var pendingComment = commentInput ? commentInput.value : '';
-    comEl.innerHTML = renderCommentsSection(t);
-    if(pendingComment){
-      var ci = document.getElementById('td-comment-input');
-      if(ci) ci.value = pendingComment;
+    var typingInComments = commentInput && document.activeElement === commentInput;
+    if(!typingInComments){
+      comEl.innerHTML = renderCommentsSection(t);
     }
   }
   // Title + description: only sync if the user isn't editing them right now
@@ -1351,10 +1892,15 @@ function refreshDrawerLiveSections(t){
 
 function renderSubtasksSection(t){
   var subs = t && t.subtasks ? Object.values(t.subtasks).filter(Boolean) : [];
-  // Order: incomplete first, then by createdAt
+  // Order: incomplete first, then by createdAt, with id as a tiebreaker
+  // so subtasks created within the same millisecond stay in a consistent
+  // order across renders (Object.values doesn't guarantee insertion order
+  // when keys collide on creation timestamps).
   subs.sort(function(a,b){
     if(a.done !== b.done) return a.done ? 1 : -1;
-    return (a.createdAt||0) - (b.createdAt||0);
+    var dt = (a.createdAt||0) - (b.createdAt||0);
+    if(dt !== 0) return dt;
+    return (a.id||'') < (b.id||'') ? -1 : (a.id||'') > (b.id||'') ? 1 : 0;
   });
   var prog = subs.length ? subs.filter(function(s){return s.done;}).length+'/'+subs.length : '';
   var html = '<div class="tdrawer-section-head">'
@@ -1446,7 +1992,7 @@ function renderTimeTrackingSection(t){
   if(Object.keys(userTotals).length){
     html += '<div class="time-user-list">';
     Object.keys(userTotals).sort().forEach(function(u){
-      var m = MEMBERS.find(function(x){return x.name===u;}) || {color:'#6B7280'};
+      var m = membersByName()[u] || {color:'#6B7280'};
       var img = (typeof loadAvatar==='function') ? loadAvatar(u) : null;
       var avInner = img ? '<img src="'+img+'" alt="'+escapeHtml(u)+'">' : escapeHtml(u.substring(0,2).toUpperCase());
       var avBg = img ? 'transparent' : m.color;
@@ -1473,7 +2019,7 @@ function renderCommentsSection(t){
   if(coms.length){
     html += '<div class="comment-list">';
     coms.forEach(function(c){
-      var m = MEMBERS.find(function(x){return x.name===c.user;}) || {color:'#6B7280'};
+      var m = membersByName()[c.user] || {color:'#6B7280'};
       var img = (typeof loadAvatar==='function') ? loadAvatar(c.user) : null;
       var avInner = img
         ? '<img src="'+img+'" alt="'+escapeHtml(c.user)+'">'
@@ -1484,7 +2030,7 @@ function renderCommentsSection(t){
            +    '<div class="comment-av" style="background:'+avBg+'">'+avInner+'</div>'
            +    '<div class="comment-body">'
            +      '<div class="comment-meta"><span class="comment-author">'+escapeHtml(c.user||'')+'</span><span class="comment-time">'+formatTimeAgo(c.createdAt)+'</span>'
-           +        (canDelete ? '<button class="comment-del" title="Delete comment" aria-label="Delete comment" onclick="deleteComment(\''+t.id+'\',\''+c.id+'\')"><span aria-hidden="true">×</span></button>' : '')
+           +        (canDelete ? '<button class="comment-del" title="Delete your comment" aria-label="Delete your comment" onclick="deleteComment(\''+t.id+'\',\''+c.id+'\')"><span aria-hidden="true">×</span></button>' : '')
            +      '</div>'
            +      '<div class="comment-text">'+renderCommentTextWithMentions(c.text||'')+'</div>'
            +    '</div>'
@@ -1798,11 +2344,17 @@ function _inlineEscHandler(e){
   // Trap arrow + Tab inside the picker so keyboard users don't get pulled
   // back into the page underneath. Up/Down moves between items; Tab cycles.
   if(!_inlinePicker) return;
+  // W4: when focus is on a native <input type="date">, let the browser
+  // handle Arrow keys (they step the focused day/month/year segment).
+  // Tab still moves through the picker as before.
+  var ae = document.activeElement;
+  if(ae && ae.tagName === 'INPUT' && ae.type === 'date'){
+    if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') return;
+  }
   var items = _inlinePicker.querySelectorAll('button.inline-picker-item, input, button');
   if(!items.length) return;
   var arr = Array.prototype.slice.call(items);
-  var current = document.activeElement;
-  var idx = arr.indexOf(current);
+  var idx = arr.indexOf(ae);
   if(e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)){
     e.preventDefault();
     var next = arr[(idx + 1 + arr.length) % arr.length] || arr[0];

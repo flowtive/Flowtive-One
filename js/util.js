@@ -153,6 +153,47 @@ function startOfYear(d){
   return x.getTime();
 }
 
+/* ── O(1) member lookup ─────────────────────────────────────
+   `MEMBERS` is a static array in config.js. Looking up a member by name
+   used to scatter ~17 `MEMBERS.find(m => m.name === x)` callsites across
+   render hot paths (entry log, reports, calendar, activity feed) — each
+   one O(N) per row. Build once, lookup forever. The map is lazy: first
+   call after the script loads pays for the build, subsequent calls are
+   single property reads. Never invalidates because MEMBERS is config. */
+var _membersByName = null;
+function membersByName(){
+  if(_membersByName) return _membersByName;
+  _membersByName = Object.create(null);
+  if(typeof MEMBERS !== 'undefined' && Array.isArray(MEMBERS)){
+    MEMBERS.forEach(function(m){ if(m && m.name) _membersByName[m.name] = m; });
+  }
+  return _membersByName;
+}
+
+/* ── Keyboard activation for ARIA-role widgets ─────────────────
+   Two surfaces that look interactive but only have inline onclick:
+     1. Bulk-select checkboxes (.task-cb role="checkbox") — Tasks,
+        Tracker per-day master, Tracker rows.
+     2. Tracker row description spans (.tt-row-text-edit role="button")
+        — click-to-edit description (v2.23.0).
+   Both are tabindex="0" so they're keyboard-reachable, but Space/Enter
+   on a focused element does nothing without this handler (and Space
+   would scroll the page). One global capture-phase listener covers them. */
+document.addEventListener('keydown', function(e){
+  if(e.key !== ' ' && e.key !== 'Enter') return;
+  var el = e.target;
+  if(!el || !el.classList) return;
+  var isCheckbox = el.classList.contains('task-cb') && el.getAttribute('role') === 'checkbox';
+  var isTextEdit = el.classList.contains('tt-row-text-edit') && el.getAttribute('role') === 'button';
+  if(!isCheckbox && !isTextEdit) return;
+  e.preventDefault();
+  // Re-fire whatever onclick the element has (set inline by the
+  // emission site — toggleTaskSelected / toggleSessionSelected /
+  // toggleSelectAllTasks / toggleSelectDay / editTimeRowDescriptionInline).
+  if(typeof el.onclick === 'function') el.onclick(e);
+  else el.click();
+});
+
 /* ── Render coalescing ─────────────────────────────────────────
    Multiple Firebase listeners can fire in rapid succession (e.g. when
    subscribeClock + subscribeTasks both refresh the workspace dashboard).
@@ -203,3 +244,37 @@ document.addEventListener('DOMContentLoaded', function(){
     mo.observe(document.body, { childList:true, subtree:true });
   }catch(e){}
 });
+
+/* ── Lazy module loader ─────────────────────────────────────
+   Inject a <script> tag on demand and return a Promise that resolves
+   when the script's onload fires. Caches the Promise (not a boolean)
+   so concurrent callers requesting the same src dedupe to a single
+   network request. Used by panel onActivate handlers to defer
+   panel-specific JS off the initial-load critical path. */
+var _moduleCache = Object.create(null);
+function loadModule(src){
+  if(_moduleCache[src]) return _moduleCache[src];
+  _moduleCache[src] = new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src;
+    // async:false preserves execution order if multiple loadModule
+    // calls fire in the same tick (rare, but safe).
+    s.async = false;
+    s.onload  = function(){ resolve(); };
+    s.onerror = function(){
+      // Drop from cache on failure so a retry can re-attempt the load.
+      delete _moduleCache[src];
+      reject(new Error('Failed to load: ' + src));
+    };
+    document.head.appendChild(s);
+  });
+  return _moduleCache[src];
+}
+
+/* Chart.js gate. Resolves immediately if Chart is already on the page
+   (loaded eagerly OR a previous call already loaded it), otherwise
+   triggers the lazy load. Idempotent. */
+function ensureChartJs(){
+  if(typeof Chart !== 'undefined') return Promise.resolve();
+  return loadModule('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js');
+}

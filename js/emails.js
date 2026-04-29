@@ -975,7 +975,40 @@ function ensureGoldenRulesPopList(){
   });
 }
 
+/* Subscribe to flowtive_email_templates for cross-user sync of email
+   edits. Used to live in subscribeRealtime in firebase.js, but that fires
+   at app boot and references globals (`emailOverrides`, `_currentOpenInd`,
+   `EMAIL_TEMPLATES`, `rerenderEmailCard`) that only exist once this file
+   loads. Now subscribed lazily — kicks in the first time Cold Pitch is
+   opened, just like everything else in this module. Idempotent via
+   `_emailListener` guard. */
+function subscribeEmailTemplates(){
+  if(typeof firebaseReady === 'undefined' || !firebaseReady) return;
+  if(_emailListener) return;
+  _emailListener = true;
+  firebaseDb.ref('flowtive_email_templates').on('value', function(snap){
+    var fresh = snap.val() || {};
+    if(JSON.stringify(fresh) === JSON.stringify(emailOverrides)) return;
+    emailOverrides = fresh;
+    try{ localStorage.setItem('flowtive_email_overrides_v1', JSON.stringify(emailOverrides)); }catch(e){}
+    // If an email modal is open, re-render its cards in place so the
+    // user sees the teammate's edits live.
+    if(_currentOpenInd && EMAIL_TEMPLATES[_currentOpenInd]){
+      EMAIL_TEMPLATES[_currentOpenInd].emails.forEach(function(_, i){
+        var card = document.getElementById('email-card-'+i);
+        if(card && !card.querySelector('.email-edit-textarea')){
+          rerenderEmailCard(_currentOpenInd, i);
+        }
+      });
+    }
+  });
+}
+
 function openEmailLibrary(){
+  // Lazy-subscribe to email-template syncs the moment Cold Pitch first
+  // opens. Same data the old eager listener fetched, just deferred until
+  // it's actually needed (and until the globals it references exist).
+  subscribeEmailTemplates();
   ensureGoldenRulesPopList();
   var body = document.getElementById('lib-modal-body');
   var html = '';

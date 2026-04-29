@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flowtive One — Reset</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:#0f172a;color:#e2e8f0;min-height:100vh;padding:32px 16px;line-height:1.5}
+  .container{max-width:760px;margin:0 auto}
+  h1{font-size:28px;font-weight:700;margin-bottom:6px;color:#f8fafc}
+  .sub{color:#94a3b8;margin-bottom:24px;font-size:14px}
+  .warn{background:#7f1d1d;border:1px solid #b91c1c;color:#fecaca;
+        padding:12px 16px;border-radius:10px;margin-bottom:24px;font-size:13.5px}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;
+        padding:18px 20px;margin-bottom:14px;cursor:pointer;
+        transition:border-color .15s,background .15s}
+  .card:hover{border-color:#475569;background:#293548}
+  .card.selected{border-color:#10b981;background:#0f3a2a}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .card-tier{font-size:11px;font-weight:700;letter-spacing:.06em;
+             text-transform:uppercase;padding:3px 8px;border-radius:6px}
+  .tier-1{background:#0c4a6e;color:#7dd3fc}
+  .tier-2{background:#854d0e;color:#fde68a}
+  .tier-3{background:#7f1d1d;color:#fecaca}
+  .card-title{font-size:16px;font-weight:600;color:#f1f5f9}
+  .card-desc{font-size:13.5px;color:#cbd5e1;margin-bottom:8px}
+  .card-list{font-size:12.5px;color:#94a3b8;font-family:"SF Mono",Menlo,monospace;
+             background:#0f172a;padding:8px 10px;border-radius:6px;
+             white-space:pre-wrap;line-height:1.6}
+  .row{display:flex;gap:10px;margin-top:18px;align-items:center}
+  input[type=text]{flex:1;background:#0f172a;border:1px solid #334155;
+                   border-radius:8px;padding:11px 14px;color:#e2e8f0;
+                   font-size:14px;font-family:inherit;outline:none}
+  input[type=text]:focus{border-color:#64748b}
+  button{background:#dc2626;color:#fff;border:none;border-radius:8px;
+         padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer;
+         font-family:inherit;transition:filter .12s,transform .12s,opacity .12s}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button:not(:disabled):hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn-secondary{background:#334155;color:#e2e8f0}
+  .btn-secondary:not(:disabled):hover{background:#475569}
+  .log{margin-top:24px;background:#0f172a;border:1px solid #1e293b;
+       border-radius:8px;padding:12px 14px;font-family:"SF Mono",Menlo,monospace;
+       font-size:12px;line-height:1.7;max-height:280px;overflow-y:auto;
+       white-space:pre-wrap}
+  .log-line{display:block}
+  .log-ok{color:#4ade80}
+  .log-warn{color:#fbbf24}
+  .log-err{color:#f87171}
+  .log-info{color:#94a3b8}
+  .done{margin-top:20px;padding:14px 16px;background:#064e3b;border:1px solid #10b981;
+        color:#a7f3d0;border-radius:10px;display:none}
+  .done a{color:#6ee7b7;font-weight:600;text-decoration:none}
+  .done a:hover{text-decoration:underline}
+  .footer{margin-top:32px;font-size:12px;color:#64748b;text-align:center}
+  .footer a{color:#94a3b8;text-decoration:none}
+  .footer a:hover{color:#cbd5e1}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Reset Flowtive One</h1>
+  <p class="sub">Pick a scope, type <code>RESET</code> to confirm, click the button. Wipes the
+                  selected Firebase paths + matching localStorage keys. Cannot be undone.</p>
+
+  <div class="warn">
+    <strong>Heads up.</strong> This connects to the live Firebase database used by every team
+    member. Anything you wipe here vanishes for everyone, immediately. There is no undo.
+  </div>
+
+  <div id="cards">
+    <div class="card" data-tier="1">
+      <div class="card-head">
+        <span class="card-tier tier-1">Tier 1</span>
+        <span class="card-title">Activity only</span>
+      </div>
+      <div class="card-desc">Wipes Logbook sessions, Workflow tasks, activity log,
+        sticky notes, and statuses. Keeps your projects, tags, email templates,
+        avatars, and login.</div>
+      <div class="card-list">flowtive_time_sessions
+flowtive_time_active
+flowtive_tasks
+flowtive_activity
+flowtive_notes
+flowtive_status
+flowtive_progress
++ matching localStorage caches</div>
+    </div>
+
+    <div class="card" data-tier="2">
+      <div class="card-head">
+        <span class="card-tier tier-2">Tier 2</span>
+        <span class="card-title">Activity + structure</span>
+      </div>
+      <div class="card-desc">Tier 1 plus the structural data: projects, tags, and
+        email templates. Keeps avatars and your login.</div>
+      <div class="card-list">everything in Tier 1
+flowtive_projects
+flowtive_tags
+flowtive_email_templates</div>
+    </div>
+
+    <div class="card" data-tier="3">
+      <div class="card-head">
+        <span class="card-tier tier-3">Tier 3</span>
+        <span class="card-title">Nuke everything</span>
+      </div>
+      <div class="card-desc">Full reset. Tier 2 plus avatars, admins, and presence.
+        Clears every <code>flowtive_*</code> localStorage key — you'll be logged out
+        and the next visit starts at the welcome screen.</div>
+      <div class="card-list">everything in Tier 2
+flowtive_avatars
+flowtive_admins
+flowtive_presence
++ all flowtive_* localStorage keys (login, theme, prefs)</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <input type="text" id="confirm-input" placeholder='Type "RESET" to enable the button' autocomplete="off">
+    <button id="reset-btn" disabled>Reset</button>
+  </div>
+
+  <div class="log" id="log" style="display:none"></div>
+  <div class="done" id="done">
+    Done. <a href="index.html">→ Open Flowtive One</a>
+  </div>
+
+  <p class="footer">
+    <a href="index.html">← Back to app</a> &nbsp;·&nbsp;
+    Flowtive One reset utility
+  </p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="js/config.js"></script>
+<script>
+(function(){
+  // ── State ───────────────────────────────────────────────────────────
+  var selectedTier = null;
+  var els = {
+    cards:    document.querySelectorAll('.card'),
+    confirm:  document.getElementById('confirm-input'),
+    btn:      document.getElementById('reset-btn'),
+    log:      document.getElementById('log'),
+    done:     document.getElementById('done')
+  };
+
+  // ── Tier definitions ────────────────────────────────────────────────
+  // Each tier lists Firebase paths to remove + a localStorage key filter.
+  // Filter is a function that takes a localStorage key and returns true
+  // if it should be removed at this tier.
+  var TIERS = {
+    1: {
+      fbPaths: [
+        'flowtive_time_sessions',
+        'flowtive_time_active',
+        'flowtive_tasks',
+        'flowtive_activity',
+        'flowtive_notes',
+        'flowtive_status',
+        'flowtive_progress'
+      ],
+      lsFilter: function(k){
+        // Wipe transactional caches; keep login, theme, avatars, preferences.
+        return k === 'flowtive_activity_fallback' ||
+               k === 'flowtive_status_v1' ||
+               k === 'flowtive_notes_v1' ||
+               k === 'flowtive_usa_state_v6';
+      }
+    },
+    2: {
+      fbPaths: [
+        // Inherits tier 1
+        'flowtive_time_sessions',
+        'flowtive_time_active',
+        'flowtive_tasks',
+        'flowtive_activity',
+        'flowtive_notes',
+        'flowtive_status',
+        'flowtive_progress',
+        // Plus:
+        'flowtive_projects',
+        'flowtive_tags',
+        'flowtive_email_templates'
+      ],
+      lsFilter: function(k){
+        return k === 'flowtive_activity_fallback' ||
+               k === 'flowtive_status_v1' ||
+               k === 'flowtive_notes_v1' ||
+               k === 'flowtive_usa_state_v6' ||
+               k === 'flowtive_email_overrides_v1';
+      }
+    },
+    3: {
+      fbPaths: [
+        'flowtive_time_sessions',
+        'flowtive_time_active',
+        'flowtive_tasks',
+        'flowtive_activity',
+        'flowtive_notes',
+        'flowtive_status',
+        'flowtive_progress',
+        'flowtive_projects',
+        'flowtive_tags',
+        'flowtive_email_templates',
+        'flowtive_avatars',
+        'flowtive_admins',
+        'flowtive_presence'
+      ],
+      // Full nuke: every flowtive_* key, no exceptions.
+      lsFilter: function(k){ return k.indexOf('flowtive_') === 0; }
+    }
+  };
+
+  // ── Card selection ──────────────────────────────────────────────────
+  els.cards.forEach(function(c){
+    c.addEventListener('click', function(){
+      els.cards.forEach(function(o){ o.classList.remove('selected'); });
+      c.classList.add('selected');
+      selectedTier = parseInt(c.getAttribute('data-tier'), 10);
+      updateButton();
+    });
+  });
+
+  // ── Confirm input ───────────────────────────────────────────────────
+  els.confirm.addEventListener('input', updateButton);
+  function updateButton(){
+    var typed = els.confirm.value.trim().toUpperCase() === 'RESET';
+    els.btn.disabled = !(typed && selectedTier);
+    if(typed && selectedTier){
+      els.btn.textContent = 'Reset (Tier ' + selectedTier + ')';
+    } else {
+      els.btn.textContent = 'Reset';
+    }
+  }
+
+  // ── Logging ─────────────────────────────────────────────────────────
+  function log(msg, cls){
+    els.log.style.display = 'block';
+    var line = document.createElement('span');
+    line.className = 'log-line' + (cls ? ' ' + cls : '');
+    line.textContent = msg + '\n';
+    els.log.appendChild(line);
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  // ── Firebase init ───────────────────────────────────────────────────
+  var fbDb = null;
+  function initFirebase(){
+    if(fbDb) return fbDb;
+    if(typeof firebase === 'undefined' || typeof FIREBASE_CONFIG === 'undefined'){
+      throw new Error('Firebase SDK or config not loaded');
+    }
+    var app = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.database(app);
+    return fbDb;
+  }
+
+  // ── The reset itself ────────────────────────────────────────────────
+  els.btn.addEventListener('click', async function(){
+    if(els.btn.disabled) return;
+    els.btn.disabled = true;
+    els.confirm.disabled = true;
+    els.cards.forEach(function(c){ c.style.pointerEvents = 'none'; c.style.opacity = '0.6'; });
+
+    var tier = TIERS[selectedTier];
+    log('▶ Tier ' + selectedTier + ' reset starting…', 'log-info');
+
+    // 1. Firebase paths
+    try {
+      var db = initFirebase();
+      log('● Connected to ' + FIREBASE_CONFIG.projectId, 'log-ok');
+      for(var i = 0; i < tier.fbPaths.length; i++){
+        var path = tier.fbPaths[i];
+        try {
+          await db.ref(path).remove();
+          log('  ✓ removed /' + path, 'log-ok');
+        } catch(e){
+          log('  ✗ /' + path + '  → ' + (e && e.message ? e.message : e), 'log-err');
+        }
+      }
+    } catch(e){
+      log('● Firebase init failed: ' + (e && e.message ? e.message : e), 'log-err');
+    }
+
+    // 2. localStorage
+    log('● Clearing localStorage…', 'log-info');
+    var removed = 0;
+    try {
+      var keys = [];
+      for(var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      keys.forEach(function(k){
+        if(tier.lsFilter(k)){
+          localStorage.removeItem(k);
+          log('  ✓ removed ' + k, 'log-ok');
+          removed++;
+        }
+      });
+      if(!removed) log('  · nothing matched the filter', 'log-info');
+    } catch(e){
+      log('  ✗ localStorage error: ' + e.message, 'log-err');
+    }
+
+    log('▶ Done. ' + tier.fbPaths.length + ' Firebase paths, ' + removed + ' local keys.', 'log-ok');
+    els.done.style.display = 'block';
+    // Clear the input so it can't be re-fired by accident
+    els.confirm.value = '';
+  });
+})();
+</script>
+</body>
+</html>

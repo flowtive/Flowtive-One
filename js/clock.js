@@ -33,6 +33,18 @@ var clockActive = {};     // {userName: {sessionId, start, user}}
 var _clockSubscribed = false;
 var SESSION_AUTO_CLOSE_MS = 16*60*60*1000; // 16h cap
 
+/* ── Session loading window ────────────────────────────────────
+   We default to "last 12 months" via .startAt(threshold) instead of the
+   old limitToLast(500) which silently dropped older entries.
+   Older ranges are loaded on demand via _clockLoadOlderThan(targetMs)
+   when the user picks a Reports preset (All Time / Last Year) or
+   navigates the Calendar/Timesheet far enough back. */
+var FRESH_WINDOW_MS = 365 * 86400000; // 12 months
+var _clockFreshThreshold = 0;          // earliest ms covered by the live listener
+var _clockOldestLoaded = 0;            // earliest ms we have data for (live + manual)
+var _clockFreshKeys = {};              // ids currently in the live window (for delete-detection)
+var _clockLoadingOlder = false;        // simple guard so concurrent triggers coalesce
+
 function fmtElapsed(ms){
   if(!ms || ms < 0) return '0m';
   var totalMin = Math.floor(ms/60000);
@@ -48,18 +60,30 @@ function fmtHours(ms){
   return (Math.round(h*10)/10).toString();
 }
 
+/* Single source of truth for "how long has this entry been running / how long
+   did it run?" Used by Tracker panel, Calendar, Reports, Dashboard so views
+   stay in lockstep instead of drifting by a second.
+   Accepts a session-like {start, end?, durationMs?}. */
+function getLiveDurationMs(session){
+  if(!session || !session.start) return 0;
+  if(typeof session.durationMs === 'number') return session.durationMs;
+  if(session.end) return Math.max(0, session.end - session.start);
+  return Math.max(0, Date.now() - session.start);
+}
+
 function subscribeClock(){
   if(!firebaseReady || _clockSubscribed) return;
   _clockSubscribed = true;
   firebaseDb.ref('flowtive_time_active').on('value', function(snap){
     clockActive = snap.val() || {};
     autoCloseStaleOwnSession();
-    // These three are cheap and safe to run synchronously
-    renderClockButton();
-    renderOnTheClockCard();
-    renderSidebarClockBadges();
-    // Heavier panel rebuilds — coalesce per key so back-to-back FB updates
-    // don't stack into multiple full renders in the same frame.
+    // Coalesce ALL renders through scheduleRender so back-to-back updates
+    // (e.g. someone starts then immediately stops) stack into a single
+    // rAF-batched render. Was previously firing three sync renders here
+    // BEFORE the scheduled ones, which doubled work on each tick.
+    scheduleRender('clock-button',     renderClockButton);
+    scheduleRender('otc-card',         renderOnTheClockCard);
+    scheduleRender('sid-clock-badges', renderSidebarClockBadges);
     scheduleRender('panel-time', function(){
       var tt = document.getElementById('panel-time');
       if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
@@ -69,8 +93,28 @@ function subscribeClock(){
       if(wd && wd.classList.contains('active') && typeof buildDashboard === 'function') buildDashboard();
     });
   });
-  firebaseDb.ref('flowtive_time_sessions').orderByChild('start').limitToLast(500).on('value', function(snap){
-    clockSessions = snap.val() || {};
+  // Live listener: only the fresh window (last 12 months by default).
+  // We MERGE rather than overwrite clockSessions so any older entries
+  // pulled in via _clockLoadOlderThan() are preserved across updates.
+  _clockFreshThreshold = Date.now() - FRESH_WINDOW_MS;
+  _clockOldestLoaded = _clockFreshThreshold;
+  firebaseDb.ref('flowtive_time_sessions').orderByChild('start').startAt(_clockFreshThreshold).on('value', function(snap){
+    var fresh = snap.val() || {};
+    // Drop any keys that were in the previous fresh window but vanished now
+    // (i.e. deleted server-side). Older keys outside the window are untouched.
+    Object.keys(_clockFreshKeys).forEach(function(k){
+      if(!(k in fresh)) delete clockSessions[k];
+    });
+    _clockFreshKeys = {};
+    Object.keys(fresh).forEach(function(k){
+      _clockFreshKeys[k] = true;
+      clockSessions[k] = fresh[k];
+    });
+    // Invalidate the Tracker totals cache — the data underneath it just
+    // changed, any cached sum is now stale. Same for the Reports collect
+    // cache (rows pulled from clockSessions); the next render rebuilds.
+    if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
+    if(typeof _repInvalidate === 'function') _repInvalidate();
     // Coalesce panel rebuilds via scheduleRender (rAF-batched, per key)
     scheduleRender('panel-dashboard', function(){
       var wd = document.getElementById('panel-dashboard');
@@ -97,6 +141,45 @@ function subscribeClock(){
     });
   });
 }
+
+/* On-demand loader for sessions older than what the live listener covers.
+   Returns a Promise that resolves when the older entries have been merged
+   into clockSessions and active panels re-rendered. No-op if `targetMs`
+   is already covered. */
+function _clockLoadOlderThan(targetMs){
+  if(!firebaseReady) return Promise.resolve();
+  if(_clockLoadingOlder) return Promise.resolve();
+  if(typeof targetMs !== 'number' || targetMs >= _clockOldestLoaded) return Promise.resolve();
+  _clockLoadingOlder = true;
+  return firebaseDb.ref('flowtive_time_sessions')
+    .orderByChild('start')
+    .startAt(targetMs)
+    .endAt(_clockOldestLoaded - 1)
+    .once('value')
+    .then(function(snap){
+      var older = snap.val() || {};
+      Object.keys(older).forEach(function(k){
+        clockSessions[k] = older[k];
+      });
+      _clockOldestLoaded = targetMs;
+      // Trigger renders for whoever's active so older entries show up
+      if(typeof scheduleRender === 'function'){
+        ['panel-dashboard','panel-time','panel-time-calendar','panel-time-reports','panel-time-timesheet'].forEach(function(pid){
+          scheduleRender(pid, function(){
+            var p = document.getElementById(pid);
+            if(!p || !p.classList.contains('active')) return;
+            if(pid === 'panel-time' && typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
+            else if(pid === 'panel-time-calendar' && typeof renderTimeCalendarPanel === 'function') renderTimeCalendarPanel();
+            else if(pid === 'panel-time-reports' && typeof renderTimeReportsPanel === 'function') renderTimeReportsPanel();
+            else if(pid === 'panel-time-timesheet' && typeof renderTimeTimesheetPanel === 'function') renderTimeTimesheetPanel();
+            else if(pid === 'panel-dashboard' && typeof buildDashboard === 'function') buildDashboard();
+          });
+        });
+      }
+    })
+    .catch(function(){ /* swallow — UI just doesn't show older entries */ })
+    .then(function(){ _clockLoadingOlder = false; });
+}
 function unsubscribeClock(){
   if(firebaseReady && firebaseDb){
     try{ firebaseDb.ref('flowtive_time_active').off(); }catch(e){}
@@ -105,6 +188,22 @@ function unsubscribeClock(){
   _clockSubscribed = false;
   clockSessions = {};
   clockActive = {};
+}
+
+/* Hard cap on time-entry descriptions. Pasting a 10MB blob into the
+   "What are you working on?" field would otherwise stall Firebase writes
+   and bloat every subsequent read. 500 chars is plenty for a sentence
+   or two of context, the only thing the field is meant for. (F8) */
+var DESCRIPTION_MAX_CHARS = 500;
+function _capDescription(s){
+  if(typeof s !== 'string') return s;
+  var trimmed = s.trim();
+  if(trimmed.length <= DESCRIPTION_MAX_CHARS) return trimmed;
+  // Surface the truncation so the user knows what happened.
+  if(typeof showToast === 'function'){
+    showToast('Description trimmed to '+DESCRIPTION_MAX_CHARS+' chars', 'warning');
+  }
+  return trimmed.slice(0, DESCRIPTION_MAX_CHARS);
 }
 
 function clockIn(description, opts){
@@ -117,9 +216,8 @@ function clockIn(description, opts){
   var id = ref.key;
   var now = Date.now();
   var rec = {user:name, start:now, end:null, durationMs:null};
-  if(description && typeof description === 'string' && description.trim()){
-    rec.description = description.trim();
-  }
+  var capped = description ? _capDescription(description) : '';
+  if(capped){ rec.description = capped; }
   if(opts.projectId) rec.projectId = opts.projectId;
   if(Array.isArray(opts.tags) && opts.tags.length) rec.tags = opts.tags;
   ref.set(rec).catch(function(){ showToast('Start Work Failed'); });
@@ -137,7 +235,7 @@ function updateSession(sessionId, patch){
   if(!existing) return;
   var update = {};
   if('description' in patch){
-    var d = (patch.description||'').trim();
+    var d = _capDescription(patch.description || '');
     update.description = d || null;
   }
   if('start' in patch && typeof patch.start === 'number') update.start = patch.start;
@@ -195,7 +293,8 @@ function addManualSession(start, end, description, opts){
     durationMs: end - start,
     manuallyAdded: true
   };
-  if(description && description.trim()) rec.description = description.trim();
+  var capped = description ? _capDescription(description) : '';
+  if(capped) rec.description = capped;
   if(opts.projectId) rec.projectId = opts.projectId;
   if(Array.isArray(opts.tags) && opts.tags.length) rec.tags = opts.tags;
   ref.set(rec).catch(function(){ showToast('Save Failed'); });
@@ -208,7 +307,7 @@ function updateActiveSessionDescription(description){
   if(!currentUser || !firebaseReady) return;
   var active = clockActive[currentUser.name];
   if(!active) return;
-  var d = (description||'').trim();
+  var d = _capDescription(description || '');
   firebaseDb.ref('flowtive_time_sessions/'+active.sessionId+'/description').set(d || null).catch(function(){});
 }
 
@@ -291,7 +390,7 @@ function renderOnTheClockCard(){
   // Sort by start asc (longest-running first)
   entries.sort(function(a,b){ return a.start - b.start; });
   list.innerHTML = entries.map(function(a){
-    var m = MEMBERS.find(function(x){return x.name===a.user;}) || {name:a.user, color:'#6B7280'};
+    var m = membersByName()[a.user] || {name:a.user, color:'#6B7280'};
     var img = (typeof loadAvatar==='function') ? loadAvatar(m.name) : null;
     var avInner = img
       ? '<img src="'+img+'" alt="'+escapeHtml(m.name)+'">'
@@ -308,8 +407,14 @@ function renderOnTheClockCard(){
 function renderHoursThisWeek(){
   var ctx = document.getElementById('hours-week-chart-canvas');
   if(!ctx) return;
-  if(charts.hoursWeek){ charts.hoursWeek.destroy(); }
-
+  // Lazy-load Chart.js if not already on the page. ensureChartJs resolves
+  // immediately once Chart is loaded; the wrapped recall below is a no-op
+  // on the second pass. Keeps Chart.js (~200 KB) off the initial-load
+  // critical path for users who never open the dashboard.
+  if(typeof Chart === 'undefined'){
+    ensureChartJs().then(renderHoursThisWeek);
+    return;
+  }
   // Build last 7 day labels (oldest first)
   var labels=[];
   var dayStarts=[];
@@ -343,48 +448,67 @@ function renderHoursThisWeek(){
       maxBarThickness: 28
     };
   });
-  charts.hoursWeek = new Chart(ctx,{
-    type:'bar',
-    data:{ labels: labels, datasets: datasets },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
-        tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
-      },
-      scales:{
-        x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
-        y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
+  // Reuse instance if present — `.update('none')` swaps data without
+  // recreating GPU buffers or replaying the entry animation.
+  if(charts.hoursWeek){
+    charts.hoursWeek.data.labels = labels;
+    charts.hoursWeek.data.datasets = datasets;
+    charts.hoursWeek.update('none');
+  } else {
+    charts.hoursWeek = new Chart(ctx,{
+      type:'bar',
+      data:{ labels: labels, datasets: datasets },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
+          tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
+        },
+        scales:{
+          x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
+          y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 
 function tickClockUI(){
   if(!currentUser) return;
   var active = clockActive[currentUser.name];
-  // Update label on every .clock-btn (topbar, tasks toolbar, etc.) when running
-  if(active){
-    var elapsed = Date.now() - active.start;
+  var now = Date.now();
+  var minuteBoundary = !tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 60000;
+  // Update the .clock-btn label ONLY at minute boundaries. fmtElapsed
+  // floors to minutes for any duration ≥ 1 minute, so per-second updates
+  // produced identical strings — paying for querySelectorAll + DOM writes
+  // every second to render the same text. Now we only update when the
+  // visible value actually changes.
+  if(active && minuteBoundary){
+    var elapsed = now - active.start;
     document.querySelectorAll('.clock-btn .clock-btn-label-text').forEach(function(label){
       label.textContent = 'Stop Work · '+fmtElapsed(elapsed);
     });
   }
-  // Update per-task timer counters (row pills + modal total) every second
+  // Update per-task timer counters (row pills + modal total) every second —
+  // these can show seconds, so a 1Hz tick is real, not redundant.
   if(typeof tickTaskTimers === 'function') tickTaskTimers();
-  // Update the Time Tracker panel live counter when it's the active panel
+  // Update the Time Tracker panel live counter when it's the active panel —
+  // the running session's HH:MM:SS counter ticks at 1Hz.
   if(typeof tickTimeTrackerPanel === 'function') tickTimeTrackerPanel();
-  // Update the calendar's now-line + running blocks every second
+  // Update the calendar's now-line + running blocks every second.
   if(typeof tickCalendarPanel === 'function') tickCalendarPanel();
-  // Refresh timesheet totals when a session crosses a minute boundary
-  if(typeof tickTimesheetPanel === 'function') tickTimesheetPanel();
-  // Update sidebar badges + otc card every minute (less frequent than per-second to save reflows)
-  var now = Date.now();
-  if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 30000){
+  // Refresh timesheet totals when a session crosses a minute boundary —
+  // moved into the minute-boundary block below.
+  // Update sidebar badges + otc card every minute (less frequent than
+  // per-second to save reflows). Bumped from 30s → 60s — the labels show
+  // "1h 23m" precision so anything sub-minute is invisible anyway, and
+  // halving the reflow rate is a free perf win.
+  if(minuteBoundary){
     tickClockUI._lastMinute = now;
     renderSidebarClockBadges();
+    if(typeof tickTimesheetPanel === 'function') tickTimesheetPanel();
     if(document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')){
       renderOnTheClockCard();
     }

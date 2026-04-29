@@ -14,7 +14,7 @@
    on hover so the affordance is obvious without cluttering the rest state. */
 .kpi-card-clickable{cursor:pointer;outline:none}
 .kpi-card-clickable:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,15,26,0.08);border-color:var(--accent)}
-.kpi-card-clickable:focus-visible{box-shadow:0 0 0 3px var(--accent-subtle);border-color:var(--accent)}
+.kpi-card-clickable:focus-visible{box-shadow:0 0 0 2px var(--accent-ring);border-color:var(--accent)}
 .kpi-card-clickable:active{transform:translateY(0)}
 .kpi-card-clickable::after{content:'→';position:absolute;top:14px;right:14px;font-size:14px;font-weight:600;color:var(--hint);opacity:0;transform:translateX(-4px);transition:opacity 0.15s var(--ease-out),transform 0.15s var(--ease-out);pointer-events:none}
 .kpi-card-clickable:hover::after,.kpi-card-clickable:focus-visible::after{opacity:1;transform:translateX(0);color:var(--accent)}
@@ -191,6 +191,7 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .otc-card{background:linear-gradient(135deg,var(--success-subtle) 0%,var(--success-bg-2) 100%);border:1px solid var(--success-border);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:none}
 .otc-card.show{display:block}
 .otc-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.otc-sub{font-size:10.5px;color:var(--success-fg);opacity:0.65;letter-spacing:0.02em;margin-left:auto;font-weight:500}
 .otc-pulse{width:8px;height:8px;border-radius:50%;background:var(--success-strong);animation:clkDot 1.4s ease-in-out infinite}
 .otc-title{font-size:12px;font-weight:700;color:var(--success-fg);text-transform:uppercase;letter-spacing:0.05em}
 .otc-list{display:flex;flex-wrap:wrap;gap:10px}
@@ -211,8 +212,15 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 
 /* ── Tasks ── */
 .tasks-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+/* W11: search input now lives inside a relative wrap so a × clear
+   button can be absolutely positioned on the right when search has text. */
+.tasks-search-wrap{position:relative;flex:1;min-width:160px;max-width:280px;display:flex}
+.tasks-search-wrap .tasks-search{max-width:none;flex:1;padding-right:32px}
 .tasks-search{flex:1;min-width:160px;max-width:280px;padding:7px 12px 7px 30px;border:1px solid var(--border);border-radius:99px;background:var(--bg-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Ccircle cx='6' cy='6' r='4.5' stroke='%239CA3AF' stroke-width='1.4'/%3E%3Cpath d='M10 10l2.5 2.5' stroke='%239CA3AF' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat 10px center;font-size:13px;font-family:inherit;color:var(--text);outline:none;transition:border-color 0.15s}
 .tasks-search:focus{border-color:var(--accent)}
+.tasks-search::-webkit-search-cancel-button{display:none}
+.tasks-search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:22px;height:22px;border:none;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;transition:all 0.1s}
+.tasks-search-clear:hover{background:var(--off);color:var(--text)}
 .view-toggle{display:inline-flex;background:var(--off);border:1px solid var(--border);border-radius:99px;padding:2px}
 .view-toggle button{border:none;background:transparent;padding:5px 12px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:99px;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all 0.12s}
 .view-toggle button.active{background:var(--bg-surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,0.06)}
@@ -252,11 +260,29 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .task-row > div{padding:11px 12px}
 .task-row.done .task-title{text-decoration:line-through;color:var(--hint)}
 .task-checkbox-cell{display:flex;align-items:center;justify-content:center;padding:0!important}
+/* Row checkbox — now drives bulk SELECTION (not done-toggle).
+   Selected state = filled accent square with a check. */
 .task-cb{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:var(--bg-surface)}
-.task-cb:hover{border-color:var(--blue)}
-.task-cb.on{background:var(--success);border-color:var(--success)}
-.task-cb.on::after{content:'';width:8px;height:5px;border-left:2px solid var(--bg-surface);border-bottom:2px solid var(--bg-surface);transform:rotate(-45deg) translate(1px,-1px);display:block}
+.task-cb:hover{border-color:var(--accent)}
+.task-cb:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-ring)}
+.task-cb.selected{background:var(--accent);border-color:var(--accent)}
+.task-cb.selected::after{content:'';width:8px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px);display:block}
+/* Indeterminate (mixed) state — used by master select-all checkboxes
+   when only some of the visible items are selected. Renders as a
+   horizontal accent bar inside the box. */
+.task-cb.indeterminate{background:var(--accent);border-color:var(--accent)}
+.task-cb.indeterminate::after{content:'';width:8px;height:0;border-top:2px solid #fff;border-left:none;border-bottom:none;transform:none;display:block}
+/* Whole row gets a subtle accent tint when selected so the user can scan
+   their selection at a glance even if the checkbox is off-screen. */
+.task-row.is-selected{background:var(--accent-subtle)}
+.task-row.is-selected:hover{background:var(--accent-subtle)}
 .task-title{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+/* W13: subtle dotted underline on hover (only when not done) so users
+   discover that titles are double-click-editable without a visible badge. */
+.task-row:hover .task-title{text-decoration:underline dotted var(--border-strong);text-underline-offset:3px}
+.task-row.done:hover .task-title{text-decoration:line-through}
+.kanban-card:hover .kanban-card-title{text-decoration:underline dotted var(--border-strong);text-underline-offset:3px}
+.kanban-card.done:hover .kanban-card-title{text-decoration:line-through}
 .task-title-sub{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Inline title editor — replaces .task-title or .kanban-card-title in place. */
 .task-title-inline-edit{font-family:inherit;font-size:13px;font-weight:500;color:var(--text);width:100%;padding:4px 8px;border:1px solid var(--accent);border-radius:5px;background:var(--bg-elevated);outline:none;box-shadow:0 0 0 2px var(--accent-subtle)}
@@ -322,7 +348,13 @@ td{padding:9px 14px;font-size:13px;vertical-align:middle}
 .av-mini.av-empty:hover{border-style:solid;border-color:var(--accent);color:var(--accent)}
 
 /* Inline picker — shared popover used by status / priority / assignee */
-.inline-picker{position:absolute;z-index:1900;min-width:160px;max-width:280px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 12px 32px rgba(15,15,26,0.18),0 2px 6px rgba(15,15,26,0.08);padding:4px;opacity:0;transform:translateY(-4px) scale(0.98);transform-origin:top left;transition:opacity 0.12s var(--ease-out),transform 0.12s var(--ease-out)}
+/* Inline picker base (used by tag/project pickers, status/priority/
+   assignee chips). Z-index sits ABOVE every modal, drawer, command
+   palette, and keyboard-shortcuts overlay (max 2600) but BELOW toasts
+   (3000) — pickers opened from inside a modal must float over the
+   modal's backdrop, while transient success/error toasts can still
+   surface above an open picker. */
+.inline-picker{position:absolute;z-index:2700;min-width:160px;max-width:280px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 12px 32px rgba(15,15,26,0.18),0 2px 6px rgba(15,15,26,0.08);padding:4px;opacity:0;transform:translateY(-4px) scale(0.98);transform-origin:top left;transition:opacity 0.12s var(--ease-out),transform 0.12s var(--ease-out)}
 .inline-picker.show{opacity:1;transform:translateY(0) scale(1)}
 .inline-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:none;background:transparent;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12.5px;color:var(--text);text-align:left;transition:background 0.1s}
 .inline-picker-item:hover{background:var(--bg-elevated)}
@@ -371,11 +403,47 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .kanban-col-count{font-size:10px;color:var(--hint);font-weight:500;background:var(--bg-surface);border:1px solid var(--border);border-radius:99px;padding:1px 7px}
 .kanban-col-add{background:none;border:none;color:var(--hint);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1;font-family:inherit}
 .kanban-col-add:hover{color:var(--blue);background:var(--bg-surface)}
+/* Per-column quick-add input — sits at the bottom of each column, accepts
+   Enter to create a card in that column's status. */
+.kanban-col-add-row{margin-top:auto;padding-top:6px}
+.kanban-col-add-input{width:100%;padding:8px 10px;border:1px dashed var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px;border-radius:8px;outline:none;transition:all 0.12s}
+.kanban-col-add-input::placeholder{color:var(--hint);font-weight:500}
+.kanban-col-add-input:hover{border-color:var(--border-strong);background:var(--bg-surface)}
+.kanban-col-add-input:focus{border-style:solid;border-color:var(--accent);background:var(--bg-surface);box-shadow:0 0 0 2px var(--accent-ring)}
+.tasks-density-compact .kanban-col-add-input{padding:5px 8px;font-size:11.5px}
 .kanban-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;cursor:grab;transition:transform var(--duration-fast) var(--ease-out),box-shadow var(--duration-fast) var(--ease-out),border-color var(--duration-fast) var(--ease-out),background var(--duration-fast) var(--ease-out);display:flex;flex-direction:column;gap:6px;will-change:transform}
 .kanban-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);transform:translateY(-1px);background:var(--bg-elevated)}
-.kanban-card.dragging{opacity:0.4;cursor:grabbing}
+/* Drag feedback — more tactile than just opacity. The card lifts via
+   shadow + scale + slight tilt so the user has clear "I'm holding this"
+   feedback. (#27 — Round 1 deferred polish.) */
+.kanban-card.dragging{opacity:0.55;cursor:grabbing;transform:scale(1.03) rotate(-1deg);box-shadow:0 16px 32px rgba(15,15,26,0.18),0 4px 12px rgba(15,15,26,0.10);z-index:50}
 .kanban-card-title{font-size:12.5px;font-weight:500;color:var(--text);line-height:1.4;cursor:text}
 .kanban-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+
+/* ── Density toggle ──────────────────────────────────────────
+   Three densities for the Tasks panel: compact / comfortable / spacious.
+   Persists per-user via localStorage. The toolbar button cycles through. */
+.task-density-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;font-weight:500;border-radius:99px;cursor:pointer;transition:all 0.12s}
+.task-density-btn:hover{border-color:var(--accent);color:var(--accent)}
+.task-density-btn svg{width:13px;height:13px}
+
+/* COMPACT — fit more cards on screen, hide secondary card meta */
+.tasks-density-compact .kanban-card{padding:6px 10px;gap:3px}
+.tasks-density-compact .kanban-card-title{font-size:12px}
+.tasks-density-compact .kanban-card-meta{gap:4px;margin-top:1px}
+.tasks-density-compact .kanban-card-desc{display:none}
+.tasks-density-compact .task-row > div{padding:6px 12px}
+.tasks-density-compact .task-row{font-size:12px}
+.tasks-density-compact .task-list-head > div{padding:6px 12px}
+.tasks-density-compact .kanban-col{padding:8px 8px 10px;gap:5px}
+.tasks-density-compact .kanban-col-head{padding-bottom:5px;margin-bottom:2px}
+
+/* SPACIOUS — extra breathing room, more vertical padding */
+.tasks-density-spacious .kanban-card{padding:14px 16px;gap:9px}
+.tasks-density-spacious .kanban-card-title{font-size:13.5px;line-height:1.5}
+.tasks-density-spacious .task-row > div{padding:15px 14px}
+.tasks-density-spacious .task-row{font-size:13.5px}
+.tasks-density-spacious .kanban-col{padding:14px 14px 16px;gap:11px}
 .kanban-card-meta .av-mini{width:18px;height:18px;border-radius:50%;font-size:7px;font-weight:700;color:var(--bg-surface);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;margin-left:auto}
 .kanban-card-meta .av-mini img{width:100%;height:100%;object-fit:cover;display:block}
 
@@ -384,6 +452,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
    Edit mode: large modal with main column + activity sidebar.
    New-task mode: same modal shell, single column, footer with Create button. */
 .tdrawer-backdrop{position:fixed;inset:0;background:rgba(15,15,26,0.55);backdrop-filter:blur(2px);z-index:1500;opacity:0;pointer-events:none;transition:opacity 0.18s var(--ease-out)}
+/* W3: lock page scroll while the task drawer is open. Matches the
+   body.sidebar-open pattern from v2.10. */
+body.tdrawer-open{overflow:hidden}
 .tdrawer-backdrop.show{opacity:1;pointer-events:auto}
 .tdrawer{position:fixed;top:50%;left:50%;width:min(820px,92vw);max-height:88vh;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:1600;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(15,15,26,0.32),0 4px 16px rgba(15,15,26,0.12);opacity:0;pointer-events:none;transform:translate(-50%,-48%) scale(0.97);transition:opacity 0.2s var(--ease-out),transform 0.2s var(--ease-out)}
 .tdrawer.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
@@ -447,6 +518,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .td-rich-btn svg{width:13px;height:13px}
 .td-rich-btn:hover{background:var(--bg-surface);color:var(--text)}
 .td-rich-btn:active{transform:scale(0.94)}
+/* W12: active state when the current selection has the format applied */
+.td-rich-btn.active{background:var(--accent-subtle);color:var(--accent)}
 .td-rich-sep{width:1px;height:16px;background:var(--border);margin:0 4px}
 .td-rich-editor{border-top-left-radius:0;border-top-right-radius:0;outline:none;cursor:text;overflow-y:auto;max-height:280px}
 .td-rich-editor:empty::before,.td-rich-editor.is-empty::before{content:attr(data-placeholder);color:var(--hint);pointer-events:none}
@@ -620,6 +693,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .ftc-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;letter-spacing:-0.01em}
 .ftc-message{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px}
 .ftc-actions{display:flex;justify-content:flex-end;gap:8px}
+/* Stacked variant for 3-button flows (e.g. project-delete with orphan
+   cleanup choice). Each button is full-width, top-down primary→danger→cancel. */
+.ftc-actions-stack{flex-direction:column;align-items:stretch;gap:6px}
+.ftc-actions-stack .ftc-btn{width:100%;padding:9px 14px;text-align:center}
+.ftc-actions-stack .ftc-cancel{margin-top:2px}
 .ftc-btn{padding:7px 16px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);font-family:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;transition:all 0.12s}
 .ftc-btn:hover{background:var(--off)}
 .ftc-cancel{color:var(--muted)}
@@ -766,6 +844,33 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .cal-block-task{border-left-style:dashed}
 .cal-block-running{box-shadow:0 0 0 2px var(--success-strong) inset}
 .cal-block-running-dot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--success-strong);animation:timePillPulse 1.4s ease-in-out infinite}
+/* Inline Stop button on running blocks — appears bottom-right on hover
+   (pointer devices) or always-on (touch devices). Lets the user stop a
+   timer without leaving the calendar view. (F10) */
+.cal-block-stop-btn{position:absolute;bottom:4px;right:4px;width:18px;height:18px;border:none;border-radius:4px;background:var(--danger-strong);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.18);transition:transform 0.1s,filter 0.1s}
+.cal-block:hover .cal-block-stop-btn{display:flex}
+.cal-block-stop-btn:hover{filter:brightness(1.08);transform:scale(1.06)}
+.cal-block-stop-btn:active{transform:scale(0.94)}
+.cal-block-stop-btn svg{display:block}
+@media (hover: none){
+  .cal-block-stop-btn{display:flex}
+}
+
+/* Inline Delete (×) button on completed global entries. Top-right corner
+   so it doesn't clash with the Stop button on running blocks (which goes
+   bottom-right). Hover-only on pointer devices, always visible on touch. */
+.cal-block-del-btn{position:absolute;top:4px;right:4px;width:18px;height:18px;border:none;border-radius:4px;background:rgba(15,15,26,0.55);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.18);transition:transform 0.1s,background 0.1s,filter 0.1s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.cal-block:hover .cal-block-del-btn{display:flex}
+.cal-block-del-btn:hover{background:var(--danger-strong);transform:scale(1.06)}
+.cal-block-del-btn:active{transform:scale(0.94)}
+.cal-block-del-btn svg{display:block}
+@media (hover: none){
+  .cal-block-del-btn{display:flex}
+}
+/* On compact (short) blocks, hide the meta to avoid overlap with the
+   delete corner — the Stop button already does this implicitly via its
+   bottom-right positioning, but Delete is top-right. */
+.cal-block-compact .cal-block-del-btn{top:2px;right:2px;width:16px;height:16px}
 
 /* Mobile: force day view layout, smaller cells */
 @media (max-width:639px){
@@ -847,6 +952,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .pt-tag-picker-done{padding:5px 14px;background:var(--accent);border:none;border-radius:5px;color:var(--text-on-accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:filter 0.12s}
 .pt-tag-picker-done:hover{filter:brightness(1.06)}
 .pt-tag-picker-empty{padding:14px 12px;font-size:12px;color:var(--muted);font-style:italic;text-align:center}
+/* Project picker variant — single-select, no Done button. The footer
+   shows a small "type + Enter to create" hint instead. */
+.pt-proj-pick-foot{justify-content:flex-start}
+.pt-tag-picker-foot-hint{font-size:11px;color:var(--hint);letter-spacing:0.02em;font-weight:500}
+/* Project rows include a color dot inline with the name (tag rows don't). */
+.pt-proj-pick-row .pt-pick-dot{width:10px;height:10px;margin-left:-2px}
 
 /* Tracker bar — Project + Tag chips */
 .tt-project-chip,.tt-tag-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0;transition:all 0.12s}
@@ -866,8 +977,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .entry-tag-pill{font-size:10.5px;font-weight:600;color:var(--accent);background:var(--accent-subtle);border-radius:99px;padding:1px 7px;white-space:nowrap}
 
 /* Edit/manual entry dialog — second row of chip-buttons for project + tags */
-.te-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.te-chip-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;width:100%;justify-content:flex-start;transition:all 0.12s}
+.te-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+/* Project + Tags chip buttons match the .te-input dimensions exactly so
+   the form feels uniform — same padding, same border-radius, same height.
+   (Was padding:7px 12px / border-radius:99px — taller pills next to
+   shorter rectangular inputs looked off.) */
+.te-chip-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;width:100%;justify-content:flex-start;transition:all 0.12s;min-height:36px}
 .te-chip-btn:hover{border-color:var(--accent);color:var(--accent)}
 .te-chip-empty{color:var(--muted);border-style:dashed}
 
@@ -918,7 +1033,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 /* Cells */
 .ts-cell{cursor:pointer;text-align:center;font-variant-numeric:tabular-nums;transition:background 0.1s,box-shadow 0.1s;border-left:1px solid var(--border-subtle);position:relative}
 .ts-cell:hover{background:var(--accent-subtle);box-shadow:inset 0 0 0 1px var(--accent)}
-.ts-cell-empty .ts-cell-add{color:var(--hint);font-size:18px;font-weight:300;opacity:0;transition:opacity 0.1s}
+/* Always show the + at low opacity so empty cells look clickable on
+   first scan (was opacity:0 — too hidden, users didn't realize they
+   could click). Hover bumps it to full + accent color. */
+.ts-cell-empty .ts-cell-add{color:var(--hint);font-size:18px;font-weight:300;opacity:0.35;transition:opacity 0.1s,color 0.1s}
 .ts-cell-empty:hover .ts-cell-add{opacity:1;color:var(--accent)}
 .ts-cell-value{font-size:13px;font-weight:600;color:var(--text)}
 .ts-cell.ts-today{background:rgba(16,185,129,0.04)}
@@ -936,6 +1054,14 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
   .ts-row-head,.ts-row-label,.ts-foot-label{min-width:130px;max-width:130px}
   .ts-day-head .ts-day-date{font-size:10.5px}
   .ts-row td{height:42px}
+}
+/* On phones the horizontal scrollbar visually clutters; hide it but keep
+   the touch-scroll behavior. Add a subtle right-edge shadow on the sticky
+   first column so users perceive it as pinned while scrolling. (F12) */
+@media (max-width:639px){
+  .ts-table-scroll{scrollbar-width:none}
+  .ts-table-scroll::-webkit-scrollbar{display:none}
+  .ts-row-head,.ts-row-label,.ts-foot-label{box-shadow:4px 0 8px -4px rgba(15,15,26,0.12)}
 }
 @media (max-width:639px){
   .ts-add-row-btn span{display:none}
@@ -984,10 +1110,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .rep-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
 .rep-card-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
 .rep-card-sub{font-size:11px;color:var(--hint);font-weight:500}
+/* Subtle hint chip in card heads (e.g. "ⓘ multi-tag" tooltip on the
+   tag-grouped table to explain double-counting). */
+.rep-card-hint{font-size:10px;color:var(--muted);background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:99px;padding:2px 8px;letter-spacing:0.02em;cursor:help;font-weight:500}
 
 /* Chart wrap (Summary view) */
 .rep-chart-wrap{height:240px;position:relative}
 @media (max-width:899px){.rep-chart-wrap{height:200px}}
+/* "Loading older entries…" inline hint shown while _clockLoadOlderThan
+   fetches an older range than the live 12-month window covers. */
+.rep-loading-hint{position:absolute;top:14px;right:14px;padding:5px 10px;background:var(--accent-subtle);color:var(--accent);font-size:11px;font-weight:600;border-radius:99px;letter-spacing:0.02em;animation:repHintPulse 1.4s ease-in-out infinite}
+/* M6: error variant — shown when the older-range fetch hasn't progressed
+   after 10s. Stops the pulse + flips to a quiet warning color. */
+.rep-loading-hint.rep-loading-hint-error{background:var(--warning-bg);color:var(--warning-fg);animation:none}
+@keyframes repHintPulse{0%,100%{opacity:1}50%{opacity:0.55}}
 
 /* Table — shared by Summary / Detailed / Weekly */
 .rep-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -1073,12 +1209,45 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 
 /* Top tracker bar — description input + live counter + start/stop + manual */
 .tt-tracker-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;transition:border-color 0.15s, box-shadow 0.15s}
-.tt-tracker-bar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-subtle)}
+/* No focus halo on the tracker bar when the description input is
+   focused — keeps the bar quiet during typing. The running state still
+   gets its success-tinted ring as a deliberate "I'm tracking" cue. */
 .tt-tracker-bar.tt-running{border-color:var(--success-strong);box-shadow:0 0 0 3px var(--success-bg)}
-.tt-desc{flex:1;border:none;background:transparent;outline:none;font-family:inherit;font-size:14px;color:var(--text);padding:6px 4px;min-width:0}
+/* Wrap that hosts the input + the animated typewriter overlay. The wrap
+   takes the flex sizing that .tt-desc used to own; the input now fills
+   the wrap and the overlay sits absolutely on top of it (pointer-events
+   off, so clicks fall through to the input). When the input has real
+   content, JS toggles `.has-value` on the wrap to hide the overlay. */
+.tt-desc-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0}
+.tt-desc{flex:1;border:none;background:transparent;outline:none;font-family:inherit;font-size:14px;color:var(--text);padding:6px 4px;min-width:0;width:100%}
 .tt-desc::placeholder{color:var(--hint)}
+/* Animated placeholder overlay — sits on top of the real input. Two
+   children: a text span (textContent updated char-by-char) and a caret
+   span (separate so its CSS blink runs uninterrupted by text mutations).
+   Classic typewriter: no fades, no slides, just clean character ticks
+   with a blinking cursor. */
+.tt-desc-typer{position:absolute;inset:0;display:flex;align-items:center;padding:6px 4px;font-family:inherit;font-size:14px;color:var(--hint);pointer-events:none;white-space:nowrap;overflow:hidden}
+.tt-desc-typer-text{white-space:pre}
+.tt-desc-typer-caret{display:inline-block;width:1.5px;height:1.05em;margin-left:1px;background:currentColor;vertical-align:-1px;animation:tt-caret-blink 1.06s steps(2,jump-none) infinite;flex-shrink:0}
+@keyframes tt-caret-blink{0%,49.99%{opacity:1}50%,100%{opacity:0}}
+.tt-desc-wrap.has-value .tt-desc-typer{display:none}
+/* While the input is focused, hide the overlay so the user sees only
+   their real text cursor (otherwise the native caret at the left + the
+   overlay's blinking caret at the right of the ghost text reads as two
+   cursors). Animation keeps running underneath; when they blur, the
+   overlay reappears wherever the typewriter currently is. */
+.tt-desc-wrap:focus-within .tt-desc-typer{display:none}
+@media (prefers-reduced-motion:reduce){
+  .tt-desc-typer-caret{animation:none;opacity:1}
+}
 .tt-live-time{font-family:inherit;font-size:18px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;padding:0 8px;flex-shrink:0}
 .tt-live-idle{color:var(--hint)}
+/* Idle timer is a button (click → manual entry dialog). Neutralize the
+   default button chrome so it looks like the running-state display, then
+   add a subtle hover to signal it's clickable. */
+button.tt-live-time{background:transparent;border:none;cursor:pointer;line-height:1.2;border-radius:6px;transition:background 0.12s,color 0.12s}
+button.tt-live-clickable:hover{background:var(--bg-elevated);color:var(--text)}
+button.tt-live-clickable:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-ring)}
 .tt-start-btn,.tt-stop-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:filter 0.12s, transform 0.12s, box-shadow 0.12s}
 .tt-start-btn{background:var(--accent);color:var(--text-on-accent)}
 .tt-start-btn:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 4px 12px rgba(16,185,129,0.25)}
@@ -1096,27 +1265,77 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .tt-total-label{font-size:10.5px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
 .tt-total-value{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
 
-/* Filter chip row */
-.tt-filters{display:inline-flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+/* Filter chip row — wraps the time-range chips and the scope toggle on
+   one line (wraps to two on narrow screens). */
+.tt-filters-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.tt-filters{display:inline-flex;gap:6px;flex-wrap:wrap}
 .tt-filter{font-family:inherit;font-size:12px;font-weight:500;color:var(--muted);background:var(--bg-surface);border:1px solid var(--border);border-radius:99px;padding:5px 12px;cursor:pointer;transition:all 0.12s}
 .tt-filter:hover{color:var(--text);border-color:var(--accent)}
 .tt-filter.active{background:var(--blue);border-color:var(--blue);color:var(--bg-surface)}
 
+/* Scope toggle — Only Me / All Team. Pill-segmented control matching
+   the calendar's filter; tells the user which slice of the team the log
+   is showing. */
+.tt-scope-toggle{display:inline-flex;background:var(--off);border:1px solid var(--border);border-radius:99px;padding:2px;margin-left:auto}
+.tt-scope-toggle button{border:none;background:transparent;padding:5px 12px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:99px;font-family:inherit;transition:all 0.12s}
+.tt-scope-toggle button:hover{color:var(--text)}
+.tt-scope-toggle button.active{background:var(--bg-surface);color:var(--accent);box-shadow:0 1px 2px rgba(15,15,26,0.06)}
+
 /* Entry log — grouped by day */
 .tt-log{display:flex;flex-direction:column;gap:18px}
 .tt-day{}
-.tt-day-head{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:6px}
+.tt-day-head{display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:6px}
 .tt-day-label{font-size:12px;font-weight:600;color:var(--text)}
-.tt-day-total{font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.tt-day-total{font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+/* Per-day master checkbox sits flush left of the day label. Reuses
+   .task-cb sizing so it visually matches the row checkboxes below. */
+.tt-day-cb-wrap{display:inline-flex;align-items:center;justify-content:center;width:16px;flex-shrink:0}
 .tt-day-rows{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
 
 /* Single entry row */
-.tt-row{display:grid;grid-template-columns:1fr 200px 80px 90px;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border-subtle);transition:background 0.1s}
+.tt-row{display:grid;grid-template-columns:24px 1fr 200px 80px 90px;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border-subtle);transition:background 0.1s}
+/* When the entry log is in All Team scope, the row grid grows by one
+   column to slot the owner chip between description and times. */
+.tt-scope-all .tt-row{grid-template-columns:24px 1fr 140px 200px 80px 90px}
 .tt-row:last-child{border-bottom:none}
 .tt-row:hover{background:var(--bg-elevated)}
 .tt-row-running{background:var(--success-bg)!important}
+/* Bulk-select checkbox column for the entry log. Reuses .task-cb visual
+   from Tasks. Empty placeholder cell for task / running rows so the
+   columns line up. */
+.tt-row-cb-cell{display:flex;align-items:center;justify-content:center}
+.tt-row-cb-empty{visibility:hidden}
+.tt-row-selected{background:var(--accent-subtle)}
+.tt-row-selected:hover{background:var(--accent-subtle)}
 .tt-row-desc{display:flex;align-items:center;gap:10px;min-width:0}
 .tt-row-text{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+/* Empty description on own rows — faded italic placeholder that still
+   invites a click. Only applied when the description is empty. */
+.tt-row-text-empty{color:var(--hint);font-style:italic;font-weight:400}
+/* Clickable description on own rows — cursor + subtle dotted underline
+   on row-hover signals the inline-edit affordance (same pattern as
+   task titles). */
+.tt-row-text-edit{cursor:text;border-radius:3px;padding:1px 3px;margin:-1px -3px;transition:background 0.1s}
+.tt-row:hover .tt-row-text-edit{text-decoration:underline dotted var(--border-strong);text-underline-offset:3px}
+/* Inline-edit input — replaces the .tt-row-text element in place.
+   Matches the row's font + height so the swap is seamless. No focus
+   ring; the border + elevated background are enough to signal edit mode. */
+.tt-row-text-input{font-family:inherit;font-size:13px;font-weight:500;color:var(--text);background:var(--bg-elevated);border:1px solid var(--border);border-radius:5px;padding:3px 8px;outline:none;width:100%;min-width:0}
+.tt-row-text-input:focus{border-color:var(--border-strong)}
+/* "Who" cell — shown only when the entry log is in "All Team" scope.
+   Sits between description and times so the row reads:
+     [✓] [description / project / tags]    [who]   [when]   [how long]   [⋯]
+   In Only-Me scope this column collapses (see grid override below). */
+.tt-row-user-cell{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);min-width:0}
+.tt-row-user-cell .av-mini{width:20px;height:20px;font-size:9px;font-weight:700;color:#fff;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden;flex-shrink:0}
+.tt-row-user-cell .av-mini img{width:100%;height:100%;object-fit:cover}
+.tt-row-user-name{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-row-user-you{color:var(--accent);font-weight:500}
+.tt-row-user-empty{visibility:hidden}
+/* Other-user rows are read-only here — soften them slightly so the
+   eye scans my own work first, theirs second. */
+.tt-row-other{opacity:0.85}
+.tt-row-other:hover{opacity:1}
 .tt-row-badges{display:inline-flex;gap:4px;flex-shrink:0}
 .tt-badge{display:inline-flex;align-items:center;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2px 7px;border-radius:99px}
 .tt-badge-task{background:var(--accent-subtle);color:var(--accent)}
@@ -1141,17 +1360,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 
 /* Manual / edit entry dialog form */
 .te-form{margin-bottom:18px}
-.te-label{display:block;font-size:10.5px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;margin-top:10px}
+/* Label spacing — 14px above each group, 6px below the label so the
+   field sits a hair lower. :first-child override means the very first
+   label in the form (Description) doesn't get the top margin. */
+.te-label{display:block;font-size:10.5px;font-weight:600;color:var(--hint);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;margin-top:14px}
 .te-label:first-child{margin-top:0}
-.te-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:var(--bg-surface);font-family:inherit;outline:none;transition:border-color 0.12s}
+.te-input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:var(--bg-surface);font-family:inherit;outline:none;transition:border-color 0.12s;min-height:36px;box-sizing:border-box}
 .te-input:focus{border-color:var(--accent)}
-.te-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px}
-.te-duration{font-size:12px;color:var(--muted);font-weight:500;margin-top:10px;font-variant-numeric:tabular-nums}
+/* DATE / START / END group — 14px top so it doesn't crowd the
+   description input above it (was 0). */
+.te-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-top:14px}
+.te-duration{font-size:12px;color:var(--muted);font-weight:500;margin-top:14px;font-variant-numeric:tabular-nums}
 .te-duration-error{color:var(--danger-strong)}
 
 /* Mobile responsive */
 @media (max-width:899px){
   .tt-tracker-bar{flex-wrap:wrap}
+  .tt-desc-wrap{order:1;width:100%;flex:1 1 100%}
   .tt-desc{order:1;width:100%;flex:1 1 100%}
   .tt-live-time{order:2}
   .tt-start-btn,.tt-stop-btn{order:3;flex:1}
@@ -1160,6 +1385,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
   .tt-row-times{font-size:11.5px}
   .tt-row-dur{text-align:left;font-size:14px}
   .tt-row-actions{justify-content:flex-start}
+  /* Hide empty checkbox placeholders on mobile (task / running rows)
+     so they don't take a full row of vertical space. The active
+     checkbox itself stays inline. */
+  .tt-row-cb-empty{display:none}
+  .tt-row-cb-cell{justify-content:flex-start;padding-bottom:2px}
   .te-grid{grid-template-columns:1fr 1fr 1fr}
 }
 @media (max-width:479px){
@@ -1190,6 +1420,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .task-group.g-today   .task-group-name{color:var(--warning-amber-2)}
 .task-group.g-done    .task-group-name{color:var(--hint)}
 
+/* Completed-tasks section in flat list view — shown below the open list
+   when both buckets have items. Header is clickable to collapse/expand;
+   state persists in localStorage. Done rows already get strikethrough
+   from .task-row.done CSS, so the visual signal stacks. */
+.task-completed-section{margin-top:18px}
+.task-completed-head{display:flex;align-items:center;gap:8px;width:100%;padding:8px 6px;background:transparent;border:none;cursor:pointer;font-family:inherit;text-align:left;border-radius:6px;transition:background 0.1s}
+.task-completed-head:hover{background:var(--bg-elevated)}
+.task-completed-chev{color:var(--hint);transition:transform 0.18s var(--ease-out);flex-shrink:0}
+.task-completed-section:not(.collapsed) .task-completed-chev{transform:rotate(90deg)}
+.task-completed-label{font-size:11px;font-weight:700;color:var(--hint);text-transform:uppercase;letter-spacing:0.06em}
+.task-completed-count{font-size:10px;font-weight:600;color:var(--hint);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px}
+.task-completed-section .task-completed-list{transition:max-height 0.22s var(--ease-out),opacity 0.18s var(--ease-out)}
+.task-completed-section.collapsed .task-completed-list{display:none}
+/* Slightly fade the completed list so it visually recedes */
+.task-completed-list .task-row{opacity:0.7}
+.task-completed-list .task-row:hover{opacity:1}
+
 /* Subtask progress badge — shown inside .task-title-row and on .kanban-card-meta */
 .task-title-row{display:flex;align-items:center;gap:8px;min-width:0}
 .task-title-row .task-title{flex:1;min-width:0}
@@ -1198,6 +1445,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .subtask-progress.complete{background:var(--success-bg);color:var(--success-fg);border-color:var(--success-bg)}
 .subtask-progress.complete svg{color:var(--success-strong)}
 .kanban-card-meta .subtask-progress{font-size:10px;padding:1px 6px}
+/* Comment count badge — same shape as subtask-progress, slightly different
+   accent color so the two read distinctly when they sit side-by-side. */
+.comment-count{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--muted);background:var(--off);border:1px solid var(--border);border-radius:99px;padding:1px 7px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.comment-count svg{width:11px;height:11px;color:var(--hint)}
+.kanban-card-meta .comment-count{font-size:10px;padding:1px 6px}
 
 /* Per-task time pill — clickable Start/Stop button doubling as the live total.
    Hidden entirely until the task has tracked time or is currently running. */
@@ -1211,6 +1463,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 /* Empty state — subtle until hovered/row-hovered, so untracked rows stay quiet. */
 .task-time-pill.empty{opacity:0.45;border-style:dashed}
 .task-row:hover .task-time-pill.empty,.kanban-card:hover .task-time-pill.empty,.task-time-pill.empty:hover{opacity:1;border-style:solid}
+/* Distinct cue for "never tracked" (no entries at all) vs "0m" (entries
+   exist but sum to zero). Uses an em-dash label and a fainter look. */
+.task-time-pill.empty-untracked{opacity:0.35}
+.task-time-pill.empty-untracked .task-time-val{font-style:normal;letter-spacing:0.05em}
 @keyframes timePillPulse{0%,100%{opacity:1}50%{opacity:0.45}}
 .kanban-card-meta .task-time-pill{font-size:10px;padding:1px 6px}
 
@@ -1556,3 +1812,64 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .buyer-psych{background:var(--warning-subtle);border:1px solid var(--warning-yellow-border);border-radius:10px;padding:12px 14px;margin-bottom:16px}
 .buyer-psych-label{font-size:10.5px;font-weight:700;color:var(--warning-deep);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
 .buyer-psych-text{font-size:12.5px;line-height:1.55;color:var(--text-primary)}
+
+
+/* ── Tasks bulk action bar ─────────────────────────────────────
+   Fixed at the bottom of the viewport when 1+ rows are selected via
+   checkbox. Slides up, holds: count + Status / Priority / Assignee /
+   Due / Delete buttons + Clear (×). Each picker reuses the existing
+   inline-picker UI anchored on the button. */
+.tasks-bulk-bar{
+  position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px) scale(0.97);
+  /* z-index 1850 sits above the mobile sidebar drawer (95) + its
+     backdrop (94) + most surface-level UI, but stays below modal
+     dialogs (.ftc-backdrop is 2400+) and Cmd+K (.pal-backdrop 2400+).
+     Lifted from 1700 in Round 2 (L1). */
+  z-index:1850;display:flex;align-items:center;gap:6px;
+  padding:8px 8px 8px 16px;
+  background:var(--bg-inverse,#0F0F1A);color:#fff;
+  border-radius:99px;
+  box-shadow:0 12px 36px rgba(15,15,26,0.32),0 2px 8px rgba(15,15,26,0.18);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.2s var(--ease-out),transform 0.2s var(--ease-out);
+  max-width:calc(100vw - 32px);
+}
+.tasks-bulk-bar.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+.tbb-count{font-size:13px;font-weight:600;letter-spacing:0.01em;padding-right:4px;white-space:nowrap}
+.tbb-divider{width:1px;height:18px;background:rgba(255,255,255,0.18);flex-shrink:0;margin:0 2px}
+/* "Select all (N)" / "Deselect all" link on the bulk bar — quieter than
+   the action buttons (text-only, no background) so it reads as a
+   secondary toggle rather than a primary action. */
+.tbb-link{background:transparent;border:none;padding:6px 10px;color:rgba(255,255,255,0.78);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;border-radius:99px;transition:background 0.12s,color 0.12s;white-space:nowrap}
+.tbb-link:hover{background:rgba(255,255,255,0.10);color:#fff}
+.tbb-link:active{transform:scale(0.97)}
+.tbb-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+  background:transparent;color:#fff;border:none;border-radius:99px;
+  font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  transition:background 0.12s,color 0.12s;
+}
+.tbb-btn:hover{background:rgba(255,255,255,0.12)}
+.tbb-btn:active{transform:scale(0.97)}
+.tbb-btn svg{width:13px;height:13px;flex-shrink:0}
+.tbb-btn.tbb-danger{color:#FCA5A5}
+.tbb-btn.tbb-danger:hover{background:rgba(239,68,68,0.18);color:#FECACA}
+.tbb-clear{
+  width:28px;height:28px;border:none;border-radius:50%;
+  background:rgba(255,255,255,0.10);color:#fff;
+  cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;
+  font-family:inherit;flex-shrink:0;margin-left:2px;
+  transition:background 0.12s;
+}
+.tbb-clear:hover{background:rgba(255,255,255,0.20)}
+
+/* Mobile — stack-friendly: smaller padding, hide button labels under 480px */
+@media (max-width:639px){
+  .tasks-bulk-bar{bottom:80px;padding:6px 6px 6px 12px;gap:3px}
+  .tbb-count{font-size:12px}
+  .tbb-btn{padding:6px 9px;font-size:12px}
+}
+@media (max-width:479px){
+  .tasks-bulk-bar .tbb-btn span{display:none}
+  .tasks-bulk-bar .tbb-btn{padding:8px;width:34px;justify-content:center}
+}

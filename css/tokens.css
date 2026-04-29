@@ -42,7 +42,7 @@
   --accent-subtle-2:  #ECFDF5;
   --accent-fg:        #FFFFFF;
   --accent-light:     #6BF0A9;          /* the inboxkit bright mint — used for highlights */
-  --accent-ring:      rgba(16,185,129,0.20);
+  --accent-ring:      rgba(16,185,129,0.10);
 
   /* ── Brand gradient — emerald family (used for hero, primary buttons, KPI strips) ── */
   --gradient-brand:        linear-gradient(135deg, #10B981 0%, #059669 100%);
@@ -154,7 +154,7 @@
   --shadow-lg:  0 8px 24px rgba(15,23,42,0.14);
   --shadow-xl:  0 20px 60px rgba(15,23,42,0.20);
   --shadow-inner: inset 0 1px 2px rgba(15,23,42,0.06);
-  --ring-accent:  0 0 0 3px var(--accent-ring);
+  --ring-accent:  0 0 0 2px var(--accent-ring);
   --shadow-glow-brand: 0 8px 24px rgba(16,185,129,0.25);
 
   /* ── Theme-aware glow tints (used by pulses + logo mark) ── */
@@ -249,7 +249,7 @@
   --accent-subtle-2:  rgba(107,240,169,0.06);
   --accent-fg:        #061510;          /* deep green-black for max contrast on bright mint */
   --accent-light:     #7EF5B5;
-  --accent-ring:      rgba(107,240,169,0.45);
+  --accent-ring:      rgba(107,240,169,0.20);
 
   /* ── Brand gradients re-tuned for dark (mint family) ── */
   --gradient-brand:        linear-gradient(135deg, #6BF0A9 0%, #22C17E 100%);

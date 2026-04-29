@@ -38,7 +38,13 @@ function _tsFindFreeHour(dayStart){
       occupied.push({ start: Math.max(sStart, dayStart), end: Math.min(sEnd, dayEnd) });
     });
   }
-  // Per-task entries
+  // Per-task entries. L4: when a task entry just ended (end within the
+  // last few seconds), Firebase may not have propagated the new end time
+  // yet — `tasksData` could still show it as running and treat the
+  // current moment as occupied. Treat very-recently-ended entries as
+  // ended so the slot finder doesn't conservatively reject the moment.
+  var nowMs = Date.now();
+  var GRACE_MS = 5000; // ignore entries that ended in the last 5s
   if(name && typeof tasksData === 'object' && tasksData){
     Object.keys(tasksData).forEach(function(tid){
       var t = tasksData[tid];
@@ -47,7 +53,10 @@ function _tsFindFreeHour(dayStart){
         var e = t.timeEntries[eid];
         if(!e || e.user !== name || !e.start) return;
         var eStart = e.start;
-        var eEnd = e.end || Date.now();
+        // Treat "ended in the last 5s" as already-ended (use the stored
+        // end time, not now) — avoids excluding the very moment a
+        // teammate just stopped a task timer.
+        var eEnd = e.end ? e.end : (nowMs - GRACE_MS);
         if(eEnd <= dayStart || eStart >= dayEnd) return;
         occupied.push({ start: Math.max(eStart, dayStart), end: Math.min(eEnd, dayEnd) });
       });
@@ -224,6 +233,10 @@ function tsWeekNav(dir){
   if(dir === 'prev')      _tsAnchor -= 7*86400000;
   else if(dir === 'next') _tsAnchor += 7*86400000;
   else if(dir === 'today') _tsAnchor = startOfWeek(Date.now());
+  // Fetch older sessions on demand if we've navigated past the live window.
+  if(typeof _clockLoadOlderThan === 'function' && typeof _clockOldestLoaded === 'number'){
+    if(_tsAnchor < _clockOldestLoaded) _clockLoadOlderThan(_tsAnchor);
+  }
   renderTimeTimesheetPanel();
 }
 

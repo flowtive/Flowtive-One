@@ -212,7 +212,7 @@ function _calCollectEntries(dayStarts){
     var s = clockSessions[id];
     if(!s || !s.start || !s.user) return;
     if(_calFilter === 'me' && s.user !== name) return;
-    var member = MEMBERS.find(function(m){ return m.name === s.user; }) || {color:'#6B7280'};
+    var member = membersByName()[s.user] || {color:'#6B7280'};
     // Project color overrides member color when set — keeps the user's
     // project palette consistent across the week.
     var color = member.color;
@@ -238,7 +238,7 @@ function _calCollectEntries(dayStarts){
         var e = t.timeEntries[eid];
         if(!e || !e.start || !e.user) return;
         if(_calFilter === 'me' && e.user !== name) return;
-        var member = MEMBERS.find(function(m){ return m.name === e.user; }) || {color:'#6B7280'};
+        var member = membersByName()[e.user] || {color:'#6B7280'};
         var isActive = !!(t.activeTimers && t.activeTimers[e.user] && t.activeTimers[e.user].entryId === eid);
         pushSplit({
           kind:'task', id:eid, taskId:tid, user:e.user, color:member.color,
@@ -279,6 +279,39 @@ function _calRenderBlock(b){
     ? desc + ' · this slice: ' + sliceLabel + ' · full entry: ' + fullStartStr + ' → ' + fullEndStr
     : desc + ' · ' + startStr + ' – ' + endStr;
   var meta = compact ? '' : '<div class="cal-block-meta">'+escapeHtml(sliceLabel)+'</div>';
+  // Inline Stop button on running blocks — saves the user a navigation
+  // round-trip to the Tracker / topbar / sidebar to halt a session. (F10)
+  var stopBtn = '';
+  if(b.running){
+    var stopAction = b.kind === 'task'
+      ? "stopTaskTimer('"+b.taskId+"')"
+      : "clockOut()";
+    stopBtn = '<button class="cal-block-stop-btn" type="button"'
+      + ' onclick="event.stopPropagation();'+stopAction+'"'
+      + ' title="Stop running timer" aria-label="Stop running timer">'
+      + '<svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="6" height="6" rx="1"/></svg>'
+      + '</button>';
+  }
+  // Inline Delete button on completed global entries — same hover/touch
+  // pattern as Stop. Skips task-linked entries (they're managed via the
+  // task drawer) and currently-running entries (use Stop first). Reuses
+  // the existing confirmDeleteEntry → deleteSession path which already
+  // shows an undo toast.
+  // Note: for multi-day sessions every slice shares one session id, so
+  // clicking × on any block deletes the whole entry. The label below
+  // makes that explicit; confirmDeleteEntry adds a clarifying line to
+  // the modal too. (Round-2 M3.)
+  var delBtn = '';
+  if(b.kind !== 'task' && !b.running){
+    var delTitle = spans
+      ? 'Delete entire session (spans multiple days)'
+      : 'Delete entry';
+    delBtn = '<button class="cal-block-del-btn" type="button"'
+      + ' onclick="event.stopPropagation();confirmDeleteEntry(\''+b.id+'\')"'
+      + ' title="'+delTitle+'" aria-label="'+delTitle+'">'
+      + '<svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6"/></svg>'
+      + '</button>';
+  }
   return '<div class="cal-block'
     + (b.kind==='task'?' cal-block-task':'')
     + (b.running?' cal-block-running':'')
@@ -292,6 +325,8 @@ function _calRenderBlock(b){
     + '<div class="cal-block-title">'+escapeHtml(desc)+'</div>'
     + meta
     + (b.running ? '<span class="cal-block-running-dot"></span>' : '')
+    + stopBtn
+    + delBtn
     + '</div>';
 }
 
@@ -302,9 +337,14 @@ function _calLighten(hex){
   var r = parseInt(m[1].substring(0,2),16);
   var g = parseInt(m[1].substring(2,4),16);
   var b = parseInt(m[1].substring(4,6),16);
-  // Mix toward white at 80% (light theme) or stay darker for dark theme via opacity
-  // We'll just return rgba so it works in both themes
-  return 'rgba('+r+','+g+','+b+',0.18)';
+  // Theme-aware alpha — light mode reads fine at 0.18 on white-ish bg,
+  // but the same alpha on dark mode looks washed out / barely visible.
+  // Bump to 0.30 in dark mode for readability without overwhelming the
+  // border-left accent stripe.
+  var isDark = false;
+  try{ isDark = (document.documentElement.getAttribute('data-theme') === 'dark'); }catch(e){}
+  var alpha = isDark ? 0.30 : 0.18;
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
 
 function _calFmtHour(h){
@@ -345,11 +385,21 @@ function _calOnEmptyClick(evt, dayStart){
 /* ── Toolbar handlers ── */
 function setCalView(v){
   if(v === _calView) return;
+  // Capture the previous view BEFORE assigning — the day/week branches
+  // below test whether we're entering that mode for the first time, and
+  // the test only works if we still know what we're transitioning from.
+  // (Earlier rev compared `_calView` against the value we'd just assigned
+  // to it, which was always equal — both branches were dead and the
+  // anchor never re-snapped, leaving Day view stranded on the week's
+  // Monday instead of today.)
+  var prev = _calView;
   _calView = v;
-  // When switching to day, anchor on today (or current day if anchor was a week)
-  if(v === 'day' && _calView !== 'day'){
-    _calAnchor = startOfDay(_calAnchor || Date.now());
-  } else if(v === 'week'){
+  if(v === 'day' && prev !== 'day'){
+    // Coming from week (Monday-anchored) or any non-day view → snap the
+    // anchor onto today's start so the user lands on today, not Monday.
+    _calAnchor = startOfDay(Date.now());
+  } else if(v === 'week' && prev !== 'week'){
+    // Coming from day → snap to that day's containing week start.
     _calAnchor = startOfWeek(_calAnchor || Date.now());
   }
   renderTimeCalendarPanel();
@@ -363,6 +413,12 @@ function calNav(dir){
   if(dir === 'prev')  _calAnchor -= step;
   if(dir === 'next')  _calAnchor += step;
   if(dir === 'today') _calAnchor = _calView === 'week' ? startOfWeek(Date.now()) : startOfDay(Date.now());
+  // If we've navigated past the live listener's 12-month window, fetch
+  // the missing older sessions so the calendar can render them. Silent
+  // no-op if we already have everything covered.
+  if(typeof _clockLoadOlderThan === 'function' && typeof _clockOldestLoaded === 'number'){
+    if(_calAnchor < _clockOldestLoaded) _clockLoadOlderThan(_calAnchor - 86400000);
+  }
   renderTimeCalendarPanel();
 }
 

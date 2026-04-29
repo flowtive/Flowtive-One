@@ -198,7 +198,7 @@ function buildActivityFeed(){
   var show=activityLog.slice(0, _activityShowCount);
   el.innerHTML='';
   show.forEach(function(entry){
-    var mem=MEMBERS.find(function(m){return m.name===entry.who;})||{name:entry.who,color:'#888'};
+    var mem=membersByName()[entry.who]||{name:entry.who,color:'#888'};
     var img=loadAvatar(mem.name);
     var avHtml=img
       ?'<img src="'+img+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover" alt="'+mem.name+'">'
@@ -293,8 +293,12 @@ function buildActivityFeed(){
 function buildWeeklyChart(){
   var ctx=document.getElementById('weekly-chart-canvas');
   if(!ctx) return;
-  if(charts.weekly){ charts.weekly.destroy(); }
-
+  // Lazy-load Chart.js. Once the load resolves the function re-runs
+  // and Chart is defined, so the gate falls through.
+  if(typeof Chart === 'undefined'){
+    ensureChartJs().then(buildWeeklyChart);
+    return;
+  }
   // Responsive height
   var isMobile = window.innerWidth < 640;
   var wrapEl = ctx.parentElement;
@@ -336,18 +340,27 @@ function buildWeeklyChart(){
     };
   });
 
-  charts.weekly=new Chart(ctx,{
-    type:'line',
-    data:{labels:labels,datasets:datasets},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11},padding:12,color:themeColor('--text-secondary','#6B7280')}},tooltip:{mode:'index',intersect:false}},
-      scales:{
-        y:{beginAtZero:true,grid:{color:themeColor('--border-default','#F3F4F6')},ticks:{color:themeColor('--text-tertiary','#9CA3AF'),font:{size:11},stepSize:1}},
-        x:{grid:{display:false},ticks:{color:themeColor('--text-secondary','#6B7280'),font:{size:10},maxRotation:30}}
+  // Reuse existing chart instance if present — `.update('none')` swaps in
+  // the new dataset without recreating GPU buffers or playing the entry
+  // animation. Saves real allocation cost on every Firebase tick.
+  if(charts.weekly){
+    charts.weekly.data.labels = labels;
+    charts.weekly.data.datasets = datasets;
+    charts.weekly.update('none');
+  } else {
+    charts.weekly=new Chart(ctx,{
+      type:'line',
+      data:{labels:labels,datasets:datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11},padding:12,color:themeColor('--text-secondary','#6B7280')}},tooltip:{mode:'index',intersect:false}},
+        scales:{
+          y:{beginAtZero:true,grid:{color:themeColor('--border-default','#F3F4F6')},ticks:{color:themeColor('--text-tertiary','#9CA3AF'),font:{size:11},stepSize:1}},
+          x:{grid:{display:false},ticks:{color:themeColor('--text-secondary','#6B7280'),font:{size:10},maxRotation:30}}
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 // Close search when clicking outside

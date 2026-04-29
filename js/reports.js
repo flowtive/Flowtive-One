@@ -62,7 +62,33 @@ function _repRangeLabel(){
    filtered by the active range + member/project/tag/description. Each
    entry: {kind, id, taskId?, user, start, end, durationMs, description,
           projectId, tags, ...}. Per-task entries have empty projectId/tags. */
+/* Cache + invalidator for _repCollectEntries. _repRenderView() calls
+   _repCollectEntries up to 4× per pass (Summary, Detailed, Weekly tabs
+   each independently call it; KPI row calls it; charts call it). Each
+   call walks all clockSessions + all task.timeEntries. The cache lets
+   the second-through-Nth call within a single render cycle reuse the
+   first call's result.
+   Invalidated by:
+     • Filter setters below (setRepRange, setRepFilterMember, etc.)
+     • Firebase listeners that change clockSessions or tasksData
+     • currentUser change (rare here — Reports filters work on names not
+       on the current user, but member filter could become invalid)
+   Cache key includes rangeOverride.start/end so callers passing a custom
+   slice (e.g. _repBuildKpis with a mini-range) get their own entry. */
+var _repCache = Object.create(null);
+function _repInvalidate(){ _repCache = Object.create(null); }
+function _repCacheKey(rangeOverride){
+  var r = rangeOverride || _repResolveRange();
+  return _repRange + '|' + (r.start||0) + '|' + (r.end||0)
+       + '|' + (_repCustomStart||0) + '|' + (_repCustomEnd||0)
+       + '|' + (_repFilterMember||'')
+       + '|' + (_repFilterProject||'')
+       + '|' + (_repFilterTag||'')
+       + '|' + (_repSearch||'');
+}
 function _repCollectEntries(rangeOverride){
+  var key = _repCacheKey(rangeOverride);
+  if(key in _repCache) return _repCache[key];
   var range = rangeOverride || _repResolveRange();
   var rows = [];
   var search = (_repSearch || '').toLowerCase().trim();
@@ -75,7 +101,7 @@ function _repCollectEntries(rangeOverride){
     rows.push({
       kind: 'global', id: id, user: s.user,
       start: s.start, end: s.end || null,
-      durationMs: s.durationMs || (s.end ? Math.max(0, s.end - s.start) : Math.max(0, Date.now() - s.start)),
+      durationMs: getLiveDurationMs(s),
       description: s.description || '',
       projectId: s.projectId || null,
       tags: Array.isArray(s.tags) ? s.tags : []
@@ -93,7 +119,7 @@ function _repCollectEntries(rangeOverride){
         rows.push({
           kind: 'task', id: eid, taskId: tid, user: e.user,
           start: e.start, end: e.end || null,
-          durationMs: e.durationMs || Math.max(0, end - e.start),
+          durationMs: getLiveDurationMs(e),
           description: t.title || '(Untitled task)',
           projectId: null, tags: []
         });
@@ -116,6 +142,7 @@ function _repCollectEntries(rangeOverride){
     return true;
   });
 
+  _repCache[key] = rows;
   return rows;
 }
 
@@ -133,7 +160,7 @@ function _repGroup(rows, by){
     var key, label, color;
     if(by === 'member'){
       key = r.user || '__none__';
-      var m = MEMBERS.find(function(x){ return x.name === r.user; });
+      var m = membersByName()[r.user];
       label = key === '__none__' ? 'Unknown' : key;
       color = m ? m.color : '#6B7280';
     } else if(by === 'project'){
@@ -218,6 +245,7 @@ function renderTimeReportsPanel(){
     srch.value = _repSearch;
     srch.addEventListener('input', function(){
       _repSearch = srch.value;
+      _repInvalidate(); // search query changed → cached rows are stale
       _repRenderView();
     });
   }
@@ -336,7 +364,7 @@ function _repRenderSummary(){
       + '<div class="rep-empty-icon">📊</div>'
       + '<div class="rep-empty-title">No entries match your filters</div>'
       + '<div class="rep-empty-sub">Try a wider date range, or clear filters with the button above.</div>'
-      + '<button type="button" class="rep-empty-cta" onclick="setRepRange(\'all\')">Show all time</button>'
+      + '<button type="button" class="rep-empty-cta" onclick="setRepRange(\'all_time\')">Show all time</button>'
       + '</div>';
   }
 
@@ -352,12 +380,19 @@ function _repRenderSummary(){
   }).join('');
 
   return _repKpiRow(kpis)
-    + '<div class="rep-card">'
+    + '<div class="rep-card" id="rep-chart-card">'
     +   '<div class="rep-card-head"><span class="rep-card-title">Hours by Day · Stacked by '+_repGroupByLabel()+'</span><span class="rep-card-sub">'+_repRangeLabel()+'</span></div>'
     +   '<div class="rep-chart-wrap"><canvas id="rep-chart-canvas"></canvas></div>'
     + '</div>'
     + '<div class="rep-card">'
-    +   '<div class="rep-card-head"><span class="rep-card-title">By '+_repGroupByLabel()+'</span><span class="rep-card-sub">'+groups.length+' '+(groups.length===1?'group':'groups')+'</span></div>'
+    +   '<div class="rep-card-head">'
+    +     '<span class="rep-card-title">By '+_repGroupByLabel()+'</span>'
+    +     '<span class="rep-card-sub">'+groups.length+' '+(groups.length===1?'group':'groups')+'</span>'
+    +     // Tooltip explaining the multi-bucket math when grouping by tag —
+    +     // entries with N tags contribute their full duration to each tag's
+    +     // total. So the sum across rows can exceed the grand total.
+    +     (_repGroupBy === 'tag' ? '<span class="rep-card-hint" title="Each entry counts toward every tag it has — sum across rows may exceed the grand total.">ⓘ multi-tag</span>' : '')
+    +   '</div>'
     +   '<table class="rep-table">'
     +     '<thead><tr><th>'+_repGroupByLabel()+'</th><th class="rep-cell-num">Entries</th><th class="rep-cell-num">Time</th><th></th></tr></thead>'
     +     '<tbody>'+tableRows+'</tbody>'
@@ -497,7 +532,7 @@ function _repRenderDetailed(){
       + '<div class="rep-empty-icon">📋</div>'
       + '<div class="rep-empty-title">No entries match your filters</div>'
       + '<div class="rep-empty-sub">Try a wider date range, or clear filters with the button above.</div>'
-      + '<button type="button" class="rep-empty-cta" onclick="setRepRange(\'all\')">Show all time</button>'
+      + '<button type="button" class="rep-empty-cta" onclick="setRepRange(\'all_time\')">Show all time</button>'
       + '</div>';
   }
 
@@ -508,7 +543,7 @@ function _repRenderDetailed(){
   }
 
   var tbody = rows.map(function(r){
-    var member = MEMBERS.find(function(m){ return m.name === r.user; });
+    var member = membersByName()[r.user];
     var memberColor = member ? member.color : '#6B7280';
     var projectChip = '';
     if(r.projectId && projectsData[r.projectId]){
@@ -664,11 +699,56 @@ function setRepRange(v){
     return;
   }
   _repRange = v;
+  _repInvalidate(); // range changed → cached rows are stale
+  // Some presets (All Time / This Year / Last Year) reach further back than
+  // the live listener's 12-month window. Trigger an on-demand fetch so the
+  // older entries appear in the report instead of being silently missing.
+  _repEnsureRangeLoaded(_repResolveRange().start);
   renderTimeReportsPanel();
 }
-function setRepFilterMember(v){ _repFilterMember = v; _repRenderView(); }
-function setRepFilterProject(v){ _repFilterProject = v; _repRenderView(); }
-function setRepFilterTag(v){ _repFilterTag = v; _repRenderView(); }
+
+/* Make sure clockSessions covers `targetStartMs`. Falls through silently
+   when already covered, when offline, or when the helper isn't available
+   (legacy load order). Re-renders whichever panel becomes ready. */
+function _repEnsureRangeLoaded(targetStartMs){
+  if(typeof _clockLoadOlderThan !== 'function') return;
+  if(typeof _clockOldestLoaded !== 'number' || targetStartMs >= _clockOldestLoaded) return;
+  // Render a small loading hint in the chart area while we fetch
+  var card = document.getElementById('rep-chart-card');
+  if(card && !card.querySelector('.rep-loading-hint')){
+    var hint = document.createElement('div');
+    hint.className = 'rep-loading-hint';
+    hint.textContent = 'Loading older entries…';
+    card.appendChild(hint);
+  }
+  // M6: race the fetch against a 10s timeout. If we're offline / Firebase
+  // is unreachable, _clockLoadOlderThan can resolve silently without any
+  // older data ever arriving — leaving the user staring at a near-empty
+  // report. Detect that case and show a non-blocking "couldn't load"
+  // message (still removable on the next range change).
+  var startBound = _clockOldestLoaded;
+  var settled = false;
+  _clockLoadOlderThan(targetStartMs).then(function(){
+    settled = true;
+    var h = document.querySelector('.rep-loading-hint');
+    if(h) h.remove();
+  });
+  setTimeout(function(){
+    if(settled) return;
+    // Still pending after 10s. If _clockOldestLoaded hasn't budged the
+    // load truly didn't progress — surface that to the user.
+    if(_clockOldestLoaded === startBound){
+      var h = document.querySelector('.rep-loading-hint');
+      if(h){
+        h.textContent = 'Couldn\'t load older entries — check your connection';
+        h.classList.add('rep-loading-hint-error');
+      }
+    }
+  }, 10000);
+}
+function setRepFilterMember(v){ _repFilterMember = v; _repInvalidate(); _repRenderView(); }
+function setRepFilterProject(v){ _repFilterProject = v; _repInvalidate(); _repRenderView(); }
+function setRepFilterTag(v){ _repFilterTag = v; _repInvalidate(); _repRenderView(); }
 function setRepGroupBy(v){ _repGroupBy = v; _repRenderView(); }
 function repToggleSort(key){
   if(_repSortKey === key) _repSortDir = (_repSortDir === 'asc' ? 'desc' : 'asc');
@@ -725,7 +805,9 @@ function _repOpenCustomRangeDialog(){
     _repCustomStart = fMs;
     _repCustomEnd   = tMs;
     _repRange = 'custom';
+    _repInvalidate(); // custom range changed → cached rows are stale
     cleanup();
+    _repEnsureRangeLoaded(fMs);
     renderTimeReportsPanel();
   };
   bd.onclick = function(e){ if(e.target === bd) cleanup(); };
