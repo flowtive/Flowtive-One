@@ -295,27 +295,9 @@ function _ttSumMs(rows){
    consistent with the entry log below them. (F2 — was: "totals say
    4h, log says 5h" bug. Now also: scope toggle makes totals follow
    what the user is looking at.) */
-/* Memoized within a single render pass. renderTimeTrackerPanel calls
-   _ttSumForRange 2-3× per render (Today, This Week, sometimes a filtered
-   range), and each call walks ALL clockSessions + ALL tasks×entries —
-   on a busy team that's hundreds of iterations × 3. The cache lets the
-   second and third call hit a precomputed answer.
-   Invalidated whenever data changes (Firebase listener → time_sessions
-   or tasks update) or when scope toggles. Skipped entirely while a
-   running session exists for the current user — that value moves every
-   tick, can't be cached. */
-var _ttSumCache = Object.create(null);
-function _ttInvalidateSumCache(){ _ttSumCache = Object.create(null); }
 function _ttSumForRange(rangeStart, rangeEnd){
   if(!currentUser) return 0;
   var name = currentUser.name;
-  // Live counter mode: any running session means the value is changing
-  // every second. Skip the cache entirely so the live tick stays honest.
-  var hasRunning = !!(clockActive && clockActive[name]);
-  if(!hasRunning){
-    var key = _ttScope + '|' + rangeStart + '|' + rangeEnd;
-    if(key in _ttSumCache) return _ttSumCache[key];
-  }
   var meOnly = (_ttScope === 'me');
   var sum = 0;
   // Global sessions
@@ -341,9 +323,6 @@ function _ttSumForRange(rangeStart, rangeEnd){
         sum += getLiveDurationMs(e);
       });
     });
-  }
-  if(!hasRunning){
-    _ttSumCache[_ttScope + '|' + rangeStart + '|' + rangeEnd] = sum;
   }
   return sum;
 }
@@ -889,8 +868,6 @@ function setTimeScope(s){
   if(s !== 'me' && s !== 'all') return;
   if(s === _ttScope) return;
   _ttScope = s;
-  // Cached totals are keyed on _ttScope — old entries are now stale.
-  _ttInvalidateSumCache();
   try{ localStorage.setItem('flowtive_tt_scope', s); }catch(e){}
   // Switching scope can hide selected entries (e.g. me → all is fine,
   // but selection should still be valid). Clear to be safe + simple.
@@ -966,7 +943,7 @@ function renderTimeRow(r){
   // entirely in "Only Me" scope (a column of self-portraits adds nothing).
   var userCell = '';
   if(_ttScope === 'all' && r.user){
-    var m = membersByName()[r.user] || null;
+    var m = (typeof MEMBERS !== 'undefined') ? MEMBERS.find(function(x){ return x.name === r.user; }) : null;
     var color = m ? m.color : '#6B7280';
     var img = (typeof loadAvatar === 'function') ? loadAvatar(r.user) : null;
     var inner = img

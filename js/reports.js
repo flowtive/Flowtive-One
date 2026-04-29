@@ -62,33 +62,7 @@ function _repRangeLabel(){
    filtered by the active range + member/project/tag/description. Each
    entry: {kind, id, taskId?, user, start, end, durationMs, description,
           projectId, tags, ...}. Per-task entries have empty projectId/tags. */
-/* Cache + invalidator for _repCollectEntries. _repRenderView() calls
-   _repCollectEntries up to 4× per pass (Summary, Detailed, Weekly tabs
-   each independently call it; KPI row calls it; charts call it). Each
-   call walks all clockSessions + all task.timeEntries. The cache lets
-   the second-through-Nth call within a single render cycle reuse the
-   first call's result.
-   Invalidated by:
-     • Filter setters below (setRepRange, setRepFilterMember, etc.)
-     • Firebase listeners that change clockSessions or tasksData
-     • currentUser change (rare here — Reports filters work on names not
-       on the current user, but member filter could become invalid)
-   Cache key includes rangeOverride.start/end so callers passing a custom
-   slice (e.g. _repBuildKpis with a mini-range) get their own entry. */
-var _repCache = Object.create(null);
-function _repInvalidate(){ _repCache = Object.create(null); }
-function _repCacheKey(rangeOverride){
-  var r = rangeOverride || _repResolveRange();
-  return _repRange + '|' + (r.start||0) + '|' + (r.end||0)
-       + '|' + (_repCustomStart||0) + '|' + (_repCustomEnd||0)
-       + '|' + (_repFilterMember||'')
-       + '|' + (_repFilterProject||'')
-       + '|' + (_repFilterTag||'')
-       + '|' + (_repSearch||'');
-}
 function _repCollectEntries(rangeOverride){
-  var key = _repCacheKey(rangeOverride);
-  if(key in _repCache) return _repCache[key];
   var range = rangeOverride || _repResolveRange();
   var rows = [];
   var search = (_repSearch || '').toLowerCase().trim();
@@ -142,7 +116,6 @@ function _repCollectEntries(rangeOverride){
     return true;
   });
 
-  _repCache[key] = rows;
   return rows;
 }
 
@@ -160,7 +133,7 @@ function _repGroup(rows, by){
     var key, label, color;
     if(by === 'member'){
       key = r.user || '__none__';
-      var m = membersByName()[r.user];
+      var m = MEMBERS.find(function(x){ return x.name === r.user; });
       label = key === '__none__' ? 'Unknown' : key;
       color = m ? m.color : '#6B7280';
     } else if(by === 'project'){
@@ -245,7 +218,6 @@ function renderTimeReportsPanel(){
     srch.value = _repSearch;
     srch.addEventListener('input', function(){
       _repSearch = srch.value;
-      _repInvalidate(); // search query changed → cached rows are stale
       _repRenderView();
     });
   }
@@ -543,7 +515,7 @@ function _repRenderDetailed(){
   }
 
   var tbody = rows.map(function(r){
-    var member = membersByName()[r.user];
+    var member = MEMBERS.find(function(m){ return m.name === r.user; });
     var memberColor = member ? member.color : '#6B7280';
     var projectChip = '';
     if(r.projectId && projectsData[r.projectId]){
@@ -699,7 +671,6 @@ function setRepRange(v){
     return;
   }
   _repRange = v;
-  _repInvalidate(); // range changed → cached rows are stale
   // Some presets (All Time / This Year / Last Year) reach further back than
   // the live listener's 12-month window. Trigger an on-demand fetch so the
   // older entries appear in the report instead of being silently missing.
@@ -746,9 +717,9 @@ function _repEnsureRangeLoaded(targetStartMs){
     }
   }, 10000);
 }
-function setRepFilterMember(v){ _repFilterMember = v; _repInvalidate(); _repRenderView(); }
-function setRepFilterProject(v){ _repFilterProject = v; _repInvalidate(); _repRenderView(); }
-function setRepFilterTag(v){ _repFilterTag = v; _repInvalidate(); _repRenderView(); }
+function setRepFilterMember(v){ _repFilterMember = v; _repRenderView(); }
+function setRepFilterProject(v){ _repFilterProject = v; _repRenderView(); }
+function setRepFilterTag(v){ _repFilterTag = v; _repRenderView(); }
 function setRepGroupBy(v){ _repGroupBy = v; _repRenderView(); }
 function repToggleSort(key){
   if(_repSortKey === key) _repSortDir = (_repSortDir === 'asc' ? 'desc' : 'asc');
@@ -805,7 +776,6 @@ function _repOpenCustomRangeDialog(){
     _repCustomStart = fMs;
     _repCustomEnd   = tMs;
     _repRange = 'custom';
-    _repInvalidate(); // custom range changed → cached rows are stale
     cleanup();
     _repEnsureRangeLoaded(fMs);
     renderTimeReportsPanel();

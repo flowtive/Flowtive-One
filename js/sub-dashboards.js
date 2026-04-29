@@ -241,15 +241,8 @@ function renderTimeDashboardPanel(){
 
 function _renderTimeWeekChart(){
   var ctx = document.getElementById('time-week-chart-canvas');
-  if(!ctx) return;
-  // Lazy-load Chart.js — sub-dashboards is itself lazy-loaded, but Chart.js
-  // is shared across all chart-using panels and may already be on the page
-  // (e.g. if the user landed on the main dashboard first). ensureChartJs
-  // dedupes via promise cache.
-  if(typeof Chart === 'undefined'){
-    ensureChartJs().then(_renderTimeWeekChart);
-    return;
-  }
+  if(!ctx || typeof Chart === 'undefined') return;
+  if(charts.timeWeek){ charts.timeWeek.destroy(); }
   var labels = [];
   var dayStarts = [];
   var weekStart = startOfWeek(Date.now());
@@ -277,29 +270,21 @@ function _renderTimeWeekChart(){
       maxBarThickness: 28
     };
   });
-  // Reuse instance if present — `.update('none')` swaps data without
-  // GPU buffer reallocation or replaying entry animations.
-  if(charts.timeWeek){
-    charts.timeWeek.data.labels = labels;
-    charts.timeWeek.data.datasets = datasets;
-    charts.timeWeek.update('none');
-  } else {
-    charts.timeWeek = new Chart(ctx,{
-      type:'bar',
-      data:{ labels: labels, datasets: datasets },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
-          tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
-        },
-        scales:{
-          x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
-          y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
-        }
+  charts.timeWeek = new Chart(ctx,{
+    type:'bar',
+    data:{ labels: labels, datasets: datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
+        tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
+      },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
+        y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
       }
-    });
-  }
+    }
+  });
 }
 
 function renderTopTasksList(rows){
@@ -325,7 +310,7 @@ function renderTimeMemberBreakdown(perMember){
   }
   var maxMs = entries[0].ms || 1;
   return '<div class="td-tasks-list">' + entries.map(function(r){
-    var m = membersByName()[r.name] || {color:'#6B7280'};
+    var m = MEMBERS.find(function(x){return x.name===r.name;}) || {color:'#6B7280'};
     var img = (typeof loadAvatar==='function') ? loadAvatar(r.name) : null;
     var avInner = img ? '<img src="'+img+'" alt="'+escapeHtml(r.name)+'">' : escapeHtml(r.name.substring(0,2).toUpperCase());
     var avBg = img ? 'transparent' : m.color;

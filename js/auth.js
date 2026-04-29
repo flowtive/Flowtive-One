@@ -31,10 +31,6 @@ function doLogin(){
   }
 
   currentUser = account;
-  // Filter caches that pivot on currentUser ('mine' for tasks, member-only
-  // for tracker totals) need to forget the previous user's view.
-  if(typeof _gftInvalidate === 'function') _gftInvalidate();
-  if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
   var _isFirst = isFirstLogin();
   localStorage.setItem('flowtive_user', JSON.stringify(account));
   // Hint to Chrome's password manager to save credentials
@@ -81,14 +77,6 @@ function doLogout(){
   localStorage.removeItem('flowtive_user');
   currentUser = null;
   appInitialized = false;
-  // Memoization caches that pivot on currentUser ('mine' filter for tasks,
-  // member-only sums for tracker totals, member-filtered reports). Login
-  // (line 36) resets them on user-set; logout resets them on user-clear so
-  // there's no stale cached result from the previous user lingering between
-  // logout and next login.
-  if(typeof _gftInvalidate === 'function') _gftInvalidate();
-  if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
-  if(typeof _repInvalidate === 'function') _repInvalidate();
   doneData = {};
   // Fix 8: Also clear statusData, notesData, claimsData and activityLog on logout
   statusData = {};
@@ -108,7 +96,7 @@ function showApp(){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.remove('app-hidden');
 
-  var m = membersByName()[currentUser.name];
+  var m = MEMBERS.find(function(m){ return m.name === currentUser.name; });
   var color = m ? m.color : '#406093';
   var _pillImg1 = loadAvatar(currentUser.name);
   var _pillEl1 = document.getElementById('user-pill-av');

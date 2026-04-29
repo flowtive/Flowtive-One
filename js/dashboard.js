@@ -130,30 +130,16 @@ function buildTerritoryDashboard(){
     lbEl.appendChild(row);
   });
 
-  // Donut — gate on Chart.js loading (lazy-loaded via ensureChartJs).
-  // Data is computed up front so the .then closure captures fresh values
-  // when the load resolves. Non-chart sections of buildDashboard render
-  // synchronously; charts paint when Chart.js arrives (~200KB CDN fetch
-  // on cold load, instant on warm).
+  // Donut
   var ctx1=document.getElementById('donut-chart');
-  var donutData = MEMBERS.map(function(m,i){return Math.max(countTotalCitiesForMember(i),0);});
-  var donutBorderColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim()||'#fff';
-  ensureChartJs().then(function(){
-    if(!ctx1 || !document.body.contains(ctx1)) return;
-    if(charts.donut){
-      charts.donut.data.datasets[0].data = donutData;
-      charts.donut.data.datasets[0].borderColor = donutBorderColor;
-      charts.donut.update('none');
-    } else {
-      charts.donut=new Chart(ctx1,{
-        type:'doughnut',
-        data:{
-          labels:MEMBERS.map(function(m){return m.name;}),
-          datasets:[{data:donutData,backgroundColor:MEMBERS.map(function(m){return m.color;}),borderWidth:2,borderColor:donutBorderColor}]
-        },
-        options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.label+': '+c.parsed+' cities';}}}}}
-      });
-    }
+  if(charts.donut){charts.donut.destroy();}
+  charts.donut=new Chart(ctx1,{
+    type:'doughnut',
+    data:{
+      labels:MEMBERS.map(function(m){return m.name;}),
+      datasets:[{data:MEMBERS.map(function(m,i){return Math.max(countTotalCitiesForMember(i),0);}),backgroundColor:MEMBERS.map(function(m){return m.color;}),borderWidth:2,borderColor:getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim()||'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.label+': '+c.parsed+' cities';}}}}}
   });
   var legEl=document.getElementById('donut-legend');
   legEl.innerHTML='';
@@ -183,39 +169,26 @@ function buildTerritoryDashboard(){
     legEl.appendChild(item);
   });
 
-  // Bar chart — same lazy-load gate as the donut. The mobile/desktop
-  // toggle changes `indexAxis`, which Chart.js doesn't pick up via
-  // `.update()`. So we destroy+recreate ONLY when the orientation crosses
-  // the breakpoint; otherwise just swap data.
+  // Bar chart — horizontal on mobile for readability
   var ctx2=document.getElementById('bar-chart-canvas');
+  if(charts.bar){charts.bar.destroy();}
   var isMobile = window.innerWidth < 640;
-  var barData = MEMBERS.map(function(m,i){return countTotalCitiesForMember(i);});
-  ensureChartJs().then(function(){
-    if(!ctx2 || !document.body.contains(ctx2)) return;
-    var orientationChanged = charts.bar && (charts.bar.options.indexAxis === 'y') !== isMobile;
-    if(charts.bar && orientationChanged){ charts.bar.destroy(); charts.bar = null; }
-    if(charts.bar){
-      charts.bar.data.datasets[0].data = barData;
-      charts.bar.update('none');
-    } else {
-      charts.bar=new Chart(ctx2,{
-        type:'bar',
-        data:{
-          labels:MEMBERS.map(function(m){return m.name;}),
-          datasets:[{label:'Cities covered',data:barData,backgroundColor:MEMBERS.map(function(m){return m.color+'CC';}),borderColor:MEMBERS.map(function(m){return m.color;}),borderWidth:1,borderRadius:6}]
-        },
-        options:{
-          indexAxis: isMobile ? 'y' : 'x',
-          responsive:true,maintainAspectRatio:false,
-          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return (isMobile?c.parsed.x:c.parsed.y)+' cities covered';}}}},
-          scales:{
-            y:{beginAtZero:true,grid:{color: isMobile?themeColor('--border-default','#F3F4F6'):'transparent'},ticks:{color:themeColor('--text-secondary','#6B7280'),font:{size: isMobile?11:12,weight:'500'}}},
-            x:{beginAtZero:true,grid:{color: isMobile?'transparent':themeColor('--border-default','#F3F4F6')},ticks:{color:themeColor('--text-tertiary','#9CA3AF'),font:{size:11}},display:!isMobile}
-          }
-        }
-      });
+  charts.bar=new Chart(ctx2,{
+    type: isMobile ? 'bar' : 'bar',
+    data:{
+      labels:MEMBERS.map(function(m){return m.name;}),
+      datasets:[{label:'Cities covered',data:MEMBERS.map(function(m,i){return countTotalCitiesForMember(i);}),backgroundColor:MEMBERS.map(function(m){return m.color+'CC';}),borderColor:MEMBERS.map(function(m){return m.color;}),borderWidth:1,borderRadius:6}]
+    },
+    options:{
+      indexAxis: isMobile ? 'y' : 'x',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return (isMobile?c.parsed.x:c.parsed.y)+' cities covered';}}}},
+      scales:{
+        y:{beginAtZero:true,grid:{color: isMobile?themeColor('--border-default','#F3F4F6'):'transparent'},ticks:{color:themeColor('--text-secondary','#6B7280'),font:{size: isMobile?11:12,weight:'500'}}},
+        x:{beginAtZero:true,grid:{color: isMobile?'transparent':themeColor('--border-default','#F3F4F6')},ticks:{color:themeColor('--text-tertiary','#9CA3AF'),font:{size:11}},display:!isMobile}
+      }
     }
-  }); // end ensureChartJs().then for bar chart
+  });
 
   // Industry progress
   var indEl=document.getElementById('ind-progress-grid');

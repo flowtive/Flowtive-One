@@ -12,69 +12,8 @@ var TEAM_PASSWORD = '!FlowtiveOne2026#';
      2.x.0 — minor (new features, no breaking changes)
      x.0.0 — major (significant redesign / breaking workflow changes)
    The changelog below renders in the "What's New" modal — newest first. */
-var APP_VERSION = '2.27.2';
+var APP_VERSION = '2.24.1';
 var APP_CHANGELOG = [
-  {
-    version: '2.27.2',
-    date:    '2026-04-30',
-    title:   'Hotfix — email listener ReferenceError',
-    notes:   'The Firebase listener for `flowtive_email_templates` lived in firebase.js (eager) but referenced globals from emails.js (lazy-loaded after Tier 2). At app boot, before Cold Pitch was ever opened, the listener\'s first-fire callback threw `ReferenceError: emailOverrides is not defined`, causing repeated console errors. Moved the listener into emails.js so it subscribes only when Cold Pitch is first opened.',
-    changes: [
-      {type:'fix', text:'Moved the `flowtive_email_templates` Firebase listener from `subscribeRealtime` (firebase.js) into `subscribeEmailTemplates()` (emails.js), called the first time `openEmailLibrary` runs. Cross-user sync of email edits still works — it just kicks in when the user opens Cold Pitch instead of at app boot. Eliminates the ReferenceError that fired on every page load post-Tier 2.'},
-      {type:'improvement', text:'Listener subscription is idempotent via the existing `_emailListener` guard, so re-opening Cold Pitch doesn\'t stack listeners.'}
-    ]
-  },
-  {
-    version: '2.27.1',
-    date:    '2026-04-30',
-    title:   'Hotfix — Workflow Dashboard + Chart.js eager load',
-    notes:   'Two regressions surfaced by the v2.25–v2.27 performance pass: the Workflow Dashboard rendered empty because its sidebar `onActivate` wasn\'t wrapped in `loadModule()` after `sub-dashboards.js` became lazy-loaded, and the Workspace Dashboard charts didn\'t paint because the dynamic `<script>` injection for Chart.js had a timing issue. Both fixed.',
-    changes: [
-      {type:'fix', text:'Workflow Dashboard sidebar item now loads `js/sub-dashboards.js` before calling `renderTasksDashboardPanel`. Was missed in Tier 2.3 — Logbook Dashboard was wrapped (it\'s in the same module) but the Workflow Dashboard entry wasn\'t. The `typeof === \'function\'` guard silently no-op\'d, leaving the panel empty after the title bar.'},
-      {type:'fix', text:'Chart.js back to eager-loading via `<script defer>`. The Tier 2 lazy-load via dynamic `<script>` injection had a timing edge case where the `.then()` chain in `buildWeeklyChart` and `renderHoursThisWeek` didn\'t reliably fire across all browsers, leaving the Workspace Dashboard charts blank. Eager-loading restores the synchronous code path; the gates inside chart functions are now defensive no-ops.'},
-      {type:'improvement', text:'Tier 2 lazy-loading still saves ~370 KB of panel-specific JS (`calendar-view`, `timesheet`, `reports`, `sub-dashboards`, `emails`) from the initial bundle — those modules load on first activation as designed. Only Chart.js was reverted to eager.'}
-    ]
-  },
-  {
-    version: '2.27.0',
-    date:    '2026-04-30',
-    title:   'Performance pass — Tier 3: render memoization + tick throttle',
-    notes:   'Final tier of the performance program. Reports tab cycling, Tasks filter clicks, and the per-second clock tick all do less work for the same visible result. Closes out the three-tier program with no behavior changes — just less wasted CPU.',
-    changes: [
-      {type:'improvement', text:'`tickClockUI` runs every second but the topbar "Stop Work · Xh Ym" label only changes at minute boundaries (fmtElapsed floors to minutes for ≥1 minute durations). The label update + `querySelectorAll(\'.clock-btn .clock-btn-label-text\')` now skip 59 out of 60 ticks — invisible from a user perspective, real CPU savings idle on the dashboard.'},
-      {type:'improvement', text:'`getFilteredTasks` now memoizes its result with a dirty flag. The Tasks panel calls it 4-5× per render (toolbar count, list head count, list body, count badges) and each call walked Object.values(tasksData) plus 1-2 filter passes. Now the second-through-Nth call within a render returns the cached array. Invalidated by Firebase updates, filter / sort / search changes, and login.'},
-      {type:'improvement', text:'`_repCollectEntries` (Reports) now memoizes by filter state. Switching between Summary / Detailed / Weekly tabs of Reports — which previously re-walked all clockSessions + all task.timeEntries 4× — now hits a cache. Filter changes, range changes, search changes invalidate. Firebase data changes invalidate.'},
-      {type:'improvement', text:'`tickTimesheetPanel` moved into the minute-boundary block of `tickClockUI` (it was being called every second but only updates totals on minute changes anyway).'}
-    ]
-  },
-  {
-    version: '2.26.0',
-    date:    '2026-04-30',
-    title:   'Performance pass — Tier 2: lazy-loaded panels',
-    notes:   'Five panel-specific JS modules and Chart.js itself now load on-demand instead of on page boot. Users who never open Reports, Calendar, Timesheet, Logbook Dashboard, or Cold Pitch never download those modules at all. Initial JS payload drops by ~370 KB plus the ~200 KB Chart.js bundle. First Contentful Paint should improve noticeably on slower connections.',
-    changes: [
-      {type:'new', text:'New `loadModule(src)` helper in util.js — lazy-injects a script tag and returns a Promise that resolves on `onload`. Caches the Promise (not a boolean) so concurrent callers requesting the same script dedupe to one network request. New `ensureChartJs()` gate uses it to lazy-load Chart.js the first time a chart needs to render.'},
-      {type:'improvement', text:'Removed from initial-load bundle (now lazy-loaded on first activation): `js/calendar-view.js` (~20K), `js/timesheet.js` (~16K), `js/reports.js` (~40K), `js/sub-dashboards.js` (~16K), `js/emails.js` (~76K). ~370 KB total off the critical path.'},
-      {type:'improvement', text:'Chart.js (~200 KB CDN) is no longer in the eager `<script>` tag list. It loads when the first chart paints — for the main dashboard that\'s essentially immediately, but for users who never open chart-bearing panels (just the Tracker, for instance), it never loads at all.'},
-      {type:'improvement', text:'Sidebar `onActivate` handlers wrap their renderXPanel call in `loadModule(...).then(...)`. Existing `typeof renderXPanel === \'function\'` guards in the Firebase listener cascade already handle the "module not loaded yet" case — scheduled renders simply no-op until the module arrives.'},
-      {type:'improvement', text:'Cold Pitch is now lazy-loaded too — `js/emails.js` (~76 KB) downloads only when the user clicks the sidebar item. Inline `onclick` handlers in the Cold Pitch HTML modals are safe because those modals only become reachable after `openEmailLibrary` runs (which is now gated on the module load).'}
-    ]
-  },
-  {
-    version: '2.25.0',
-    date:    '2026-04-30',
-    title:   'Performance pass — Tier 1: faster initial load + render refinements',
-    notes:   'First wave of a three-tier performance program. Initial paint is faster (parallelized Firebase reads, stale-while-revalidate from localStorage, network preconnect, deferred script parsing). Runtime is smoother (charts reuse instances instead of destroy+recreate, member lookups are O(1), Tracker totals memoize, listener-fired renders coalesce through rAF). No behavior changes — same UI, same data, just less work to get there.',
-    changes: [
-      {type:'improvement', text:'All app `<script>` tags are now `defer` — HTML parsing no longer blocks on JS download or evaluation. Combined with `<link rel="preconnect">` hints to the Chart.js CDN, Firebase SDK, and Firebase RTDB, the network sockets warm up in parallel with parsing.'},
-      {type:'improvement', text:'Initial Firebase reads now run in parallel where possible. The redundant `.once()` reads for progress / status / notes / email_templates were removed entirely — those paths are subscribed via realtime listeners whose first callback delivers the same data. Avatars stay as a one-shot because they cache to per-user localStorage. Net: 5×RTT collapsed to ~1×RTT on first paint.'},
-      {type:'improvement', text:'Stale-while-revalidate first paint. The dashboard now hydrates from localStorage caches synchronously before any network call, so users see populated KPIs / sidebar / tasks in <100ms even on slow connections. Firebase listeners then patch in fresh data via the existing `patchUIFromData` (which only touches changed nodes — no flicker, no full rebuild).'},
-      {type:'improvement', text:'Member lookups (`MEMBERS.find(m => m.name === x)`) replaced with an O(1) `membersByName()` map across 17 callsites in render hot paths — entry log, reports, calendar, activity feed, dashboard, sidebar. Was O(N) per row × N rows; now O(1) per row. Static config never changes so the map never invalidates.'},
-      {type:'improvement', text:'Charts (`charts.weekly`, `charts.hoursWeek`, `charts.timeWeek`, `charts.donut`, `charts.bar`) now reuse instances via `.update(\'none\')` instead of `.destroy() + new Chart()` on every Firebase tick. Saves GPU buffer reallocation and skips the entry-animation replay. The mobile/desktop bar-chart orientation flip still uses destroy+recreate (Chart.js can\'t pick that up via update) but only on actual orientation changes, not every tick.'},
-      {type:'improvement', text:'`flowtive_time_active` listener no longer fires three synchronous renders before its scheduled ones — every render now flows through `scheduleRender` (rAF-batched per key), so back-to-back updates (someone starting + immediately stopping a session) collapse to one paint instead of stacking.'},
-      {type:'improvement', text:'`_ttSumForRange` memoizes results within a single render pass. The Tracker panel calls it 2-3× per render (Today, This Week, sometimes a custom range) — each call walked all sessions + all task entries. Now the second and third calls hit a cache. Skipped while the user has a running timer (live counter must stay honest). Invalidated on every Firebase update.'}
-    ]
-  },
   {
     version: '2.24.1',
     date:    '2026-04-30',

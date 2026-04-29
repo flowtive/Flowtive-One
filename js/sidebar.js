@@ -54,11 +54,7 @@ function buildSidebar(){
     items: [
       { id:'sid-tasks-dashboard', label:'Dashboard', panelId:'panel-tasks-dashboard',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V8M7 12V4M12 12V6"/></svg>',
-        // sub-dashboards.js is lazy-loaded — both Logbook Dashboard AND
-        // Workflow Dashboard live in that module. Need to load it before
-        // calling renderTasksDashboardPanel, otherwise the typeof guard
-        // silently no-ops and the panel renders empty.
-        onActivate:function(){ loadModule('js/sub-dashboards.js').then(function(){ if(typeof renderTasksDashboardPanel==='function') renderTasksDashboardPanel(); }); } },
+        onActivate:function(){ if(typeof renderTasksDashboardPanel==='function') renderTasksDashboardPanel(); } },
       { id:'sid-tasks',           label:'Board',     panelId:'panel-tasks',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5l1 1 1.5-1.5"/><path d="M6.5 4h5.5"/><path d="M2 7l1 1 1.5-1.5"/><path d="M6.5 7.5h5.5"/><path d="M2 10.5l1 1 1.5-1.5"/><path d="M6.5 11h5.5"/></svg>',
         onActivate:function(){ if(typeof renderTasksPanel==='function') renderTasksPanel(); } }
@@ -77,18 +73,16 @@ function buildSidebar(){
         onActivate:function(){ if(typeof renderTimeTrackerPanel==='function') renderTimeTrackerPanel(); } },
       { id:'sid-time-calendar',  label:'Calendar',     panelId:'panel-time-calendar',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="9.5" rx="1"/><path d="M1.5 5.5h11"/><path d="M4 1.5v3M10 1.5v3"/></svg>',
-        // Lazy-load the panel module on first activation. loadModule's
-        // promise cache dedupes — second activation is instant.
-        onActivate:function(){ loadModule('js/calendar-view.js').then(function(){ if(typeof renderTimeCalendarPanel==='function') renderTimeCalendarPanel(); }); } },
+        onActivate:function(){ if(typeof renderTimeCalendarPanel==='function') renderTimeCalendarPanel(); } },
       { id:'sid-time-dashboard', label:'Dashboard',    panelId:'panel-time-dashboard',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="0.8"/><rect x="8" y="1.5" width="4.5" height="4.5" rx="0.8"/><rect x="1.5" y="8" width="4.5" height="4.5" rx="0.8"/><rect x="8" y="8" width="4.5" height="4.5" rx="0.8"/></svg>',
-        onActivate:function(){ loadModule('js/sub-dashboards.js').then(function(){ if(typeof renderTimeDashboardPanel==='function') renderTimeDashboardPanel(); }); } },
+        onActivate:function(){ if(typeof renderTimeDashboardPanel==='function') renderTimeDashboardPanel(); } },
       { id:'sid-time-timesheet', label:'Timesheet',    panelId:'panel-time-timesheet',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="11" height="11" rx="1"/><path d="M1.5 5.5h11M1.5 9.5h11M5 1.5v11M9 1.5v11"/></svg>',
-        onActivate:function(){ loadModule('js/timesheet.js').then(function(){ if(typeof renderTimeTimesheetPanel==='function') renderTimeTimesheetPanel(); }); } },
+        onActivate:function(){ if(typeof renderTimeTimesheetPanel==='function') renderTimeTimesheetPanel(); } },
       { id:'sid-time-reports',   label:'Reports',      panelId:'panel-time-reports',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1.5" width="10" height="11" rx="1"/><path d="M5 9.5v-2M7 9.5v-4M9 9.5v-3"/></svg>',
-        onActivate:function(){ loadModule('js/reports.js').then(function(){ if(typeof renderTimeReportsPanel==='function') renderTimeReportsPanel(); }); } },
+        onActivate:function(){ if(typeof renderTimeReportsPanel==='function') renderTimeReportsPanel(); } },
       { id:'sid-time-projects',  label:'Projects',     panelId:'panel-time-projects',
         icon:'<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4a1 1 0 0 1 1-1h3l1.5 1.5h5.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1V4z"/></svg>',
         onActivate:function(){ if(typeof renderProjectsPanel==='function') renderProjectsPanel(); } },
@@ -109,14 +103,7 @@ function buildSidebar(){
   emailItem.id='sid-email-templates';
   emailItem.innerHTML=
     '<div class="sid-icon"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="8" rx="1"/><path d="M2 4l5 4 5-4"/></svg></div>Flowtive Cold Pitch';
-  // Cold Pitch is lazy-loaded — emails.js (~76KB) only loads when the user
-  // actually clicks. loadModule's promise cache means subsequent clicks
-  // skip the network entirely.
-  emailItem.onclick=function(){
-    loadModule('js/emails.js').then(function(){
-      if(typeof openEmailLibrary === 'function') openEmailLibrary();
-    });
-  };
+  emailItem.onclick=function(){ openEmailLibrary(); };
   sb.appendChild(emailItem);
 
   // Flowtive Territory — Dashboard sub-item (state-coverage analytics) +

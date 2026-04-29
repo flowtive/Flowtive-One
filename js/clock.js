@@ -77,13 +77,12 @@ function subscribeClock(){
   firebaseDb.ref('flowtive_time_active').on('value', function(snap){
     clockActive = snap.val() || {};
     autoCloseStaleOwnSession();
-    // Coalesce ALL renders through scheduleRender so back-to-back updates
-    // (e.g. someone starts then immediately stops) stack into a single
-    // rAF-batched render. Was previously firing three sync renders here
-    // BEFORE the scheduled ones, which doubled work on each tick.
-    scheduleRender('clock-button',     renderClockButton);
-    scheduleRender('otc-card',         renderOnTheClockCard);
-    scheduleRender('sid-clock-badges', renderSidebarClockBadges);
+    // These three are cheap and safe to run synchronously
+    renderClockButton();
+    renderOnTheClockCard();
+    renderSidebarClockBadges();
+    // Heavier panel rebuilds — coalesce per key so back-to-back FB updates
+    // don't stack into multiple full renders in the same frame.
     scheduleRender('panel-time', function(){
       var tt = document.getElementById('panel-time');
       if(tt && tt.classList.contains('active') && typeof renderTimeTrackerPanel === 'function') renderTimeTrackerPanel();
@@ -110,11 +109,6 @@ function subscribeClock(){
       _clockFreshKeys[k] = true;
       clockSessions[k] = fresh[k];
     });
-    // Invalidate the Tracker totals cache — the data underneath it just
-    // changed, any cached sum is now stale. Same for the Reports collect
-    // cache (rows pulled from clockSessions); the next render rebuilds.
-    if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
-    if(typeof _repInvalidate === 'function') _repInvalidate();
     // Coalesce panel rebuilds via scheduleRender (rAF-batched, per key)
     scheduleRender('panel-dashboard', function(){
       var wd = document.getElementById('panel-dashboard');
@@ -390,7 +384,7 @@ function renderOnTheClockCard(){
   // Sort by start asc (longest-running first)
   entries.sort(function(a,b){ return a.start - b.start; });
   list.innerHTML = entries.map(function(a){
-    var m = membersByName()[a.user] || {name:a.user, color:'#6B7280'};
+    var m = MEMBERS.find(function(x){return x.name===a.user;}) || {name:a.user, color:'#6B7280'};
     var img = (typeof loadAvatar==='function') ? loadAvatar(m.name) : null;
     var avInner = img
       ? '<img src="'+img+'" alt="'+escapeHtml(m.name)+'">'
@@ -407,14 +401,8 @@ function renderOnTheClockCard(){
 function renderHoursThisWeek(){
   var ctx = document.getElementById('hours-week-chart-canvas');
   if(!ctx) return;
-  // Lazy-load Chart.js if not already on the page. ensureChartJs resolves
-  // immediately once Chart is loaded; the wrapped recall below is a no-op
-  // on the second pass. Keeps Chart.js (~200 KB) off the initial-load
-  // critical path for users who never open the dashboard.
-  if(typeof Chart === 'undefined'){
-    ensureChartJs().then(renderHoursThisWeek);
-    return;
-  }
+  if(charts.hoursWeek){ charts.hoursWeek.destroy(); }
+
   // Build last 7 day labels (oldest first)
   var labels=[];
   var dayStarts=[];
@@ -448,67 +436,51 @@ function renderHoursThisWeek(){
       maxBarThickness: 28
     };
   });
-  // Reuse instance if present — `.update('none')` swaps data without
-  // recreating GPU buffers or replaying the entry animation.
-  if(charts.hoursWeek){
-    charts.hoursWeek.data.labels = labels;
-    charts.hoursWeek.data.datasets = datasets;
-    charts.hoursWeek.update('none');
-  } else {
-    charts.hoursWeek = new Chart(ctx,{
-      type:'bar',
-      data:{ labels: labels, datasets: datasets },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{
-          legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
-          tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
-        },
-        scales:{
-          x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
-          y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
-        }
+  charts.hoursWeek = new Chart(ctx,{
+    type:'bar',
+    data:{ labels: labels, datasets: datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:10, padding:8, color:themeColor('--text-secondary','#6B7280') }},
+        tooltip:{ callbacks:{ label:function(c){ return c.dataset.label+': '+c.parsed.y+'h'; }}}
+      },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{ font:{size:10}, color:themeColor('--text-secondary','#6B7280') } },
+        y:{ stacked:true, beginAtZero:true, grid:{color:themeColor('--border-default','#F3F4F6')}, ticks:{ font:{size:10}, color:themeColor('--text-tertiary','#9CA3AF'), callback:function(v){ return v+'h'; } } }
       }
-    });
-  }
+    }
+  });
 }
 
 
 function tickClockUI(){
   if(!currentUser) return;
   var active = clockActive[currentUser.name];
-  var now = Date.now();
-  var minuteBoundary = !tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 60000;
-  // Update the .clock-btn label ONLY at minute boundaries. fmtElapsed
-  // floors to minutes for any duration ≥ 1 minute, so per-second updates
-  // produced identical strings — paying for querySelectorAll + DOM writes
-  // every second to render the same text. Now we only update when the
-  // visible value actually changes.
-  if(active && minuteBoundary){
-    var elapsed = now - active.start;
+  // Update label on every .clock-btn (topbar, tasks toolbar, etc.) when running
+  if(active){
+    var elapsed = Date.now() - active.start;
     document.querySelectorAll('.clock-btn .clock-btn-label-text').forEach(function(label){
       label.textContent = 'Stop Work · '+fmtElapsed(elapsed);
     });
   }
-  // Update per-task timer counters (row pills + modal total) every second —
-  // these can show seconds, so a 1Hz tick is real, not redundant.
+  // Update per-task timer counters (row pills + modal total) every second
   if(typeof tickTaskTimers === 'function') tickTaskTimers();
-  // Update the Time Tracker panel live counter when it's the active panel —
-  // the running session's HH:MM:SS counter ticks at 1Hz.
+  // Update the Time Tracker panel live counter when it's the active panel
   if(typeof tickTimeTrackerPanel === 'function') tickTimeTrackerPanel();
-  // Update the calendar's now-line + running blocks every second.
+  // Update the calendar's now-line + running blocks every second
   if(typeof tickCalendarPanel === 'function') tickCalendarPanel();
-  // Refresh timesheet totals when a session crosses a minute boundary —
-  // moved into the minute-boundary block below.
+  // Refresh timesheet totals when a session crosses a minute boundary
+  if(typeof tickTimesheetPanel === 'function') tickTimesheetPanel();
   // Update sidebar badges + otc card every minute (less frequent than
   // per-second to save reflows). Bumped from 30s → 60s — the labels show
   // "1h 23m" precision so anything sub-minute is invisible anyway, and
   // halving the reflow rate is a free perf win.
-  if(minuteBoundary){
+  var now = Date.now();
+  if(!tickClockUI._lastMinute || (now - tickClockUI._lastMinute) > 60000){
     tickClockUI._lastMinute = now;
     renderSidebarClockBadges();
-    if(typeof tickTimesheetPanel === 'function') tickTimesheetPanel();
     if(document.getElementById('panel-dashboard') && document.getElementById('panel-dashboard').classList.contains('active')){
       renderOnTheClockCard();
     }

@@ -243,7 +243,7 @@ function buildMain(){
           var cityKey=mi+'-'+safeInd+'-'+safeState+'-'+city.replace(/[^a-zA-Z]/g,'_');
           var done=isCityDone(ind,state,city);
           var by=getCityDoneBy(ind,state,city);
-          var byMember=by?(membersByName()[by]||null):null;
+          var byMember=by?MEMBERS.find(function(mm){return mm.name===by;}):null;
           var byColor=byMember?byMember.color:'#888';
           var canTick=isMe&&(!done||(done&&by===m.name));
           var cbClass='cb'+(done?' on':'')+(canTick?'':' locked');
@@ -315,17 +315,7 @@ async function initApp(){
   if(appInitialized)return;
   appInitialized=true;
   initFirebase();
-  // Stale-while-revalidate first paint:
-  //   1. Hydrate globals from localStorage (instant, sync).
-  //   2. Build the UI against that cached state — user sees a populated
-  //      dashboard in <100ms instead of a blank screen.
-  //   3. Subscribe Firebase listeners — their first 'value' callbacks
-  //      arrive async with fresh data and patch the UI surgically via
-  //      patchUIFromData (which is no-op when fresh === cached).
-  //   4. Await loadData() for the avatar one-shot (the rest moved into
-  //      listener-first-fire, since listeners give us the same data and
-  //      avoid 5×RTT of sequential .once() reads).
-  if(typeof hydrateFromCache === 'function') hydrateFromCache();
+  await loadData();
   buildSidebar();
   buildMain();
   updateSidebarCounts();
@@ -335,11 +325,6 @@ async function initApp(){
   subscribeRealtime();
   initPresence();
   subscribePresence();
-  await loadData();
-  // Re-apply avatars now that the fetch + cache write is done. First call
-  // above ran against possibly-empty localStorage; this one picks up any
-  // newly-cached avatars without rebuilding the rest of the UI.
-  applyAvatarsEverywhere();
   // Fallback polling only used when Firebase is not available
   if(!firebaseReady){
     setInterval(function(){
@@ -372,7 +357,7 @@ window.addEventListener('load', function(){
       currentUser = JSON.parse(stored);
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').classList.remove('app-hidden');
-      var m = membersByName()[currentUser.name];
+      var m = MEMBERS.find(function(m){ return m.name === currentUser.name; });
       var color = m ? m.color : '#406093';
       var _pillImg2 = loadAvatar(currentUser.name);
       var _pillEl2 = document.getElementById('user-pill-av');

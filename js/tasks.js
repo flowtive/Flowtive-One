@@ -271,15 +271,6 @@ function subscribeTasks(){
     tasksData = snap.val() || {};
     autoCloseStaleTaskTimer();
     updateSidebarTasksCount();
-    // Tasks contribute to Tracker totals via task.timeEntries — any
-    // change to the task tree could mean a different sum, so invalidate.
-    if(typeof _ttInvalidateSumCache === 'function') _ttInvalidateSumCache();
-    // Reports also pulls task.timeEntries into its row collection.
-    if(typeof _repInvalidate === 'function') _repInvalidate();
-    // Filtered-tasks cache is keyed off tasksData identity — fresh data
-    // means stale filter result. Cheap O(1) flag flip; refilter happens
-    // lazily on the next getFilteredTasks() call.
-    _gftInvalidate();
     // Drawer refresh is cheap + needs to run immediately so users don't
     // see stale data while typing.
     if(_drawerTaskId){
@@ -355,24 +346,7 @@ function taskPriorityLabel(v){
   var p = TASK_PRIORITIES.find(function(x){return x.v===v;}); return p ? p.l : v;
 }
 
-/* Cached result of getFilteredTasks. Tasks panel renders call this 4-5×
-   per pass (toolbar count + list head count + list body + done-collapse +
-   per-row count badges), each one walking Object.values(tasksData) and
-   running 1-2 filter passes. The cache lets the second-through-Nth call
-   reuse the first call's result.
-   Invalidated by:
-     • subscribeTasks listener — when tasksData changes server-side
-     • setTaskFilter, setTaskSort, setTaskSearch helpers
-     • auth.js when currentUser changes (the 'mine' filter pivots on it)
-   The `_taskFilter === 'overdue'` branch reads Date.now() — but the
-   overdue threshold only crosses minute boundaries, so a stale cache
-   for up to one render is acceptable here. The next listener tick or
-   user interaction freshens it. */
-var _gftCache = null;
-var _gftDirty = true;
-function _gftInvalidate(){ _gftDirty = true; _gftCache = null; }
 function getFilteredTasks(){
-  if(!_gftDirty && _gftCache) return _gftCache;
   var arr = Object.values(tasksData).filter(Boolean);
   // Search
   if(_taskSearch){
@@ -393,8 +367,6 @@ function getFilteredTasks(){
   } else if(_taskFilter === 'done'){
     arr = arr.filter(function(t){ return t.status === 'done'; });
   }
-  _gftCache = arr;
-  _gftDirty = false;
   return arr;
 }
 
@@ -409,7 +381,6 @@ function renderTasksPanel(){
   if(searchEl){
     searchEl.addEventListener('input', function(e){
       _taskSearch = e.target.value;
-      _gftInvalidate(); // search query changed → cached filter result is stale
       renderTasksArea();
     });
     // W11: Esc clears the search (only when the input is focused, so it
@@ -418,7 +389,6 @@ function renderTasksPanel(){
       if(e.key === 'Escape' && _taskSearch){
         e.stopPropagation();
         _taskSearch = '';
-        _gftInvalidate();
         renderTasksArea();
         // Re-focus the new input that just got rendered
         var fresh = document.getElementById('tasks-search');
@@ -431,7 +401,6 @@ function renderTasksPanel(){
   if(searchClear){
     searchClear.addEventListener('click', function(){
       _taskSearch = '';
-      _gftInvalidate();
       renderTasksArea();
       var fresh = document.getElementById('tasks-search');
       if(fresh) fresh.focus();
@@ -518,7 +487,7 @@ function renderTasksToolbar(){
   return html;
 }
 
-function setTaskSort(v){ _taskSort = v; _gftInvalidate(); renderTasksArea(); }
+function setTaskSort(v){ _taskSort = v; renderTasksArea(); }
 function toggleTaskGroup(){ _taskGroup = !_taskGroup; renderTasksPanel(); }
 
 /* Quick-add: type → Enter → task created. The fastest path to capture an idea. */
@@ -562,7 +531,7 @@ function cycleTaskDensity(){
 }
 
 function setTaskView(v){ _taskView = v; renderTasksPanel(); }
-function setTaskFilter(f){ _taskFilter = f; _gftInvalidate(); renderTasksPanel(); }
+function setTaskFilter(f){ _taskFilter = f; renderTasksPanel(); }
 
 /* Sort tasks by the chosen mode. Smart = incomplete first by priority/due,
    Newest/Oldest = createdAt, Due = dueDate (no-due last), Priority,
@@ -838,7 +807,7 @@ function renderTaskTimePill(t){
 }
 
 function renderTaskAssignee(name, taskId){
-  var m = membersByName()[name] || {name:name, color:'#6B7280'};
+  var m = MEMBERS.find(function(x){return x.name===name;}) || {name:name, color:'#6B7280'};
   var img = (typeof loadAvatar==='function') ? loadAvatar(name) : null;
   var inner = img ? '<img src="'+img+'" alt="'+escapeHtml(name)+'">' : escapeHtml(name.substring(0,2).toUpperCase());
   var bg = img ? 'transparent' : m.color;
@@ -871,7 +840,7 @@ function renderTaskBoard(tasks){
     col.forEach(function(t){
       var img, inner='', bg='#9CA3AF';
       if(t.assignee){
-        var m = membersByName()[t.assignee] || {color:'#6B7280'};
+        var m = MEMBERS.find(function(x){return x.name===t.assignee;}) || {color:'#6B7280'};
         img = loadAvatar(t.assignee);
         inner = img ? '<img src="'+img+'" alt="'+escapeHtml(t.assignee)+'">' : escapeHtml(t.assignee.substring(0,2).toUpperCase());
         bg = img ? 'transparent' : m.color;
@@ -1992,7 +1961,7 @@ function renderTimeTrackingSection(t){
   if(Object.keys(userTotals).length){
     html += '<div class="time-user-list">';
     Object.keys(userTotals).sort().forEach(function(u){
-      var m = membersByName()[u] || {color:'#6B7280'};
+      var m = MEMBERS.find(function(x){return x.name===u;}) || {color:'#6B7280'};
       var img = (typeof loadAvatar==='function') ? loadAvatar(u) : null;
       var avInner = img ? '<img src="'+img+'" alt="'+escapeHtml(u)+'">' : escapeHtml(u.substring(0,2).toUpperCase());
       var avBg = img ? 'transparent' : m.color;
@@ -2019,7 +1988,7 @@ function renderCommentsSection(t){
   if(coms.length){
     html += '<div class="comment-list">';
     coms.forEach(function(c){
-      var m = membersByName()[c.user] || {color:'#6B7280'};
+      var m = MEMBERS.find(function(x){return x.name===c.user;}) || {color:'#6B7280'};
       var img = (typeof loadAvatar==='function') ? loadAvatar(c.user) : null;
       var avInner = img
         ? '<img src="'+img+'" alt="'+escapeHtml(c.user)+'">'

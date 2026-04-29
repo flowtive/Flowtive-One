@@ -212,7 +212,7 @@ function _calCollectEntries(dayStarts){
     var s = clockSessions[id];
     if(!s || !s.start || !s.user) return;
     if(_calFilter === 'me' && s.user !== name) return;
-    var member = membersByName()[s.user] || {color:'#6B7280'};
+    var member = MEMBERS.find(function(m){ return m.name === s.user; }) || {color:'#6B7280'};
     // Project color overrides member color when set — keeps the user's
     // project palette consistent across the week.
     var color = member.color;
@@ -238,7 +238,7 @@ function _calCollectEntries(dayStarts){
         var e = t.timeEntries[eid];
         if(!e || !e.start || !e.user) return;
         if(_calFilter === 'me' && e.user !== name) return;
-        var member = membersByName()[e.user] || {color:'#6B7280'};
+        var member = MEMBERS.find(function(m){ return m.name === e.user; }) || {color:'#6B7280'};
         var isActive = !!(t.activeTimers && t.activeTimers[e.user] && t.activeTimers[e.user].entryId === eid);
         pushSplit({
           kind:'task', id:eid, taskId:tid, user:e.user, color:member.color,

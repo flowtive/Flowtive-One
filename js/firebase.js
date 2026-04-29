@@ -25,28 +25,25 @@ function setSyncing(s){
 }
 
 
-/* Hydrate globals from localStorage caches so the first paint of the app
-   has SOMETHING to render against, even before Firebase responds. The
-   listener's first 'value' callback (registered later in subscribeRealtime)
-   then patches in fresh data via patchUIFromData, which only diffs — so
-   the user sees cached state in <100ms then a surgical update when the
-   network catches up. Idempotent — safe to call multiple times. */
-function hydrateFromCache(){
-  try{
-    var p = localStorage.getItem('flowtive_usa_state_v6');
-    if(p) doneData = JSON.parse(p);
-  }catch(e){}
-  loadExtras(); // notes, status, activity, email_overrides
-}
-
 async function loadData(){
   try{
     setSyncing('syncing');
     if(firebaseReady){
-      // Avatar one-shot — avatars are cached in localStorage per-user
-      // (`flowtive_avatar_{name}`) so applyAvatarsEverywhere can read them
-      // synchronously. We need this fetch to populate the cache on first
-      // visit; subsequent visits hit the listener at line ~430 instead.
+      // Fix 3: Load all data from Firebase — do NOT call loadExtras() after this
+      // to prevent stale localStorage values from overriding fresh Firebase data
+      var snap = await firebaseDb.ref('flowtive_progress').once('value');
+      doneData = snap.val() || {};
+      var ssnap = await firebaseDb.ref('flowtive_status').once('value');
+      statusData = ssnap.val() || {};
+      // Fix 2: Load notes from Firebase
+      var nsnap = await firebaseDb.ref('flowtive_notes').once('value');
+      notesData = nsnap.val() || {};
+      // Load email template overrides
+      var esnap = await firebaseDb.ref('flowtive_email_templates').once('value');
+      emailOverrides = esnap.val() || {};
+      try{ localStorage.setItem('flowtive_email_overrides_v1', JSON.stringify(emailOverrides)); }catch(e){}
+      // Load activity fallback from localStorage (Firebase listener will update live)
+      try{ var a=localStorage.getItem('flowtive_activity_fallback'); if(a) activityLog=JSON.parse(a); }catch(e){}
       var asnap = await firebaseDb.ref('flowtive_avatars').once('value');
       if(asnap.val()){
         var avs = asnap.val();
@@ -54,17 +51,16 @@ async function loadData(){
           try{ localStorage.setItem('flowtive_avatar_'+name.toLowerCase(), avs[name]); }catch(e){}
         });
       }
-      // Note: progress / status / notes / email_templates `.once()` reads
-      // were dropped — subscribeRealtime's listeners (registered before
-      // this function awaits) fire their first callback with the same
-      // data, so the .once() reads were waste. Each was previously a
-      // sequential await adding one full RTT to time-to-interactive.
     } else {
-      // Fallback to localStorage when Firebase init failed.
-      hydrateFromCache();
+      // Fallback to localStorage
+      var stored = localStorage.getItem('flowtive_usa_state_v6');
+      if(stored){ try{doneData=JSON.parse(stored);}catch(e){doneData={};} }
+      else{ doneData={}; }
+      // Only call loadExtras when Firebase is not available
+      loadExtras();
     }
     setSyncing('live');
-  }catch(e){ setSyncing('error'); }
+  }catch(e){ setSyncing('error'); doneData={}; }
 }
 
 async function saveData(){
@@ -178,7 +174,7 @@ function patchUIFromData(oldData, newData){
 
     var isDone = !!isVal;
     var byName = isVal || null;
-    var byMember = byName ? (membersByName()[byName] || null) : null;
+    var byMember = byName ? MEMBERS.find(function(m){return m.name===byName;}) : null;
     var byColor  = byMember ? byMember.color : '#888';
 
     MEMBERS.forEach(function(m, mi){
@@ -397,15 +393,22 @@ function subscribeRealtime(){
     }
   });
 
-  // (The flowtive_email_templates listener used to live here, but it
-  // referenced `emailOverrides`, `_currentOpenInd`, `EMAIL_TEMPLATES`, and
-  // `rerenderEmailCard` — all defined in js/emails.js, which is now
-  // lazy-loaded. With those globals undefined at app boot, the listener's
-  // first 'value' callback threw ReferenceError. The subscription has been
-  // moved to subscribeEmailTemplates() in emails.js, called from
-  // openEmailLibrary the first time Cold Pitch is opened. Cross-user sync
-  // of email edits still works — it just kicks in the moment the user
-  // first opens Cold Pitch instead of at app boot.)
+  // Listen to email template overrides — sync edits across all team members
+  firebaseDb.ref('flowtive_email_templates').on('value', function(snap){
+    var fresh = snap.val() || {};
+    if(JSON.stringify(fresh) === JSON.stringify(emailOverrides)) return;
+    emailOverrides = fresh;
+    try{ localStorage.setItem('flowtive_email_overrides_v1', JSON.stringify(emailOverrides)); }catch(e){}
+    // If an email modal is open, re-render its cards
+    if(_currentOpenInd && EMAIL_TEMPLATES[_currentOpenInd]){
+      EMAIL_TEMPLATES[_currentOpenInd].emails.forEach(function(_, i){
+        var card = document.getElementById('email-card-'+i);
+        if(card && !card.querySelector('.email-edit-textarea')){
+          rerenderEmailCard(_currentOpenInd, i);
+        }
+      });
+    }
+  });
 
   // Listen to avatar changes
   firebaseDb.ref('flowtive_avatars').on('value', function(snap){

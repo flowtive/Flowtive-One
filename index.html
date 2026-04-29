@@ -11,15 +11,6 @@
 <!-- Apply theme synchronously before first paint (no FOUC) -->
 <script src="js/head-theme.js"></script>
 
-<!-- Performance hints — open the TCP+TLS handshake to CDN + Firebase
-     hosts in parallel with HTML parsing, so by the time we hit the
-     script tags below the network sockets are already warm. -->
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://flowtive-leads-default-rtdb.firebaseio.com" crossorigin>
-<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-<link rel="dns-prefetch" href="https://www.gstatic.com">
-
 <!-- Design system + feature styles -->
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/themes.css">
@@ -266,47 +257,36 @@
   </div>
 </div>
 
-<!-- External libraries — `defer` so the parser doesn't block on download
-     or evaluation. All deferred scripts execute in document order after
-     HTML parsing completes but before DOMContentLoaded.
-     Chart.js is needed for the Workspace Dashboard (the landing page),
-     so loading it eagerly via defer is strictly faster than lazy-loading
-     it via the dynamic-script gate (which had a timing edge case where
-     the .then chain didn't always fire reliably across all browsers). -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- External libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-<!-- App modules — order matters: data + utils first, features next, main last.
-     `defer` preserves order while letting the parser keep working in parallel.
-
-     The following modules are LAZY-LOADED via loadModule() in sidebar.js
-     onActivate handlers, so they're absent from this initial load:
-       js/calendar-view.js   — loaded when user opens Logbook → Calendar
-       js/timesheet.js       — loaded when user opens Logbook → Timesheet
-       js/reports.js         — loaded when user opens Logbook → Reports
-       js/sub-dashboards.js  — loaded when user opens Logbook → Dashboard
-       js/emails.js          — loaded when user opens Cold Pitch
-     Total deferred: ~370 KB removed from initial-load JS. -->
-<script defer src="js/config.js"></script>
-<script defer src="js/util.js"></script>
-<script defer src="js/theme.js"></script>
-<script defer src="js/firebase.js"></script>
-<script defer src="js/avatar.js"></script>
-<script defer src="js/auth.js"></script>
-<script defer src="js/activity.js"></script>
-<script defer src="js/leads.js"></script>
-<script defer src="js/dashboard.js"></script>
-<script defer src="js/sidebar.js"></script>
-<script defer src="js/search.js"></script>
-<script defer src="js/clock.js"></script>
-<script defer src="js/tasks.js"></script>
-<script defer src="js/timetracker.js"></script>
-<script defer src="js/projects-tags.js"></script>
-<script defer src="js/topbar.js"></script>
-<script defer src="js/palette.js"></script>
-<script defer src="js/whats-new.js"></script>
-<!-- <script defer src="js/admin.js"></script>  Reserved — feature paused; re-enable when ready -->
-<script defer src="js/main.js"></script>
+<!-- App modules — order matters: data + utils first, features next, main last -->
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/activity.js"></script>
+<script src="js/leads.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/search.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/timetracker.js"></script>
+<script src="js/calendar-view.js"></script>
+<script src="js/projects-tags.js"></script>
+<script src="js/timesheet.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/sub-dashboards.js"></script>
+<script src="js/emails.js"></script>
+<script src="js/topbar.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/whats-new.js"></script>
+<!-- <script src="js/admin.js"></script>  Reserved — feature paused; re-enable when ready -->
+<script src="js/main.js"></script>
 </body>
 </html>
